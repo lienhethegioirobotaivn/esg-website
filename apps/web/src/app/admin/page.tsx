@@ -1,7 +1,22 @@
+import { Container } from "@/components/ui";
+import { AdminWorkspace } from "@/features/admin";
+
 export default function AdminPage() {
   return (
-    <main className="p-8">
-      <h1 className="text-xl">Quản trị bộ câu hỏi ESG</h1>
+    <main>
+      <Container className="py-10">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Quản trị bộ câu hỏi ESG
+          <span className="text-primary-500">.</span>
+        </h1>
+        <p className="mt-2 max-w-2xl text-muted">
+          Thêm, sửa, xóa và sắp xếp trụ cột, nhóm và câu hỏi. Thay đổi hiển thị
+          ngay ở trang khảo sát khi bạn quay lại bằng liên kết phía trên.
+        </p>
+        <div className="mt-8">
+          <AdminWorkspace />
+        </div>
+      </Container>
     </main>
   );
 }

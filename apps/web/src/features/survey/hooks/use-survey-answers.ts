@@ -7,6 +7,8 @@ import type { EvidenceItem } from "@/features/evidence";
 import { getDraft } from "../lib/progress";
 import type { AnswerDraft, AnswerMap } from "../types";
 
+import { createId } from "@/lib/id";
+
 type AnswerAction =
   | { type: "select"; questionId: string; value: AnswerValue }
   | { type: "describe"; questionId: string; description: string }
@@ -72,7 +74,7 @@ export function useSurveyAnswers(): {
         dispatch({
           type: "add-evidence",
           questionId,
-          item: { id: crypto.randomUUID(), file },
+          item: { id: createId(), file },
         }),
       removeEvidence: (questionId, evidenceId) =>
         dispatch({ type: "remove-evidence", questionId, evidenceId }),

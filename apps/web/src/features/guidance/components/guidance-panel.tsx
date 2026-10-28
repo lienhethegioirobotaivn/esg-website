@@ -18,17 +18,20 @@ export function GuidancePanel({ question }: GuidancePanelProps) {
 
       {question ? (
         <>
-          <div className="mt-6 flex size-16 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+          <div className="mt-6 flex size-16 items-center justify-center mx-auto rounded-full bg-primary-100 text-primary-600">
             <Sprout aria-hidden className="size-9" />
           </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-primary-600">
+          <p className="mt-6 text-sm text-center font-bold uppercase text-primary-600">
             Câu {question.code}
           </p>
-          <h2 id="guidance-heading" className="mt-1 text-xl text-primary-900">
+          <h2
+            id="guidance-heading"
+            className="mt-1 text-xl text-center text-primary-900"
+          >
             {question.guidance.title}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
+          <p className="mt-3 text-sm text-justify leading-relaxed text-muted">
             {question.guidance.body}
           </p>
 
@@ -38,7 +41,7 @@ export function GuidancePanel({ question }: GuidancePanelProps) {
                 <FolderOpen aria-hidden className="size-4" />
                 Minh chứng gợi ý
               </p>
-              <p className="mt-2 text-[0.8125rem] leading-relaxed text-muted">
+              <p className="mt-2 text-[0.8125rem] text-justify leading-relaxed text-muted">
                 {question.guidance.suggestedEvidence}
               </p>
             </div>

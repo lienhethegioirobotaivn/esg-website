@@ -1,12 +1,12 @@
 "use client";
 
-import type { Survey } from "@esg/shared";
 import { useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
 import { CompanyProfileForm } from "@/features/company";
 import { GuidancePanel } from "@/features/guidance";
 
+import { useSurvey } from "../hooks/use-survey";
 import { useSurveyAnswers } from "../hooks/use-survey-answers";
 import { countCompleted } from "../lib/progress";
 import { flattenGroups } from "../lib/survey-tree";
@@ -15,11 +15,8 @@ import { GroupSection } from "./group-section";
 import { GroupTabs } from "./group-tabs";
 import { JourneyProgress } from "./journey-progress";
 
-interface SurveyWorkspaceProps {
-  survey: Survey;
-}
-
-export function SurveyWorkspace({ survey }: SurveyWorkspaceProps) {
+export function SurveyWorkspace() {
+  const survey = useSurvey();
   const { answers, actions } = useSurveyAnswers();
   const entries = useMemo(() => flattenGroups(survey), [survey]);
   const allQuestions = useMemo(

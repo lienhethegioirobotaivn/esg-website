@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 
 import { Container } from "@/components/ui";
-import { SurveyWorkspace, surveyService } from "@/features/survey";
+import { SurveyWorkspace } from "@/features/survey";
 
 export const metadata: Metadata = {
   title: "Khảo sát ESG",
 };
 
-export default async function HomePage() {
-  const survey = await surveyService.getSurvey();
-
+export default function HomePage() {
   return (
     <main>
       <Container className="py-10">
@@ -27,7 +25,7 @@ export default async function HomePage() {
         </p>
 
         <div className="mt-10">
-          <SurveyWorkspace survey={survey} />
+          <SurveyWorkspace />
         </div>
       </Container>
     </main>

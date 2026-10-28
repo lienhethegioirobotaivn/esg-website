@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@esg/shared": "workspace:*",
     "lucide-react": "^1.62.0",
     "next": "16.4.3",
     "react": "19.3.0",

@@ -13,7 +13,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: {
-    default: "ESGstudio",
+    default: "ESG Studio - Tạo hồ sơ ESG miễn phí",
     template: "%s | ESGstudio",
   },
   description: "Nền tảng khảo sát ESG nội bộ miễn phí dành cho doanh nghiệp.",

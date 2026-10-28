@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f5f6f1;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eff2ea;
+  --color-border: #e3e7dc;
+  --color-border-strong: #ccd4c0;
+
+  --color-foreground: #1c2a22;
+  --color-muted: #66756b;
+  --color-subtle: #93a098;
+
+  --color-primary-50: #f0f7f2;
+  --color-primary-100: #dfeee3;
+  --color-primary-200: #c2dccb;
+  --color-primary-300: #9ec4ab;
+  --color-primary-400: #72a784;
+  --color-primary-500: #4f8c63;
+  --color-primary-600: #3a7350;
+  --color-primary-700: #2e5c40;
+  --color-primary-800: #254a34;
+  --color-primary-900: #1c3a29;
+
+  --color-danger-50: #fdf2f1;
+  --color-danger-600: #c0392b;
+  --color-warning-50: #fdf8ec;
+  --color-warning-600: #b7791f;
+
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+
+  --shadow-card: 0 1px 2px rgb(28 42 34 / 0.04), 0 1px 3px rgb(28 42 34 / 0.06);
+}
+
+@theme inline {
+  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-900);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}

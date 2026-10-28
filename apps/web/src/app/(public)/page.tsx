@@ -1,7 +1,35 @@
-export default function Home() {
+import type { Metadata } from "next";
+
+import { Container } from "@/components/ui";
+import { SurveyWorkspace, surveyService } from "@/features/survey";
+
+export const metadata: Metadata = {
+  title: "Khảo sát ESG",
+};
+
+export default async function HomePage() {
+  const survey = await surveyService.getSurvey();
+
   return (
     <main>
-      <h1 className="text-5xl">Hello World</h1>
+      <Container className="py-10">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary-700">
+          <span aria-hidden className="size-1.5 rounded-full bg-primary-500" />
+          Từ những bước nhỏ, tạo nên thay đổi lớn
+        </p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight">
+          Hồ sơ ESG, bắt đầu từ đây
+          <span className="text-primary-500">.</span>
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted">
+          Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp. Điền thông
+          tin, thêm minh chứng và hoàn thành bộ câu hỏi theo thứ tự bạn muốn.
+        </p>
+
+        <div className="mt-10">
+          <SurveyWorkspace survey={survey} />
+        </div>
+      </Container>
     </main>
   );
 }

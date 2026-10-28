@@ -11,7 +11,10 @@ export const guidanceSchema = z.object({
 
 export const pillarSchema = z.object({
   id: z.string().min(1),
-  code: z.string().min(1).max(3),
+  code: z
+    .string()
+    .min(1, "Vui lòng nhập mã trụ cột")
+    .max(3, "Mã trụ cột tối đa 3 ký tự"),
   name: z.string().min(1, "Vui lòng nhập tên trụ cột"),
   icon: z.enum(PILLAR_ICONS),
   order: z.number().int().nonnegative(),
@@ -19,7 +22,7 @@ export const pillarSchema = z.object({
 
 export const questionGroupSchema = z.object({
   id: z.string().min(1),
-  pillarId: z.string().min(1),
+  pillarId: z.string().min(1, "Vui lòng chọn trụ cột"),
   order: z.number().int().nonnegative(),
   title: z.string().min(1, "Vui lòng nhập tên nhóm"),
   description: z.string(),

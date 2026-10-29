@@ -126,7 +126,7 @@ export function GroupQuestionsPanel({
                 key={question.id}
                 className="rounded-card border border-border bg-surface p-4"
               >
-                <div className="flex items-start gap-3">
+                <div className="flex flex-wrap items-start gap-3">
                   <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-muted">
                     Câu {index + 1}
                   </span>
@@ -145,7 +145,7 @@ export function GroupQuestionsPanel({
                       />
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
+                  <div className="ml-auto flex shrink-0 items-center gap-0.5">
                     <IconButton
                       label="Chuyển câu hỏi lên trên"
                       disabled={index === 0}

@@ -57,12 +57,12 @@ export function SurveyWorkspace() {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
       <aside aria-label="Thông tin doanh nghiệp">
         <CompanyProfileForm />
       </aside>
 
-      <section aria-labelledby="survey-heading">
+      <section aria-labelledby="survey-heading" className="min-w-0">
         <Card>
           <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
             <div>
@@ -131,7 +131,7 @@ export function SurveyWorkspace() {
 
       <aside
         aria-label="Hướng dẫn và tiến độ"
-        className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+        className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
       >
         <GuidancePanel
           question={activeQuestion}

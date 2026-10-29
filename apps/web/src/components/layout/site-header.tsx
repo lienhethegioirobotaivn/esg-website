@@ -16,7 +16,7 @@ export function SiteHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <span className="rounded-md bg-primary-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary-700">
+          <span className="hidden rounded-md bg-primary-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary-700 sm:inline">
             Miễn phí
           </span>
           <Link

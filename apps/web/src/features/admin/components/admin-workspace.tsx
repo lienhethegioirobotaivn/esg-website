@@ -66,7 +66,7 @@ export function AdminWorkspace() {
 
   return (
     <>
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <StructurePanel
           survey={survey}
           selectedGroupId={selectedEntry?.group.id ?? null}

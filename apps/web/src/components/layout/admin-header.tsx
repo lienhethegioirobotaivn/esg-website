@@ -5,7 +5,7 @@ import { Container } from "@/components/ui";
 
 export function AdminHeader() {
   return (
-    <header className="border-b border-border bg-surface">
+    <header className="sticky top-0 z-40 border-b border-border bg-surface">
       <Container className="flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/admin" className="flex items-center gap-2.5">

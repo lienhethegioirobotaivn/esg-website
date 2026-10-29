@@ -131,7 +131,7 @@ export function SurveyWorkspace() {
 
       <aside
         aria-label="Hướng dẫn và tiến độ"
-        className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+        className="min-w-0 space-y-6 lg:sticky lg:top-22 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
       >
         <GuidancePanel
           question={activeQuestion}

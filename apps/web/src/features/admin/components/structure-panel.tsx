@@ -61,9 +61,6 @@ export function StructurePanel({
                   <p className="min-w-0 flex-1 truncate text-sm font-medium">
                     {pillar.name}
                   </p>
-                  <span className="rounded bg-primary-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-primary-800">
-                    {pillar.code}
-                  </span>
                   <IconButton
                     label={`Sửa trụ cột ${pillar.name}`}
                     onClick={() => onEditPillar(pillar)}

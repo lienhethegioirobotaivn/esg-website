@@ -13,20 +13,17 @@ import { FormActions } from "./form-actions";
 
 interface PillarFormDialogProps {
   pillar: Pillar | null;
-  takenCodes: readonly string[];
   onSubmit: (input: PillarInput) => void;
   onClose: () => void;
 }
 
 interface PillarFormValues {
   name: string;
-  code: string;
   icon: string;
 }
 
 export function PillarFormDialog({
   pillar,
-  takenCodes,
   onSubmit,
   onClose,
 }: PillarFormDialogProps) {
@@ -34,27 +31,20 @@ export function PillarFormDialog({
   const { values, errors, setErrors, setValue } =
     useFormFields<PillarFormValues>({
       name: pillar?.name ?? "",
-      code: pillar?.code ?? "",
       icon: pillar?.icon ?? "sprout",
     });
 
   const nameId = `${formId}-name`;
-  const codeId = `${formId}-code`;
   const iconId = `${formId}-icon`;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = pillarInputSchema.safeParse({
       name: values.name.trim(),
-      code: values.code.trim().toUpperCase(),
       icon: values.icon,
     });
     if (!result.success) {
       setErrors(flattenIssues(result.error));
-      return;
-    }
-    if (takenCodes.includes(result.data.code)) {
-      setErrors({ code: "Mã này đã được dùng cho trụ cột khác" });
       return;
     }
     onSubmit(result.data);
@@ -76,25 +66,6 @@ export function PillarFormDialog({
             placeholder="Ví dụ: Môi trường"
             aria-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? `${nameId}-error` : undefined}
-          />
-        </Field>
-
-        <Field
-          label="Mã trụ cột (dùng làm tiền tố mã câu hỏi, tối đa 3 ký tự)"
-          htmlFor={codeId}
-          required
-          error={errors.code}
-        >
-          <Input
-            id={codeId}
-            value={values.code}
-            onChange={(event) =>
-              setValue("code", event.target.value.toUpperCase())
-            }
-            placeholder="Ví dụ: E"
-            maxLength={3}
-            aria-invalid={Boolean(errors.code)}
-            aria-describedby={errors.code ? `${codeId}-error` : undefined}
           />
         </Field>
 

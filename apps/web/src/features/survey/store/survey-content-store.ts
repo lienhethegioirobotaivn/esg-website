@@ -68,23 +68,6 @@ function reorder<T extends { id: string; order: number }>(
   });
 }
 
-function nextQuestionCode(
-  pillarCode: string,
-  questions: readonly Question[],
-): string {
-  const highest = questions.reduce((max, question) => {
-    if (!question.code.startsWith(pillarCode)) {
-      return max;
-    }
-    const sequence = Number.parseInt(
-      question.code.slice(pillarCode.length),
-      10,
-    );
-    return Number.isNaN(sequence) ? max : Math.max(max, sequence);
-  }, 0);
-  return `${pillarCode}${String(highest + 1).padStart(3, "0")}`;
-}
-
 export const useSurveyContentStore = create<SurveyContentState>()((set) => ({
   pillars: initialPillars,
   groups: initialGroups,
@@ -165,22 +148,13 @@ export const useSurveyContentStore = create<SurveyContentState>()((set) => ({
 
     addQuestion: (input) =>
       set((state) => {
-        const group = state.groups.find((item) => item.id === input.groupId);
-        const pillar = group
-          ? state.pillars.find((item) => item.id === group.pillarId)
-          : undefined;
         const siblings = state.questions.filter(
           (question) => question.groupId === input.groupId,
         );
         return {
           questions: [
             ...state.questions,
-            {
-              ...input,
-              id: createId(),
-              order: nextOrder(siblings),
-              code: nextQuestionCode(pillar?.code ?? "Q", state.questions),
-            },
+            { ...input, id: createId(), order: nextOrder(siblings) },
           ],
         };
       }),

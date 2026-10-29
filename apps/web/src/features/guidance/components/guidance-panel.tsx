@@ -3,9 +3,13 @@ import { BookOpen, FolderOpen, Lightbulb, Sprout } from "lucide-react";
 
 interface GuidancePanelProps {
   question: Question | null;
+  questionNumber: number;
 }
 
-export function GuidancePanel({ question }: GuidancePanelProps) {
+export function GuidancePanel({
+  question,
+  questionNumber,
+}: GuidancePanelProps) {
   return (
     <section
       aria-labelledby="guidance-heading"
@@ -18,12 +22,12 @@ export function GuidancePanel({ question }: GuidancePanelProps) {
 
       {question ? (
         <>
-          <div className="mt-6 flex size-16 items-center justify-center mx-auto rounded-full bg-primary-100 text-primary-600">
+          <div className="mt-6 flex size-16 mx-auto items-center justify-center rounded-full bg-primary-100 text-primary-600">
             <Sprout aria-hidden className="size-9" />
           </div>
 
-          <p className="mt-6 text-sm text-center font-bold uppercase text-primary-600">
-            Câu {question.code}
+          <p className="mt-6 text-sm text-center font-bold uppercase tracking-wider text-primary-600">
+            Câu {questionNumber}
           </p>
           <h2
             id="guidance-heading"

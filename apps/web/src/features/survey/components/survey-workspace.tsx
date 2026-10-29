@@ -38,13 +38,16 @@ export function SurveyWorkspace() {
   const previousEntry = entries[activeIndex - 1];
   const nextEntry = entries[activeIndex + 1];
 
-  const activeQuestion = activeEntry
-    ? (activeEntry.group.questions.find(
-        (question) => question.id === focusedQuestionId,
-      ) ??
-      activeEntry.group.questions[0] ??
-      null)
-    : null;
+  const activeQuestionIndex = activeEntry
+    ? Math.max(
+        0,
+        activeEntry.group.questions.findIndex(
+          (question) => question.id === focusedQuestionId,
+        ),
+      )
+    : 0;
+  const activeQuestion =
+    activeEntry?.group.questions[activeQuestionIndex] ?? null;
 
   const completedTotal = countCompleted(allQuestions, answers);
 
@@ -130,7 +133,10 @@ export function SurveyWorkspace() {
         aria-label="Hướng dẫn và tiến độ"
         className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
       >
-        <GuidancePanel question={activeQuestion} />
+        <GuidancePanel
+          question={activeQuestion}
+          questionNumber={activeQuestionIndex + 1}
+        />
         <JourneyProgress
           entries={entries}
           answers={answers}

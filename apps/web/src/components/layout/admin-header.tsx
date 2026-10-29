@@ -16,16 +16,16 @@ export function AdminHeader() {
               ESGstudio<span className="text-primary-500">.</span>
             </span>
           </Link>
-          <span className="rounded-md bg-surface-muted px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-muted">
+          <span className="rounded-md bg-surface-muted px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-muted">
             Quản trị
           </span>
         </div>
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary-700"
+          className="flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-primary-700"
         >
           <ArrowLeft aria-hidden className="size-4" />
-          Về trang khảo sát
+          Về trang chủ
         </Link>
       </Container>
     </header>

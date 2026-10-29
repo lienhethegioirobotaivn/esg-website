@@ -141,9 +141,6 @@ export function AdminWorkspace() {
       {dialog.kind === "pillar-form" ? (
         <PillarFormDialog
           pillar={dialog.pillar}
-          takenCodes={survey
-            .filter((pillar) => pillar.id !== dialog.pillar?.id)
-            .map((pillar) => pillar.code)}
           onSubmit={(input) => {
             if (dialog.pillar) {
               actions.updatePillar(dialog.pillar.id, input);

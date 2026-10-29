@@ -11,10 +11,6 @@ export default function HomePage() {
   return (
     <main>
       <Container className="py-10">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary-700">
-          <span aria-hidden className="size-1.5 rounded-full bg-primary-500" />
-          Từ những bước nhỏ, tạo nên thay đổi lớn
-        </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight">
           Hồ sơ ESG, bắt đầu từ đây
           <span className="text-primary-500">.</span>

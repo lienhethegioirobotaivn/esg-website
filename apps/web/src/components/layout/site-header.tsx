@@ -1,7 +1,8 @@
-import { Leaf, Settings } from "lucide-react";
+import { Leaf } from "lucide-react";
 import Link from "next/link";
 
 import { Container } from "@/components/ui";
+import { LanguageSwitcher } from "@/features/locale";
 
 export function SiteHeader() {
   return (
@@ -15,18 +16,7 @@ export function SiteHeader() {
             ESGstudio<span className="text-primary-500">.</span>
           </span>
         </Link>
-        <div className="flex items-center gap-4">
-          <span className="hidden rounded-md bg-primary-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary-700 sm:inline">
-            Miễn phí
-          </span>
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary-700"
-          >
-            <Settings aria-hidden className="size-4" />
-            Quản trị
-          </Link>
-        </div>
+        <LanguageSwitcher />
       </Container>
     </header>
   );

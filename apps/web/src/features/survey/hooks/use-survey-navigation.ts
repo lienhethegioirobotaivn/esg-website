@@ -14,11 +14,24 @@ interface SurveyNavigation extends ActiveGroup {
   selectPillar: (pillarId: string) => void;
 }
 
+function rememberInitialGroup(
+  entries: readonly GroupEntry[],
+  groupId: string | null,
+): RememberedGroups {
+  const entry = entries.find((candidate) => candidate.group.id === groupId);
+  return entry ? { [entry.pillarId]: entry.group.id } : {};
+}
+
 export function useSurveyNavigation(
   entries: readonly GroupEntry[],
+  initialGroupId: string | null = null,
 ): SurveyNavigation {
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [remembered, setRemembered] = useState<RememberedGroups>({});
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    initialGroupId,
+  );
+  const [remembered, setRemembered] = useState<RememberedGroups>(() =>
+    rememberInitialGroup(entries, initialGroupId),
+  );
 
   const active = resolveActiveGroup(entries, selectedGroupId);
 

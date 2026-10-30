@@ -3,11 +3,10 @@ import type { AnswerValue } from "@esg/shared";
 import { useMemo, useReducer } from "react";
 
 import type { EvidenceItem } from "@/features/evidence";
+import { createId } from "@/lib/id";
 
 import { getDraft } from "../lib/progress";
 import type { AnswerDraft, AnswerMap } from "../types";
-
-import { createId } from "@/lib/id";
 
 type AnswerAction =
   | { type: "select"; questionId: string; value: AnswerValue }
@@ -44,9 +43,7 @@ function answersReducer(state: AnswerMap, action: AnswerAction): AnswerMap {
     case "remove-evidence":
       return updateDraft(state, action.questionId, (draft) => ({
         ...draft,
-        evidence: draft.evidence.filter(
-          (item) => item.id !== action.evidenceId,
-        ),
+        evidence: draft.evidence.filter((item) => item.id !== action.evidenceId),
       }));
   }
 }
@@ -58,11 +55,11 @@ export interface SurveyAnswerActions {
   removeEvidence: (questionId: string, evidenceId: string) => void;
 }
 
-export function useSurveyAnswers(): {
+export function useSurveyAnswers(initialAnswers: AnswerMap = {}): {
   answers: AnswerMap;
   actions: SurveyAnswerActions;
 } {
-  const [answers, dispatch] = useReducer(answersReducer, {});
+  const [answers, dispatch] = useReducer(answersReducer, initialAnswers);
 
   const actions = useMemo<SurveyAnswerActions>(
     () => ({

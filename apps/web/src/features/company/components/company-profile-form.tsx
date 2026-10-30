@@ -8,39 +8,25 @@ import type { FormEvent } from "react";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
 
-const COMPANY_FIELDS = [
-  "name",
-  "industry",
-  "headcount",
-  "address",
-  "reportYear",
-  "reportScope",
-] as const;
+import type { CompanyField, CompanyFormValues } from "../constants";
+import { isCompanyField } from "../lib/company-values";
 
-type CompanyField = (typeof COMPANY_FIELDS)[number];
-type FormValues = Record<CompanyField, string>;
 type FormErrors = Partial<Record<CompanyField, string>>;
 
-const INITIAL_VALUES: FormValues = {
-  name: "",
-  industry: "",
-  headcount: "",
-  address: "",
-  reportYear: "2026",
-  reportScope: "",
-};
-
-function isCompanyField(key: PropertyKey): key is CompanyField {
-  return COMPANY_FIELDS.some((field) => field === key);
+interface CompanyProfileFormProps {
+  values: CompanyFormValues;
+  onFieldChange: (field: CompanyField, value: string) => void;
 }
 
-export function CompanyProfileForm() {
-  const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
+export function CompanyProfileForm({
+  values,
+  onFieldChange,
+}: CompanyProfileFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaved, setIsSaved] = useState(false);
 
   function updateField(field: CompanyField, value: string) {
-    setValues((current) => ({ ...current, [field]: value }));
+    onFieldChange(field, value);
     setErrors((current) => ({ ...current, [field]: undefined }));
     setIsSaved(false);
   }
@@ -78,9 +64,7 @@ export function CompanyProfileForm() {
         </span>
         <div>
           <h2 className="text-[0.9375rem]">Doanh nghiệp của bạn</h2>
-          <p className="text-xs text-subtle">
-            Thông tin dùng trong báo cáo ESG
-          </p>
+          <p className="text-xs text-subtle">Thông tin dùng trong báo cáo ESG</p>
         </div>
       </div>
 

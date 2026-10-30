@@ -1,29 +1,66 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Card } from "@/components/ui";
 import { CompanyProfileForm } from "@/features/company";
+import type { CompanyField, CompanyFormValues } from "@/features/company";
 import { GuidancePanel } from "@/features/guidance";
+import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
 
 import { useSurvey } from "../hooks/use-survey";
 import { useSurveyAnswers } from "../hooks/use-survey-answers";
+import { useSurveyDraft } from "../hooks/use-survey-draft";
 import { useSurveyNavigation } from "../hooks/use-survey-navigation";
+import { getDraftRaw, parseDraft } from "../lib/draft-storage";
+import { restoreDraft } from "../lib/draft-state";
 import { countCompleted } from "../lib/progress";
 import { flattenGroups } from "../lib/survey-tree";
+import { DraftBar } from "./draft-bar";
+import { DraftRestoredNotice } from "./draft-restored-notice";
 import { GroupNavigator } from "./group-navigator";
 import { GroupSection } from "./group-section";
 import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
 
+function subscribeNothing(): () => void {
+  return () => undefined;
+}
+
 export function SurveyWorkspace() {
+  const isClient = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  );
+
+  if (!isClient) {
+    return (
+      <div
+        aria-busy
+        className="h-96 animate-pulse rounded-card border border-border bg-surface-muted"
+      />
+    );
+  }
+  return <LoadedSurveyWorkspace />;
+}
+
+function LoadedSurveyWorkspace() {
   const survey = useSurvey();
-  const { answers, actions } = useSurveyAnswers();
   const entries = useMemo(() => flattenGroups(survey), [survey]);
   const allQuestions = useMemo(
     () => entries.flatMap((entry) => entry.group.questions),
     [entries],
   );
+
+  const [initial] = useState(() =>
+    restoreDraft(parseDraft(getDraftRaw()), entries),
+  );
+  const [isNoticeVisible, setIsNoticeVisible] = useState(
+    initial.savedAt !== null,
+  );
+  const [company, setCompany] = useState<CompanyFormValues>(initial.company);
+  const { answers, actions } = useSurveyAnswers(initial.answers);
 
   const {
     index: activeIndex,
@@ -32,7 +69,20 @@ export function SurveyWorkspace() {
     next: nextEntry,
     selectGroup,
     selectPillar,
-  } = useSurveyNavigation(entries);
+  } = useSurveyNavigation(entries, initial.activeGroupId);
+
+  const draft = useSurveyDraft({
+    entries,
+    answers,
+    company,
+    activeGroupId: activeEntry?.group.id ?? null,
+  });
+
+  useLeaveGuard({
+    hasUnsavedChanges: draft.isDirty,
+    hasEvidence: draft.hasEvidence,
+    onSave: draft.persist,
+  });
 
   const sectionRef = useRef<HTMLElement>(null);
   const [focusedQuestionId, setFocusedQuestionId] = useState<string | null>(null);
@@ -50,6 +100,10 @@ export function SurveyWorkspace() {
 
   const completedTotal = countCompleted(allQuestions, answers);
 
+  function updateCompany(field: CompanyField, value: string) {
+    setCompany((current) => ({ ...current, [field]: value }));
+  }
+
   function goToGroup(groupId: string) {
     selectGroup(groupId);
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -58,7 +112,7 @@ export function SurveyWorkspace() {
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
       <aside aria-label="Thông tin doanh nghiệp" className="min-w-0">
-        <CompanyProfileForm />
+        <CompanyProfileForm values={company} onFieldChange={updateCompany} />
       </aside>
 
       <section
@@ -81,6 +135,15 @@ export function SurveyWorkspace() {
               / {allQuestions.length} câu
             </p>
           </div>
+
+          {isNoticeVisible && initial.savedAt !== null ? (
+            <div className="mt-5 px-6 sm:px-8">
+              <DraftRestoredNotice
+                savedAt={initial.savedAt}
+                onDismiss={() => setIsNoticeVisible(false)}
+              />
+            </div>
+          ) : null}
 
           <div className="mt-5 px-6 sm:px-8">
             <PillarTabs
@@ -115,6 +178,13 @@ export function SurveyWorkspace() {
               </p>
             )}
           </div>
+
+          <DraftBar
+            savedAt={draft.savedAt}
+            isDirty={draft.isDirty}
+            saveFailed={draft.saveFailed}
+            onSave={draft.saveNow}
+          />
 
           {activeEntry ? (
             <GroupNavigator
@@ -152,6 +222,8 @@ export function SurveyWorkspace() {
           onSelectGroup={goToGroup}
         />
       </aside>
+
+      <LeaveDialog />
     </div>
   );
 }

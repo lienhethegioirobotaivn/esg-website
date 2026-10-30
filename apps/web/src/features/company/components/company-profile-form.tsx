@@ -8,10 +8,7 @@ import type { FormEvent } from "react";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
 
-import {
-  REPORT_PERIOD_OPTIONS,
-  REPORT_YEAR_OPTIONS,
-} from "../constants";
+import { REPORT_PERIOD_OPTIONS } from "../constants";
 import type { CompanyField, CompanyFormValues } from "../constants";
 import { isCompanyField } from "../lib/company-values";
 
@@ -181,13 +178,14 @@ export function CompanyProfileForm({
             required
             error={errors.reportYear}
           >
-            <Select
+            <Input
               id="company-report-year"
+              type="number"
+              inputMode="numeric"
+              min={2000}
+              max={2100}
               value={values.reportYear}
               onChange={(event) => updateField("reportYear", event.target.value)}
-              options={REPORT_YEAR_OPTIONS}
-              placeholder="Chọn năm"
-              className={values.reportYear === "" ? "text-subtle" : undefined}
               aria-invalid={Boolean(errors.reportYear)}
               aria-describedby={
                 errors.reportYear ? "company-report-year-error" : undefined

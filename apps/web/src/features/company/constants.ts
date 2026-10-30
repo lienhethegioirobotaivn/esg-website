@@ -21,14 +21,7 @@ export const REPORT_PERIOD_OPTIONS = [
   { value: "full_year", label: "Cả năm" },
 ] as const satisfies readonly { value: ReportPeriod; label: string }[];
 
-const YEAR_OPTION_COUNT = 10;
 const CURRENT_YEAR = new Date().getFullYear();
-
-export const REPORT_YEAR_OPTIONS: readonly { value: string; label: string }[] =
-  Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => {
-    const year = String(CURRENT_YEAR - index);
-    return { value: year, label: year };
-  });
 
 export const COMPANY_INITIAL_VALUES: CompanyFormValues = {
   name: "",

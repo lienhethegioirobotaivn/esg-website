@@ -19,15 +19,15 @@ const answerBaseSchema = z.object({
 
 export const answerSchema = z.discriminatedUnion("value", [
   answerBaseSchema.extend({
-    value: z.literal("yes"),
+    value: z.literal("implemented"),
     description: z.string(),
     evidence: z.array(evidenceFileSchema).max(MAX_EVIDENCE_FILES),
   }),
   answerBaseSchema.extend({
-    value: z.literal("no"),
+    value: z.literal("in_progress"),
   }),
   answerBaseSchema.extend({
-    value: z.literal("not_applicable"),
+    value: z.literal("not_implemented"),
   }),
 ]);
 

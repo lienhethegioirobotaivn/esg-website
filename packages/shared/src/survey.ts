@@ -1,8 +1,12 @@
 import { z } from "zod";
 
-import { PILLAR_ICONS, REQUIREMENT_LEVELS } from "./constants";
+import {
+  PILLAR_ICONS,
+  QUESTION_ASPECTS,
+  REQUIREMENT_LEVELS,
+} from "./constants";
 
-const idSchema = z.uuid();
+const idSchema = z.string().uuid();
 
 export const guidanceSchema = z.object({
   title: z.string().min(1, "Vui lòng nhập tiêu đề hướng dẫn"),
@@ -31,6 +35,7 @@ export const questionSchema = z.object({
   groupId: idSchema,
   order: z.number().int().nonnegative(),
   text: z.string().min(1, "Vui lòng nhập nội dung câu hỏi"),
+  aspect: z.enum(QUESTION_ASPECTS),
   descriptionRequirement: z.enum(REQUIREMENT_LEVELS),
   evidenceRequirement: z.enum(REQUIREMENT_LEVELS),
   guidance: guidanceSchema,

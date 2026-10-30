@@ -8,6 +8,10 @@ import type { FormEvent } from "react";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
 
+import {
+  REPORT_PERIOD_OPTIONS,
+  REPORT_YEAR_OPTIONS,
+} from "../constants";
 import type { CompanyField, CompanyFormValues } from "../constants";
 import { isCompanyField } from "../lib/company-values";
 
@@ -35,7 +39,8 @@ export function CompanyProfileForm({
     event.preventDefault();
     const result = companyProfileSchema.safeParse({
       ...values,
-      reportYear: Number(values.reportYear),
+      reportYear:
+        values.reportYear === "" ? undefined : Number(values.reportYear),
     });
 
     if (!result.success) {
@@ -43,8 +48,7 @@ export function CompanyProfileForm({
       for (const issue of result.error.issues) {
         const key = issue.path[0];
         if (key !== undefined && isCompanyField(key) && !nextErrors[key]) {
-          nextErrors[key] =
-            key === "reportYear" ? "Năm báo cáo không hợp lệ" : issue.message;
+          nextErrors[key] = issue.message;
         }
       }
       setErrors(nextErrors);
@@ -70,7 +74,7 @@ export function CompanyProfileForm({
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4 p-5">
         <p className="text-[0.8125rem] leading-relaxed text-muted">
-          Chỉ 6 thông tin để đặt báo cáo vào đúng bối cảnh doanh nghiệp.
+          Chỉ 7 thông tin để đặt báo cáo vào đúng bối cảnh doanh nghiệp.
         </p>
 
         <Field
@@ -148,24 +152,49 @@ export function CompanyProfileForm({
           />
         </Field>
 
-        <Field
-          label="Năm báo cáo"
-          htmlFor="company-report-year"
-          required
-          error={errors.reportYear}
-        >
-          <Input
-            id="company-report-year"
-            type="number"
-            inputMode="numeric"
-            value={values.reportYear}
-            onChange={(event) => updateField("reportYear", event.target.value)}
-            aria-invalid={Boolean(errors.reportYear)}
-            aria-describedby={
-              errors.reportYear ? "company-report-year-error" : undefined
-            }
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Kỳ báo cáo"
+            htmlFor="company-report-period"
+            required
+            error={errors.reportPeriod}
+          >
+            <Select
+              id="company-report-period"
+              value={values.reportPeriod}
+              onChange={(event) =>
+                updateField("reportPeriod", event.target.value)
+              }
+              options={REPORT_PERIOD_OPTIONS}
+              placeholder="Chọn kỳ"
+              className={values.reportPeriod === "" ? "text-subtle" : undefined}
+              aria-invalid={Boolean(errors.reportPeriod)}
+              aria-describedby={
+                errors.reportPeriod ? "company-report-period-error" : undefined
+              }
+            />
+          </Field>
+
+          <Field
+            label="Năm báo cáo"
+            htmlFor="company-report-year"
+            required
+            error={errors.reportYear}
+          >
+            <Select
+              id="company-report-year"
+              value={values.reportYear}
+              onChange={(event) => updateField("reportYear", event.target.value)}
+              options={REPORT_YEAR_OPTIONS}
+              placeholder="Chọn năm"
+              className={values.reportYear === "" ? "text-subtle" : undefined}
+              aria-invalid={Boolean(errors.reportYear)}
+              aria-describedby={
+                errors.reportYear ? "company-report-year-error" : undefined
+              }
+            />
+          </Field>
+        </div>
 
         <Field label="Phạm vi báo cáo ESG" htmlFor="company-report-scope">
           <Textarea

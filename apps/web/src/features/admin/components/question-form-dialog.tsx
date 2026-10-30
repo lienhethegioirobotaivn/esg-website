@@ -5,9 +5,9 @@ import type { Question, QuestionInput } from "@esg/shared";
 import { useId } from "react";
 import type { FormEvent } from "react";
 
-import { Field, Input, Modal, Switch, Textarea } from "@/components/ui";
+import { Field, Input, Modal, Select, Switch, Textarea } from "@/components/ui";
 
-import { DEFAULT_GUIDANCE } from "../constants";
+import { ASPECT_OPTIONS, DEFAULT_GUIDANCE } from "../constants";
 import { useFormFields } from "../hooks/use-form-fields";
 import { FormActions } from "./form-actions";
 
@@ -20,6 +20,7 @@ interface QuestionFormDialogProps {
 
 interface QuestionFormValues {
   text: string;
+  aspect: string;
   descriptionRequired: boolean;
   evidenceRequired: boolean;
   guidanceTitle: string;
@@ -32,6 +33,7 @@ function toFormValues(question: Question | null): QuestionFormValues {
   if (question === null) {
     return {
       text: "",
+      aspect: "system",
       descriptionRequired: true,
       evidenceRequired: false,
       guidanceTitle: DEFAULT_GUIDANCE.title,
@@ -42,6 +44,7 @@ function toFormValues(question: Question | null): QuestionFormValues {
   }
   return {
     text: question.text,
+    aspect: question.aspect,
     descriptionRequired: question.descriptionRequirement === "required",
     evidenceRequired: question.evidenceRequirement === "required",
     guidanceTitle: question.guidance.title,
@@ -68,9 +71,8 @@ export function QuestionFormDialog({
     const result = questionInputSchema.safeParse({
       groupId,
       text: values.text.trim(),
-      descriptionRequirement: values.descriptionRequired
-        ? "required"
-        : "optional",
+      aspect: values.aspect,
+      descriptionRequirement: values.descriptionRequired ? "required" : "optional",
       evidenceRequirement: values.evidenceRequired ? "required" : "optional",
       guidance: {
         title: values.guidanceTitle.trim(),
@@ -99,10 +101,29 @@ export function QuestionFormDialog({
             id={idOf("text")}
             value={values.text}
             onChange={(event) => setValue("text", event.target.value)}
-            placeholder="Ví dụ: Doanh nghiệp đã có chính sách bảo vệ môi trường?"
+            placeholder="Ví dụ: Công ty đã có chính sách bằng văn bản về sử dụng tiết kiệm nước chưa?"
             rows={2}
             aria-invalid={Boolean(errors.text)}
             aria-describedby={errors.text ? `${idOf("text")}-error` : undefined}
+          />
+        </Field>
+
+        <Field
+          label="Khía cạnh"
+          htmlFor={idOf("aspect")}
+          required
+          error={errors.aspect}
+        >
+          <Select
+            id={idOf("aspect")}
+            value={values.aspect}
+            onChange={(event) => setValue("aspect", event.target.value)}
+            options={ASPECT_OPTIONS}
+            placeholder="Chọn khía cạnh"
+            aria-invalid={Boolean(errors.aspect)}
+            aria-describedby={
+              errors.aspect ? `${idOf("aspect")}-error` : undefined
+            }
           />
         </Field>
 
@@ -112,14 +133,14 @@ export function QuestionFormDialog({
             checked={values.descriptionRequired}
             onChange={(checked) => setValue("descriptionRequired", checked)}
             label="Bắt buộc nhập mô tả"
-            description="Áp dụng khi người dùng chọn “Có”. Tắt để cho phép bỏ trống."
+            description="Áp dụng khi người dùng chọn “Đã thực hiện”. Tắt để cho phép bỏ trống."
           />
           <Switch
             id={idOf("evidence-required")}
             checked={values.evidenceRequired}
             onChange={(checked) => setValue("evidenceRequired", checked)}
             label="Bắt buộc có bằng chứng"
-            description="Bật để yêu cầu tải lên ít nhất 1 tệp khi người dùng chọn “Có”."
+            description="Bật để yêu cầu tải lên ít nhất 1 tệp khi người dùng chọn “Đã thực hiện”."
           />
         </div>
 

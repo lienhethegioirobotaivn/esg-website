@@ -5,8 +5,6 @@ export const PILLAR_IDS = {
 } as const;
 
 export const GROUP_IDS = {
-  environmentStrategy: "3b8d5f21-7a4c-4e96-a2d3-6c1e9b0f4a01",
-  energyClimate: "9a2e7c43-1d6b-4f58-b3a7-0e5c8d2f6b02",
   waterResources: "c5f1a8e6-3b9d-4720-8d4e-7a2c6b1f9e03",
   wasteCircular: "18d4b7a9-e2c5-4a63-9f1b-3d8e0c5a7b04",
   laborWelfare: "f6c3e0b2-5a8d-4917-a4c6-2b7f1e9d3a05",

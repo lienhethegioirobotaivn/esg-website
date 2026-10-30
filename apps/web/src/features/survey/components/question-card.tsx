@@ -58,13 +58,10 @@ export function QuestionCard({
             onChange={(value) => actions.select(question.id, value)}
           />
 
-          {draft.value === "yes" ? (
+          {draft.value === "implemented" ? (
             <div className="space-y-4 border-t border-border pt-4">
               <Field
-                label={withOptionalSuffix(
-                  "Mô tả",
-                  question.descriptionRequirement,
-                )}
+                label={withOptionalSuffix("Mô tả", question.descriptionRequirement)}
                 htmlFor={descriptionId}
                 required={question.descriptionRequirement === "required"}
               >
@@ -81,10 +78,7 @@ export function QuestionCard({
 
               <div className="space-y-1.5">
                 <p className="text-[0.8125rem] font-medium text-foreground">
-                  {withOptionalSuffix(
-                    "Bằng chứng",
-                    question.evidenceRequirement,
-                  )}
+                  {withOptionalSuffix("Bằng chứng", question.evidenceRequirement)}
                   {question.evidenceRequirement === "required" ? (
                     <span aria-hidden className="ml-1 text-primary-600">
                       *

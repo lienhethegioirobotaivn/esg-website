@@ -19,7 +19,7 @@ export function isQuestionComplete(
   if (draft.value === null) {
     return false;
   }
-  if (draft.value !== "yes") {
+  if (draft.value !== "implemented") {
     return true;
   }
   const hasDescription = draft.description.trim().length > 0;
@@ -47,8 +47,7 @@ export function isGroupComplete(
   answers: AnswerMap,
 ): boolean {
   return (
-    questions.length > 0 &&
-    countCompleted(questions, answers) === questions.length
+    questions.length > 0 && countCompleted(questions, answers) === questions.length
   );
 }
 
@@ -58,6 +57,6 @@ export function countEvidence(
 ): number {
   return questions.reduce((total, question) => {
     const draft = getDraft(answers, question.id);
-    return draft.value === "yes" ? total + draft.evidence.length : total;
+    return draft.value === "implemented" ? total + draft.evidence.length : total;
   }, 0);
 }

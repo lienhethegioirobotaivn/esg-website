@@ -1,6 +1,6 @@
 "use client";
 
-import type { Pillar, Question, QuestionGroup } from "@esg/shared";
+import type { Question, QuestionGroup } from "@esg/shared";
 import { useMemo, useState } from "react";
 
 import {
@@ -14,13 +14,11 @@ import type { DeleteTarget } from "../lib/deletion";
 import { ConfirmDialog } from "./confirm-dialog";
 import { GroupFormDialog } from "./group-form-dialog";
 import { GroupQuestionsPanel } from "./group-questions-panel";
-import { PillarFormDialog } from "./pillar-form-dialog";
 import { QuestionFormDialog } from "./question-form-dialog";
 import { StructurePanel } from "./structure-panel";
 
 type DialogState =
   | { kind: "none" }
-  | { kind: "pillar-form"; pillar: Pillar | null }
   | { kind: "group-form"; group: QuestionGroup | null; pillarId: string }
   | { kind: "question-form"; question: Question | null; groupId: string }
   | { kind: "confirm-delete"; target: DeleteTarget };
@@ -51,9 +49,6 @@ export function AdminWorkspace() {
 
   function confirmDelete(target: DeleteTarget) {
     switch (target.type) {
-      case "pillar":
-        actions.removePillar(target.pillar.id);
-        break;
       case "group":
         actions.removeGroup(target.group.id);
         break;
@@ -66,19 +61,11 @@ export function AdminWorkspace() {
 
   return (
     <>
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <StructurePanel
           survey={survey}
           selectedGroupId={selectedEntry?.group.id ?? null}
           onSelectGroup={setSelectedGroupId}
-          onAddPillar={() => setDialog({ kind: "pillar-form", pillar: null })}
-          onEditPillar={(pillar) => setDialog({ kind: "pillar-form", pillar })}
-          onDeletePillar={(pillar) =>
-            setDialog({
-              kind: "confirm-delete",
-              target: { type: "pillar", pillar },
-            })
-          }
           onAddGroup={(pillarId) =>
             setDialog({ kind: "group-form", group: null, pillarId })
           }
@@ -137,21 +124,6 @@ export function AdminWorkspace() {
           onMoveQuestion={actions.moveQuestion}
         />
       </div>
-
-      {dialog.kind === "pillar-form" ? (
-        <PillarFormDialog
-          pillar={dialog.pillar}
-          onSubmit={(input) => {
-            if (dialog.pillar) {
-              actions.updatePillar(dialog.pillar.id, input);
-            } else {
-              actions.addPillar(input);
-            }
-            closeDialog();
-          }}
-          onClose={closeDialog}
-        />
-      ) : null}
 
       {dialog.kind === "group-form" ? (
         <GroupFormDialog

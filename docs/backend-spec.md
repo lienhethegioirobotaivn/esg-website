@@ -8,7 +8,9 @@ ESGstudio là website khảo sát ESG nội bộ miễn phí cho doanh nghiệp.
 
 - Người quản trị tạo bộ câu hỏi ở `/admin`.
 - Người dùng điền thông tin doanh nghiệp và trả lời bộ câu hỏi ở trang chủ.
-- Mỗi câu có ba đáp án: **Có**, **Chưa có**, **Không áp dụng**. Chọn **Có** thì kèm mô tả và bằng chứng (tối đa 10 tệp PDF hoặc ảnh).
+- Bộ câu hỏi gồm 3 trụ cột cố định (Môi trường, Xã hội, Quản trị), mỗi trụ cột có nhiều nhóm, mỗi nhóm có nhiều câu.
+- Mỗi câu có ba trạng thái: **Đã thực hiện** (`implemented`), **Đang thực hiện** (`in_progress`), **Chưa thực hiện** (`not_implemented`). Chọn **Đã thực hiện** thì kèm mô tả và bằng chứng (tối đa 10 tệp PDF hoặc ảnh).
+- Người dùng lưu được bản nháp để làm tiếp sau.
 
 Trạng thái hiện tại:
 
@@ -16,7 +18,9 @@ Trạng thái hiện tại:
 | --- | --- |
 | Frontend (Next.js) | Hoàn thiện giao diện, dữ liệu mock trong `apps/web/src/data` |
 | Lưu bộ câu hỏi | Chỉ trong bộ nhớ trình duyệt (zustand), mất khi tải lại trang |
-| Lưu câu trả lời, thông tin doanh nghiệp, bằng chứng | Chỉ trong state của component, chưa gửi đi đâu |
+| Bản nháp (câu trả lời, mô tả, thông tin doanh nghiệp) | Lưu trong `localStorage` của trình duyệt, chưa gửi lên máy chủ |
+| Bằng chứng | Chỉ trong state của component, không có trong bản nháp |
+| Chấm điểm | Chưa làm (mục 12) |
 | Đăng nhập `/admin` | Chưa có |
 | Backend | Chưa bắt đầu |
 
@@ -44,7 +48,9 @@ Nguyên tắc:
 
 | File | Xuất ra |
 | --- | --- |
-| `constants.ts` | `MAX_EVIDENCE_FILES` (10), `MAX_EVIDENCE_FILE_SIZE_BYTES` (10 MB), `ACCEPTED_EVIDENCE_MIME_TYPES`, `ANSWER_VALUES`, `REQUIREMENT_LEVELS`, `PILLAR_ICONS` và các kiểu suy ra |
+| `constants.ts` | `MAX_EVIDENCE_FILES` (10), `MAX_EVIDENCE_FILE_SIZE_BYTES` (10 MB), `ACCEPTED_EVIDENCE_MIME_TYPES`, `ANSWER_VALUES`, `REQUIREMENT_LEVELS`, `PILLAR_ICONS`, `QUESTION_ASPECTS` và các kiểu suy ra |
+| `report-period.ts` | `REPORT_PERIODS` (`q1`, `q2`, `q3`, `q4`, `full_year`) |
+| `draft.ts` | `DRAFT_VERSION`, `draftSnapshotSchema` (định dạng bản nháp lưu ở trình duyệt, dùng lại khi lưu bản nháp lên máy chủ) |
 | `survey.ts` | `pillarSchema`, `questionGroupSchema`, `questionSchema`, `guidanceSchema`, các schema `*InputSchema`, `surveySchema` và kiểu tương ứng |
 | `answer.ts` | `evidenceFileSchema`, `answerSchema` (discriminated union theo `value`) |
 | `company.ts` | `companyProfileSchema` |
@@ -71,17 +77,19 @@ Submission 1───1 CompanyProfile (gộp trong bảng submissions)
 
 | Thực thể | Trường | Ghi chú |
 | --- | --- | --- |
-| Pillar (trụ cột) | `id` uuid, `name`, `icon` (`sprout` \| `users` \| `landmark`), `order` | Ví dụ: Môi trường, Xã hội, Quản trị. Số lượng không giới hạn |
+| Pillar (trụ cột) | `id` uuid, `name`, `icon` (`sprout` \| `users` \| `landmark`), `order` | **Cố định 3 trụ cột**: Môi trường, Xã hội, Quản trị, tạo bằng seed. Admin không thêm, sửa, xóa |
 | QuestionGroup (nhóm) | `id` uuid, `pillarId`, `title`, `description`, `order` | Một nhóm thuộc đúng một trụ cột |
-| Question (câu hỏi) | `id` uuid, `groupId`, `text`, `descriptionRequirement`, `evidenceRequirement`, `guidance`, `order` | `*Requirement` là `required` hoặc `optional` |
+| Question (câu hỏi) | `id` uuid, `groupId`, `text`, `aspect`, `descriptionRequirement`, `evidenceRequirement`, `guidance`, `order` | `*Requirement` là `required` hoặc `optional`. `aspect` thuộc `system`, `operation`, `process`, `environment`, `customer`, `society` |
 | Guidance | `title`, `body`, `suggestedEvidence`, `tip` | Hiển thị ở cột phải. Lưu thành 4 cột trong bảng `questions` |
 
 Quy tắc:
 
 - **Không có mã câu hỏi** (như `E001`). Id là UUID. Giao diện hiển thị "Câu 1, Câu 2..." tính từ vị trí hiện tại trong nhóm, vì vậy backend **không lưu và không trả** số thứ tự hiển thị. Chỉ có `order` dùng để sắp xếp.
 - `order` là số nguyên tăng dần trong phạm vi cha (nhóm trong trụ cột, câu hỏi trong nhóm). Có thể có khoảng trống sau khi xóa, không cần đánh số lại.
-- Xóa trụ cột sẽ xóa luôn các nhóm và câu hỏi bên trong. Xóa nhóm sẽ xóa các câu hỏi bên trong.
-- Nhóm hoặc trụ cột rỗng vẫn hợp lệ. Giao diện hiển thị trạng thái rỗng.
+- Xóa nhóm sẽ xóa các câu hỏi bên trong.
+- Nhóm rỗng vẫn hợp lệ. Giao diện hiển thị trạng thái rỗng.
+- Giao diện khảo sát hiển thị từng nhóm một, chuyển giữa các nhóm bằng 3 tab trụ cột, nút Nhóm trước / Nhóm tiếp (đi xuyên các trụ cột) và danh sách Hành trình.
+- **Dữ liệu ban đầu** lấy từ `Bo_cau_hoi_danh_gia_ESG.docx`: 8 nhóm (2 Môi trường, 3 Xã hội, 3 Quản trị), mỗi nhóm 10 câu, tổng 80 câu. Id cố định trong `apps/web/src/data/ids.ts`, dùng làm dữ liệu seed.
 
 ### 3.2 Bài khảo sát của người dùng
 
@@ -93,7 +101,8 @@ Quy tắc:
 | `industry` | string (mã lựa chọn) | Có |
 | `headcount` | string (mã lựa chọn) | Có |
 | `address` | string | Có |
-| `reportYear` | số nguyên 2000 đến 2100 | Có |
+| `reportPeriod` | `q1`, `q2`, `q3`, `q4` hoặc `full_year` | Có |
+| `reportYear` | số nguyên 2000 đến 2100, mặc định năm hiện tại | Có |
 | `reportScope` | string | Không |
 
 Danh sách lựa chọn hiện nằm trong `apps/web/src/data/company-options.ts`:
@@ -107,22 +116,22 @@ Danh sách lựa chọn hiện nằm trong `apps/web/src/data/company-options.ts
 
 | `value` | Trường kèm theo |
 | --- | --- |
-| `yes` | `description` (string), `evidence` (tối đa 10 tệp) |
-| `no` | không có |
-| `not_applicable` | không có |
+| `implemented` | `description` (string), `evidence` (tối đa 10 tệp) |
+| `in_progress` | không có |
+| `not_implemented` | không có |
 
 **EvidenceFile**: `id`, `name`, `size` (byte, tối đa 10 MB), `mimeType` thuộc `application/pdf`, `image/png`, `image/jpeg`, `image/webp`.
 
 ### 3.3 Quy tắc "câu đã hoàn thành"
 
-Dùng để tính tiến độ. Phải giống hệt giữa web và api:
+Dùng để tính tiến độ và để tự lưu bản nháp (khi một nhóm chuyển sang hoàn thành). Phải giống hệt giữa web và api:
 
 1. Chưa chọn đáp án: chưa hoàn thành.
-2. Chọn `no` hoặc `not_applicable`: hoàn thành.
-3. Chọn `yes`:
+2. Chọn `in_progress` hoặc `not_implemented`: hoàn thành.
+3. Chọn `implemented`:
    - Nếu `descriptionRequirement = required` thì mô tả (sau khi `trim`) phải khác rỗng.
    - Nếu `evidenceRequirement = required` thì phải có ít nhất 1 tệp bằng chứng.
-4. Khi chuyển từ `yes` sang đáp án khác, mô tả và bằng chứng không còn được tính. **(Đề xuất)** server xóa luôn mô tả và tệp đã tải của câu đó để tránh rác.
+4. Khi chuyển từ `implemented` sang đáp án khác, mô tả và bằng chứng không còn được tính. **(Đề xuất)** server xóa luôn mô tả và tệp đã tải của câu đó để tránh rác.
 
 ## 4. Lược đồ cơ sở dữ liệu (Drizzle, PostgreSQL)
 
@@ -135,6 +144,8 @@ import {
   ACCEPTED_EVIDENCE_MIME_TYPES,
   ANSWER_VALUES,
   PILLAR_ICONS,
+  QUESTION_ASPECTS,
+  REPORT_PERIODS,
   REQUIREMENT_LEVELS,
 } from "@esg/shared";
 import {
@@ -153,6 +164,8 @@ export const requirementLevelEnum = pgEnum(
   "requirement_level",
   REQUIREMENT_LEVELS,
 );
+export const questionAspectEnum = pgEnum("question_aspect", QUESTION_ASPECTS);
+export const reportPeriodEnum = pgEnum("report_period", REPORT_PERIODS);
 export const answerValueEnum = pgEnum("answer_value", ANSWER_VALUES);
 export const evidenceMimeTypeEnum = pgEnum(
   "evidence_mime_type",
@@ -203,6 +216,7 @@ export const questions = pgTable(
       .notNull()
       .references(() => questionGroups.id, { onDelete: "cascade" }),
     text: text("text").notNull(),
+    aspect: questionAspectEnum("aspect").notNull(),
     descriptionRequirement: requirementLevelEnum("description_requirement")
       .notNull()
       .default("required"),
@@ -228,6 +242,7 @@ export const submissions = pgTable("submissions", {
   industry: text("industry"),
   headcount: text("headcount"),
   address: text("address"),
+  reportPeriod: reportPeriodEnum("report_period"),
   reportYear: integer("report_year"),
   reportScope: text("report_scope"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
@@ -279,6 +294,7 @@ Quyết định cần chốt:
 
 - **Không đặt ràng buộc unique cho `(parent, sort_order)`.** Đổi chỗ hai phần tử bằng cách hoán đổi `order` sẽ vi phạm unique tạm thời. Thay vào đó, hoán đổi trong một transaction.
 - **Xóa câu hỏi có bài khảo sát đã nộp:** thiết kế trên dùng `cascade`, nghĩa là câu trả lời liên quan bị xóa theo. Nếu muốn giữ lịch sử các bài đã nộp, cần chuyển sang lưu ảnh chụp (snapshot) nội dung câu hỏi vào bài nộp, hoặc xóa mềm câu hỏi (`deleted_at`). **(Đề xuất)** làm xóa mềm khi bắt đầu có người dùng thật.
+- **Trụ cột cố định:** bảng `pillars` chỉ có 3 dòng do seed tạo. Không làm route ghi cho `pillars`.
 - **Số lượng bằng chứng tối đa 10 mỗi câu** phải kiểm tra ở tầng ứng dụng (đếm trước khi chèn, trong transaction). Không có cách biểu diễn gọn bằng ràng buộc cột.
 - **Danh tính người dùng:** frontend chưa có đăng nhập. **(Đề xuất)** giai đoạn đầu mỗi bài khảo sát là một `submission` ẩn danh, trình duyệt giữ `submissionId` trong `localStorage` để tiếp tục. Khi thêm tài khoản, thêm cột `user_id` vào `submissions`.
 
@@ -331,7 +347,7 @@ Thông báo lỗi trả về bằng tiếng Việt vì giao diện hiển thị 
 Ghi chú:
 
 - `PUT` câu trả lời là **upsert** theo cặp `(submissionId, questionId)`. Ràng buộc unique ở bảng `answers` bảo đảm không trùng.
-- Tải tệp mỗi lần **một tệp**, khớp với giao diện (một ô tải, thêm bằng nút `+`). Server kiểm tra: câu trả lời hiện là `yes`, chưa đủ 10 tệp, đúng loại, không quá 10 MB.
+- Tải tệp mỗi lần **một tệp**, khớp với giao diện (một ô tải, thêm bằng nút `+`). Server kiểm tra: câu trả lời hiện là `implemented`, chưa đủ 10 tệp, đúng loại, không quá 10 MB.
 - Server **không tin `Content-Type` do client gửi**. Đọc vài byte đầu của tệp (magic bytes) để xác định PDF, PNG, JPEG, WEBP rồi so với danh sách cho phép.
 - Bài đã `submitted` không cho sửa (409).
 
@@ -341,10 +357,7 @@ Tất cả nằm dưới `/admin`. **(Đề xuất)** bọc bằng middleware x�
 
 | Phương thức | Đường dẫn | Body | Ghi chú |
 | --- | --- | --- | --- |
-| GET | `/admin/survey` | không | Giống `/survey` |
-| POST | `/admin/pillars` | `PillarInput` | `order` = lớn nhất hiện có + 1 |
-| PATCH | `/admin/pillars/:id` | `PillarInput` | |
-| DELETE | `/admin/pillars/:id` | không | Xóa kèm nhóm và câu hỏi |
+| GET | `/admin/survey` | không | Giống `/survey`. Trụ cột chỉ đọc |
 | POST | `/admin/groups` | `QuestionGroupInput` | Kiểm tra `pillarId` tồn tại |
 | PATCH | `/admin/groups/:id` | `QuestionGroupInput` | Cho phép đổi `pillarId` |
 | DELETE | `/admin/groups/:id` | không | Xóa kèm câu hỏi |
@@ -354,7 +367,7 @@ Tất cả nằm dưới `/admin`. **(Đề xuất)** bọc bằng middleware x�
 | DELETE | `/admin/questions/:id` | không | |
 | POST | `/admin/questions/:id/move` | `{ "direction": -1 \| 1 }` | Hoán đổi với câu liền kề cùng nhóm |
 
-Phản hồi của `POST` và `PATCH` là thực thể vừa tạo hoặc sửa (kiểu `Pillar`, `QuestionGroup`, `Question`). Giao diện hiện tại dùng id do client sinh ra, khi nối API thì **server sinh id** và client dùng id trả về.
+Phản hồi của `POST` và `PATCH` là thực thể vừa tạo hoặc sửa (kiểu `QuestionGroup`, `Question`). Giao diện hiện tại dùng id do client sinh ra, khi nối API thì **server sinh id** và client dùng id trả về.
 
 Việc `move` trả về `204` hoặc danh sách anh em đã sắp xếp lại đều được. **(Đề xuất)** trả về danh sách anh em để client không phải gọi lại `GET /survey`.
 
@@ -451,9 +464,11 @@ export interface EvidenceStorage {
 | --- | --- | --- |
 | `features/survey/services/survey.service.ts` | Đọc từ `data/` | `fetch` tới `GET /survey`, trả `Survey` đã kiểm bằng `surveySchema.parse` |
 | `features/survey/store/survey-content-store.ts` | Mutation trực tiếp trên state | Mỗi action gọi API `/admin/*` rồi cập nhật state bằng dữ liệu server trả về |
-| `features/survey/hooks/use-survey-answers.ts` | Reducer cục bộ | Vẫn giữ draft cục bộ, thêm gọi `PUT .../answers/:questionId` sau khi người dùng dừng gõ (debounce) hoặc chọn đáp án |
+| `features/survey/hooks/use-survey-answers.ts` | Reducer cục bộ, khởi tạo từ bản nháp | Vẫn giữ state cục bộ, thêm gọi `PUT .../answers/:questionId` sau khi người dùng dừng gõ (debounce) hoặc chọn đáp án |
+| `features/survey/lib/draft-storage.ts`, `hooks/use-survey-draft.ts` | Lưu bản nháp vào `localStorage` (tự lưu khi xong một nhóm, nút lưu thủ công) | Thay bằng `submission` ở máy chủ. Giữ định dạng `draftSnapshotSchema` hoặc thay bằng API, và giữ `localStorage` chỉ để nhớ `submissionId` |
+| `features/leave-guard` | Cảnh báo khi còn thay đổi chưa lưu | Giữ nguyên. Điều kiện "chưa lưu" đổi thành "chưa đồng bộ lên máy chủ" |
 | `features/evidence` | Chỉ giữ `File` trong bộ nhớ | `POST` từng tệp, lưu `evidenceId` trả về thay cho `crypto.randomUUID()` |
-| `features/company/components/company-profile-form.tsx` | Chỉ hiện "đã ghi nhận" | Gọi `PUT .../company` khi bấm lưu |
+| `features/company/components/company-profile-form.tsx` | Controlled form, giá trị do `survey-workspace` giữ; chỉ hiện "đã ghi nhận" | Gọi `PUT .../company` khi bấm lưu |
 | `data/` | Dữ liệu mock | Chuyển thành file seed của Drizzle, sau đó giữ làm dữ liệu test |
 
 Biến môi trường phía web: `NEXT_PUBLIC_API_URL`, ví dụ `http://localhost:4000/api/v1`.
@@ -487,5 +502,30 @@ Mock data dùng UUID cố định trong `data/ids.ts`, có thể dùng nguyên c
 - Người dùng có cần đăng nhập để tiếp tục bài khảo sát trên nhiều thiết bị không, hay chỉ cần link riêng?
 - Sau khi nộp, báo cáo ESG được tạo thế nào (bước 3 "Báo cáo ESG của bạn" trong thiết kế tham khảo): xuất PDF, trang xem trực tuyến, hay chưa làm?
 - Một doanh nghiệp có nhiều bài khảo sát theo từng năm báo cáo không? Nếu có, cần thêm khái niệm `Company` tách khỏi `Submission`.
+- Cách chấm điểm (mục 12) có đúng như dự kiến không?
 - Có cho phép nhiều quản trị viên không, và có cần nhật ký thay đổi bộ câu hỏi không?
 - Khi admin sửa hoặc xóa câu hỏi sau khi đã có bài nộp, có cần giữ nguyên nội dung cũ cho các bài đó không (xem mục 4)?
+
+## 12. TODO
+
+### 12.1 Chấm điểm theo nhóm
+
+File Word `Bo_cau_hoi_danh_gia_ESG.docx` có dòng "Điểm: ....../20" ở cuối mỗi nhóm (10 câu, tối đa 20 điểm). Cách tính dự kiến, **chưa được xác nhận**:
+
+| Trạng thái | Điểm |
+| --- | --- |
+| `implemented` | 2 |
+| `in_progress` | 1 |
+| `not_implemented` | 0 |
+
+Cần chốt: điểm hiển thị ở đâu (đầu nhóm, cột Hành trình, báo cáo cuối), có tính điểm theo từng trụ cột và tổng không, có xếp loại theo ngưỡng không, câu chưa trả lời tính thế nào. Khi làm, đặt hàm tính điểm trong `@esg/shared` để web và api dùng chung, và thêm vào `GET /submissions/:id/progress`.
+
+### 12.2 Lưu bằng chứng trong bản nháp
+
+Bản nháp ở trình duyệt chỉ lưu câu trả lời, mô tả và thông tin doanh nghiệp. Tệp bằng chứng mất khi tải lại trang. Giải quyết khi có backend: tải từng tệp lên `POST .../evidence` ngay khi người dùng chọn, bản nháp chỉ giữ `evidenceId`. Trong lúc đó giao diện đã cảnh báo người dùng ở thanh lưu nháp, hộp thoại rời trang và thông báo khôi phục.
+
+### 12.3 Khác
+
+- Chặn nút Back của trình duyệt khi còn thay đổi chưa lưu (hiện chỉ chặn đóng tab, tải lại và liên kết `GuardedLink`).
+- Bản dịch cho bộ chuyển ngôn ngữ (hiện chỉ đổi thuộc tính `lang`).
+- Rà soát câu hỏi nhắc tên riêng một doanh nghiệp (ví dụ câu về cổ phiếu LIX) nếu dùng cho mọi doanh nghiệp.

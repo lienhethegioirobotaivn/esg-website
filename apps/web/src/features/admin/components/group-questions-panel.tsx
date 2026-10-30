@@ -4,6 +4,7 @@ import type { Question, RequirementLevel } from "@esg/shared";
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button, Card, IconButton } from "@/components/ui";
+import { ASPECT_LABELS } from "@/features/survey";
 import type { GroupEntry } from "@/features/survey";
 import { cn } from "@/lib/cn";
 
@@ -57,8 +58,7 @@ export function GroupQuestionsPanel({
   if (!entry) {
     return (
       <Card className="p-8 text-center text-sm text-muted">
-        Chưa có nhóm nào. Hãy thêm trụ cột, sau đó thêm nhóm câu hỏi ở khung bên
-        trái.
+        Chưa có nhóm nào. Hãy thêm nhóm câu hỏi ở khung bên trái.
       </Card>
     );
   }
@@ -126,7 +126,7 @@ export function GroupQuestionsPanel({
                 key={question.id}
                 className="rounded-card border border-border bg-surface p-4"
               >
-                <div className="flex flex-wrap items-start gap-3">
+                <div className="flex items-start gap-3">
                   <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-muted">
                     Câu {index + 1}
                   </span>
@@ -135,6 +135,9 @@ export function GroupQuestionsPanel({
                       {question.text}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
+                      <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted">
+                        {ASPECT_LABELS[question.aspect]}
+                      </span>
                       <RequirementBadge
                         label="Mô tả"
                         level={question.descriptionRequirement}
@@ -145,7 +148,7 @@ export function GroupQuestionsPanel({
                       />
                     </div>
                   </div>
-                  <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                  <div className="flex shrink-0 items-center gap-0.5">
                     <IconButton
                       label="Chuyển câu hỏi lên trên"
                       disabled={index === 0}

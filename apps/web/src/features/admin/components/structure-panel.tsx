@@ -1,9 +1,9 @@
 "use client";
 
-import type { Pillar, Survey } from "@esg/shared";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import type { Survey } from "@esg/shared";
+import { Plus } from "lucide-react";
 
-import { Button, Card, IconButton } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { PILLAR_ICON_COMPONENTS } from "@/features/survey";
 import { cn } from "@/lib/cn";
 
@@ -11,9 +11,6 @@ interface StructurePanelProps {
   survey: Survey;
   selectedGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
-  onAddPillar: () => void;
-  onEditPillar: (pillar: Pillar) => void;
-  onDeletePillar: (pillar: Pillar) => void;
   onAddGroup: (pillarId: string) => void;
 }
 
@@ -21,28 +18,19 @@ export function StructurePanel({
   survey,
   selectedGroupId,
   onSelectGroup,
-  onAddPillar,
-  onEditPillar,
-  onDeletePillar,
   onAddGroup,
 }: StructurePanelProps) {
   return (
     <Card className="p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[0.9375rem]">Cấu trúc bộ câu hỏi</h2>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={onAddPillar}
-          leadingIcon={<Plus aria-hidden className="size-4" />}
-        >
-          Thêm trụ cột
-        </Button>
-      </div>
+      <h2 className="text-[0.9375rem]">Cấu trúc bộ câu hỏi</h2>
+      <p className="mt-1 text-xs text-subtle">
+        Ba phần Môi trường, Xã hội, Quản trị là cố định. Bạn quản lý nhóm và câu
+        hỏi bên trong.
+      </p>
 
       {survey.length === 0 ? (
         <p className="mt-4 rounded-control border border-dashed border-border-strong p-4 text-center text-sm text-muted">
-          Chưa có trụ cột nào. Hãy thêm trụ cột đầu tiên.
+          Chưa có dữ liệu cho ba phần ESG.
         </p>
       ) : (
         <div className="mt-4 space-y-3">
@@ -54,26 +42,10 @@ export function StructurePanel({
                 className="rounded-control border border-border"
               >
                 <div className="flex items-center gap-2 border-b border-border bg-surface-muted px-3 py-2.5">
-                  <Icon
-                    aria-hidden
-                    className="size-4 shrink-0 text-primary-700"
-                  />
+                  <Icon aria-hidden className="size-4 shrink-0 text-primary-700" />
                   <p className="min-w-0 flex-1 truncate text-sm font-medium">
                     {pillar.name}
                   </p>
-                  <IconButton
-                    label={`Sửa trụ cột ${pillar.name}`}
-                    onClick={() => onEditPillar(pillar)}
-                  >
-                    <Pencil aria-hidden className="size-4" />
-                  </IconButton>
-                  <IconButton
-                    label={`Xóa trụ cột ${pillar.name}`}
-                    tone="danger"
-                    onClick={() => onDeletePillar(pillar)}
-                  >
-                    <Trash2 aria-hidden className="size-4" />
-                  </IconButton>
                 </div>
 
                 <ul className="space-y-1 p-2">

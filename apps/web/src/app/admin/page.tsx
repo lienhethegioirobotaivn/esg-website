@@ -10,8 +10,9 @@ export default function AdminPage() {
           <span className="text-primary-500">.</span>
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Thêm, sửa, xóa và sắp xếp trụ cột, nhóm và câu hỏi. Thay đổi hiển thị
-          ngay ở trang khảo sát khi bạn quay lại bằng liên kết phía trên.
+          Ba phần Môi trường, Xã hội, Quản trị là cố định. Thêm, sửa, xóa và sắp
+          xếp nhóm và câu hỏi bên trong. Thay đổi hiển thị ở trang khảo sát khi
+          bạn quay lại.
         </p>
         <div className="mt-8">
           <AdminWorkspace />

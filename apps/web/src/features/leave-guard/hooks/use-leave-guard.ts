@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 
 import { useLeaveGuardStore } from "../store/leave-guard-store";

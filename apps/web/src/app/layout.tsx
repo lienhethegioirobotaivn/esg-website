@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     template: "%s | ESGstudio",
   },
   description: "Nền tảng khảo sát ESG nội bộ miễn phí dành cho doanh nghiệp.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export const viewport: Viewport = {

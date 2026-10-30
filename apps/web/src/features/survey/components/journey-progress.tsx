@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { Fragment } from "react";
 
 import { Card } from "@/components/ui";
 import { cn } from "@/lib/cn";
@@ -39,9 +40,7 @@ export function JourneyProgress({
     <Card className="p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-[0.9375rem]">Hành trình của bạn</h2>
-        <span className="text-sm font-semibold text-primary-700">
-          {percent}%
-        </span>
+        <span className="text-sm font-semibold text-primary-700">{percent}%</span>
       </div>
 
       <div
@@ -70,41 +69,49 @@ export function JourneyProgress({
           const questions = entry.group.questions;
           const isActive = entry.group.id === activeGroupId;
           const isComplete = isGroupComplete(questions, answers);
+          const startsPillar = entries[index - 1]?.pillarId !== entry.pillarId;
           return (
-            <li key={entry.group.id}>
-              <button
-                type="button"
-                onClick={() => onSelectGroup(entry.group.id)}
-                aria-current={isActive ? "step" : undefined}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
-                  isActive
-                    ? "bg-primary-50 font-medium text-primary-900"
-                    : "text-muted hover:bg-surface-muted",
-                )}
-              >
-                <span
+            <Fragment key={entry.group.id}>
+              {startsPillar ? (
+                <li className="px-2.5 pb-1 pt-3 text-[0.6875rem] font-semibold uppercase tracking-wider text-subtle first:pt-0">
+                  {entry.pillarName}
+                </li>
+              ) : null}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onSelectGroup(entry.group.id)}
+                  aria-current={isActive ? "step" : undefined}
                   className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium",
-                    isComplete
-                      ? "bg-primary-700 text-white"
-                      : "border border-border bg-surface text-subtle",
+                    "flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
+                    isActive
+                      ? "bg-primary-50 font-medium text-primary-900"
+                      : "text-muted hover:bg-surface-muted",
                   )}
                 >
-                  {isComplete ? (
-                    <Check aria-hidden className="size-3.5" />
-                  ) : (
-                    padNumber(index + 1)
-                  )}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  {entry.group.title}
-                </span>
-                <span className="shrink-0 text-xs text-subtle">
-                  {countCompleted(questions, answers)}/{questions.length}
-                </span>
-              </button>
-            </li>
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium",
+                      isComplete
+                        ? "bg-primary-700 text-white"
+                        : "border border-border bg-surface text-subtle",
+                    )}
+                  >
+                    {isComplete ? (
+                      <Check aria-hidden className="size-3.5" />
+                    ) : (
+                      padNumber(index + 1)
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {entry.group.title}
+                  </span>
+                  <span className="shrink-0 text-xs text-subtle">
+                    {countCompleted(questions, answers)}/{questions.length}
+                  </span>
+                </button>
+              </li>
+            </Fragment>
           );
         })}
       </ul>

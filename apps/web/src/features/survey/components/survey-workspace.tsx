@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Card } from "@/components/ui";
 import { CompanyProfileForm } from "@/features/company";
@@ -8,12 +8,13 @@ import { GuidancePanel } from "@/features/guidance";
 
 import { useSurvey } from "../hooks/use-survey";
 import { useSurveyAnswers } from "../hooks/use-survey-answers";
+import { useSurveyNavigation } from "../hooks/use-survey-navigation";
 import { countCompleted } from "../lib/progress";
 import { flattenGroups } from "../lib/survey-tree";
 import { GroupNavigator } from "./group-navigator";
 import { GroupSection } from "./group-section";
-import { GroupTabs } from "./group-tabs";
 import { JourneyProgress } from "./journey-progress";
+import { PillarTabs } from "./pillar-tabs";
 
 export function SurveyWorkspace() {
   const survey = useSurvey();
@@ -24,20 +25,19 @@ export function SurveyWorkspace() {
     [entries],
   );
 
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(
-    entries[0]?.group.id ?? null,
-  );
-  const [focusedQuestionId, setFocusedQuestionId] = useState<string | null>(
-    null,
-  );
+  const {
+    index: activeIndex,
+    entry: activeEntry,
+    previous: previousEntry,
+    next: nextEntry,
+    selectGroup,
+    selectPillar,
+  } = useSurveyNavigation(entries);
 
-  const activeIndex = entries.findIndex(
-    (entry) => entry.group.id === activeGroupId,
-  );
-  const activeEntry = entries[activeIndex];
-  const previousEntry = entries[activeIndex - 1];
-  const nextEntry = entries[activeIndex + 1];
+  const sectionRef = useRef<HTMLElement>(null);
+  const [focusedQuestionId, setFocusedQuestionId] = useState<string | null>(null);
 
+  const activePillarId = activeEntry?.pillarId ?? null;
   const activeQuestionIndex = activeEntry
     ? Math.max(
         0,
@@ -46,23 +46,26 @@ export function SurveyWorkspace() {
         ),
       )
     : 0;
-  const activeQuestion =
-    activeEntry?.group.questions[activeQuestionIndex] ?? null;
+  const activeQuestion = activeEntry?.group.questions[activeQuestionIndex] ?? null;
 
   const completedTotal = countCompleted(allQuestions, answers);
 
   function goToGroup(groupId: string) {
-    setActiveGroupId(groupId);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    selectGroup(groupId);
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
-      <aside aria-label="Thông tin doanh nghiệp">
+      <aside aria-label="Thông tin doanh nghiệp" className="min-w-0">
         <CompanyProfileForm />
       </aside>
 
-      <section aria-labelledby="survey-heading" className="min-w-0">
+      <section
+        ref={sectionRef}
+        aria-labelledby="survey-heading"
+        className="min-w-0 scroll-mt-20"
+      >
         <Card>
           <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
             <div>
@@ -74,23 +77,28 @@ export function SurveyWorkspace() {
               </h2>
             </div>
             <p className="shrink-0 rounded-control border border-border bg-surface-muted px-3 py-1.5 text-sm text-muted">
-              <span className="font-semibold text-foreground">
-                {completedTotal}
-              </span>{" "}
+              <span className="font-semibold text-foreground">{completedTotal}</span>{" "}
               / {allQuestions.length} câu
             </p>
           </div>
 
           <div className="mt-5 px-6 sm:px-8">
-            <GroupTabs
-              entries={entries}
-              activeGroupId={activeGroupId}
+            <PillarTabs
+              survey={survey}
+              activePillarId={activePillarId}
               answers={answers}
-              onSelectGroup={setActiveGroupId}
+              onSelectPillar={selectPillar}
             />
           </div>
 
-          <div className="mt-4 border-t border-border px-6 py-6 sm:px-8">
+          <div
+            id="survey-panel"
+            role="tabpanel"
+            aria-labelledby={
+              activePillarId ? `pillar-tab-${activePillarId}` : undefined
+            }
+            className="mt-4 border-t border-border px-6 py-6 sm:px-8"
+          >
             {activeEntry ? (
               <GroupSection
                 position={activeIndex + 1}
@@ -112,8 +120,8 @@ export function SurveyWorkspace() {
             <GroupNavigator
               position={activeIndex + 1}
               total={entries.length}
-              hasPrevious={previousEntry !== undefined}
-              hasNext={nextEntry !== undefined}
+              hasPrevious={previousEntry !== null}
+              hasNext={nextEntry !== null}
               onPrevious={() => {
                 if (previousEntry) {
                   goToGroup(previousEntry.group.id);
@@ -140,7 +148,7 @@ export function SurveyWorkspace() {
         <JourneyProgress
           entries={entries}
           answers={answers}
-          activeGroupId={activeGroupId}
+          activeGroupId={activeEntry?.group.id ?? null}
           onSelectGroup={goToGroup}
         />
       </aside>

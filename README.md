@@ -11,6 +11,7 @@ Website khảo sát ESG nội bộ miễn phí cho doanh nghiệp. Người qu�
 | `packages/shared` | Có: hằng số, schema Zod, kiểu dữ liệu dùng chung |
 | Bản nháp của người dùng | Có, lưu trong trình duyệt (`localStorage`): câu trả lời, mô tả, thông tin doanh nghiệp. Tệp bằng chứng chưa được lưu |
 | Lưu lên máy chủ | Chưa có. Bộ câu hỏi do admin chỉnh chỉ nằm trong bộ nhớ trình duyệt, tải lại trang là mất |
+| Xuất báo cáo PDF | Có, tạo ngay trên trình duyệt: xem bản nháp, kiểm tra thiếu câu, tải về |
 | Chấm điểm | Chưa làm (xem mục TODO) |
 | Đăng nhập `/admin` | Chưa có |
 
@@ -18,6 +19,7 @@ Website khảo sát ESG nội bộ miễn phí cho doanh nghiệp. Người qu�
 
 - **Ngôn ngữ:** TypeScript chế độ nghiêm ngặt, không dùng `any`.
 - **Frontend:** Next.js (App Router), Tailwind CSS v4, lucide-react, zustand.
+- **Báo cáo PDF:** `@react-pdf/renderer`, tạo phía trình duyệt, font DejaVu Sans đặt ở `apps/web/public/fonts` để hiển thị đủ dấu tiếng Việt.
 - **Validate:** Zod, dùng chung giữa web và api qua `@esg/shared`.
 - **Backend (dự kiến):** Express, Drizzle ORM, PostgreSQL.
 - **Quản lý gói:** pnpm workspace.
@@ -64,11 +66,12 @@ pnpm --filter @esg/shared add <ten-goi>
 │   │       ├── app/            Route: (public) là trang khảo sát, admin là trang quản trị
 │   │       ├── components/     ui (thành phần cơ bản) và layout (header, footer)
 │   │       ├── features/       Chia theo tính năng
-│   │       │   ├── survey/     3 tab ESG, nhóm, câu hỏi, tiến độ, bản nháp, store nội dung
+│   │       │   ├── survey/     3 tab ESG, nhóm, câu hỏi, tiến độ, bản nháp, báo cáo PDF, store nội dung
 │   │       │   ├── company/    Form thông tin doanh nghiệp (kỳ báo cáo, năm báo cáo)
 │   │       │   ├── evidence/   Tải bằng chứng
 │   │       │   ├── guidance/   Cột hướng dẫn bên phải
 │   │       │   ├── leave-guard/ Cảnh báo khi rời trang với bản nháp chưa lưu
+│   │       │   ├── how-it-works/ Liên kết và hộp thoại "Cách hoạt động" ở header
 │   │       │   ├── locale/     Chuyển ngôn ngữ (chưa có bản dịch)
 │   │       │   └── admin/      Quản trị nhóm và câu hỏi
 │   │       ├── data/           Dữ liệu mock
@@ -103,9 +106,17 @@ Dữ liệu mock nằm trong `apps/web/src/data`. Dữ liệu quản trị viên
 - Đóng tab hoặc tải lại khi còn thay đổi chưa lưu: trình duyệt hiện hộp thoại xác nhận của nó. Với liên kết dẫn sang trang khác trong ứng dụng (`GuardedLink`), ứng dụng hiện hộp thoại riêng. Nút Back của trình duyệt chưa được chặn.
 - Tệp bằng chứng **chưa** được lưu trong bản nháp (xem TODO).
 
+## Báo cáo PDF
+
+- Nút **Xem bản nháp** mở hộp thoại chứa PDF sẽ xuất (có khung "BẢN NHÁP" nếu còn thiếu câu). Nút **Tạo báo cáo** kiểm tra dữ liệu rồi tải file về.
+- Kiểm tra: thông tin doanh nghiệp theo `companyProfileSchema`; mỗi câu chưa trả lời, thiếu mô tả hoặc thiếu bằng chứng (theo cùng quy tắc `isQuestionComplete`). Nếu có lỗi, hộp thoại liệt kê, bấm vào mục nào thì cuộn tới đúng ô hoặc câu đó.
+- Nội dung: thông tin doanh nghiệp, thống kê tổng (đã, đang, chưa thực hiện), theo trụ cột, theo nhóm, theo khía cạnh, danh sách điểm cần cải thiện, chi tiết từng câu, số trang.
+- Nút **Làm báo cáo mới** (cột Tiến độ) xóa bản nháp và toàn bộ câu trả lời sau khi người dùng xác nhận.
+
 ## TODO
 
 - **Chấm điểm theo nhóm.** File Word có dòng "Điểm: ....../20" ở mỗi nhóm. Cách tính dự kiến: Đã thực hiện 2 điểm, Đang thực hiện 1 điểm, Chưa thực hiện 0 điểm. Đây là suy luận, cần xác nhận trước khi làm.
+- **Mở rộng báo cáo:** người lập báo cáo và ngày lập, nhúng ảnh bằng chứng, so sánh với kỳ trước, khuyến nghị theo từng nhóm.
 - **Lưu bằng chứng trong bản nháp.** Cần backend và kho lưu trữ tệp.
 - **Lưu lên máy chủ** và đăng nhập `/admin`.
 - **Bản dịch** cho bộ chuyển ngôn ngữ.
@@ -116,7 +127,7 @@ Dữ liệu mock nằm trong `apps/web/src/data`. Dữ liệu quản trị viên
 - **Không dùng `any`.** Dữ liệu từ bên ngoài phải qua Zod trước khi dùng. ESLint bật `no-explicit-any` và `no-non-null-assertion`.
 - **Tổ chức theo tính năng.** Mỗi feature tự chứa `components`, `hooks`, `lib`, `services`, và chỉ xuất ra ngoài qua `index.ts`.
 - **Kiểu và schema dùng chung đặt ở `@esg/shared`.** Không khai báo lại ở `apps/web` hay `apps/api`.
-- **Giao diện:** màu, bo góc và bóng khai báo bằng token trong `apps/web/src/app/globals.css`. Không viết mã màu cố định trong component. Font là Be Vietnam Pro.
+- **Giao diện:** màu, bo góc và bóng khai báo bằng token trong `apps/web/src/app/globals.css`. Không viết mã màu cố định trong component. Giao diện phẳng, đơn giản, dùng font hệ thống; không nhãn "miễn phí" trên giao diện.
 - **Nội dung giao diện bằng tiếng Việt.**
 - **Commit theo Conventional Commits**, có phạm vi (scope), viết bằng tiếng Anh. Ví dụ: `feat(web): add admin page`, `fix(shared): correct group schema`.
 

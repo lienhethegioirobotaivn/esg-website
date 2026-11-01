@@ -57,11 +57,14 @@ Nguyên tắc:
 | `build-survey.ts` | `buildSurvey({ pillars, groups, questions })` dựng cây `Survey` đã sắp xếp theo `order` |
 | `form-errors.ts` | `flattenIssues(error)` gom lỗi Zod thành `Record<string, string>` |
 
+Chưa có trong shared (đang ở web, cần chuyển): `isQuestionComplete`, `validateReport`, tổng hợp số liệu báo cáo.
+
 ### 2.2 Việc nên làm ở `@esg/shared` trước khi viết API
 
 1. **Chuyển logic "câu đã hoàn thành" về shared.** Hiện hàm `isQuestionComplete` nằm ở `apps/web/src/features/survey/lib/progress.ts`. Server cần dùng chính quy tắc đó để tính tiến độ và kiểm tra khi nộp bài. Đưa hàm này (kèm kiểu đầu vào thuần, không phụ thuộc `File`) vào `packages/shared/src/completion.ts`.
-2. **Tách kiểu bằng chứng.** Ở web, `EvidenceItem` giữ đối tượng `File`. Ở shared chỉ có `EvidenceFile` (metadata). Server làm việc với metadata, web ghép thêm `File` khi upload.
-3. **Đổi `questionId` trong `answerSchema` thành `z.string().uuid()`** cho nhất quán với `idSchema` trong `survey.ts`.
+2. **Chuyển `validateReport` và tổng hợp số liệu báo cáo** (mục 3.4) về `packages/shared`, kèm kiểu đầu vào thuần.
+3. **Tách kiểu bằng chứng.** Ở web, `EvidenceItem` giữ đối tượng `File`. Ở shared chỉ có `EvidenceFile` (metadata). Server làm việc với metadata, web ghép thêm `File` khi upload.
+4. **Đổi `questionId` trong `answerSchema` thành `z.string().uuid()`** cho nhất quán với `idSchema` trong `survey.ts`.
 
 ## 3. Mô hình miền (domain)
 
@@ -88,7 +91,7 @@ Quy tắc:
 - `order` là số nguyên tăng dần trong phạm vi cha (nhóm trong trụ cột, câu hỏi trong nhóm). Có thể có khoảng trống sau khi xóa, không cần đánh số lại.
 - Xóa nhóm sẽ xóa các câu hỏi bên trong.
 - Nhóm rỗng vẫn hợp lệ. Giao diện hiển thị trạng thái rỗng.
-- Giao diện khảo sát hiển thị từng nhóm một, chuyển giữa các nhóm bằng 3 tab trụ cột, nút Nhóm trước / Nhóm tiếp (đi xuyên các trụ cột) và danh sách Hành trình.
+- Giao diện khảo sát hiển thị từng nhóm một, chuyển giữa các nhóm bằng 3 tab trụ cột, nút Nhóm trước / Nhóm tiếp (đi xuyên các trụ cột) và khối Tiến độ.
 - **Dữ liệu ban đầu** lấy từ `Bo_cau_hoi_danh_gia_ESG.docx`: 8 nhóm (2 Môi trường, 3 Xã hội, 3 Quản trị), mỗi nhóm 10 câu, tổng 80 câu. Id cố định trong `apps/web/src/data/ids.ts`, dùng làm dữ liệu seed.
 
 ### 3.2 Bài khảo sát của người dùng
@@ -132,6 +135,24 @@ Dùng để tính tiến độ và để tự lưu bản nháp (khi một nhóm 
    - Nếu `descriptionRequirement = required` thì mô tả (sau khi `trim`) phải khác rỗng.
    - Nếu `evidenceRequirement = required` thì phải có ít nhất 1 tệp bằng chứng.
 4. Khi chuyển từ `implemented` sang đáp án khác, mô tả và bằng chứng không còn được tính. **(Đề xuất)** server xóa luôn mô tả và tệp đã tải của câu đó để tránh rác.
+
+### 3.4 Báo cáo PDF và kiểm tra trước khi xuất
+
+Hiện báo cáo được **tạo hoàn toàn ở trình duyệt** bằng `@react-pdf/renderer` (font DejaVu Sans để có dấu tiếng Việt). Backend chưa cần tạo PDF.
+
+Quy tắc kiểm tra (`validateReport`, hiện ở `apps/web/src/features/survey/lib/report-validation.ts`) phải giống hệt giữa web và api:
+
+1. Thông tin doanh nghiệp: kiểm bằng `companyProfileSchema`.
+2. Mỗi câu có đúng một lý do lỗi, theo thứ tự: `unanswered` (chưa chọn), `missing-description` (chọn `implemented`, mô tả bắt buộc nhưng rỗng), `missing-evidence` (chọn `implemented`, bằng chứng bắt buộc nhưng chưa có tệp). Khớp với 3.3.
+3. Có lỗi thì không tạo báo cáo chính thức; vẫn cho xem bản nháp (PDF có khung "BẢN NHÁP").
+
+Số liệu trong báo cáo (tổng, theo trụ cột, nhóm, khía cạnh, điểm cần cải thiện) được tính từ cây `Survey` và câu trả lời, ở `report-data.ts`.
+
+**(Đề xuất)** khi có backend: chuyển `validateReport` và phần tổng hợp số liệu vào `@esg/shared`; `POST /submissions/:id/submit` dùng lại `validateReport` để trả 409 kèm danh sách lỗi. Việc tạo PDF có thể giữ ở web, dùng dữ liệu từ `GET /submissions/:id`.
+
+### 3.5 Làm báo cáo mới
+
+Nút "Làm báo cáo mới" xóa bản nháp ở trình duyệt và đưa form về trạng thái ban đầu. Khi có backend: **(Đề xuất)** không xóa bài cũ; client bỏ `submissionId` đã nhớ và gọi `POST /submissions` để tạo bài mới. Bài cũ giữ nguyên, có thể dọn sau theo thời hạn lưu.
 
 ## 4. Lược đồ cơ sở dữ liệu (Drizzle, PostgreSQL)
 
@@ -466,6 +487,8 @@ export interface EvidenceStorage {
 | `features/survey/store/survey-content-store.ts` | Mutation trực tiếp trên state | Mỗi action gọi API `/admin/*` rồi cập nhật state bằng dữ liệu server trả về |
 | `features/survey/hooks/use-survey-answers.ts` | Reducer cục bộ, khởi tạo từ bản nháp | Vẫn giữ state cục bộ, thêm gọi `PUT .../answers/:questionId` sau khi người dùng dừng gõ (debounce) hoặc chọn đáp án |
 | `features/survey/lib/draft-storage.ts`, `hooks/use-survey-draft.ts` | Lưu bản nháp vào `localStorage` (tự lưu khi xong một nhóm, nút lưu thủ công) | Thay bằng `submission` ở máy chủ. Giữ định dạng `draftSnapshotSchema` hoặc thay bằng API, và giữ `localStorage` chỉ để nhớ `submissionId` |
+| `features/survey/lib/report-*.ts`, `report/`, `hooks/use-report-export.ts`, `use-report-preview.ts` | Kiểm tra và tạo PDF ở trình duyệt từ state cục bộ | Giữ tạo PDF ở web. Dữ liệu lấy từ submission; `validateReport` dùng từ `@esg/shared`; nút Tạo báo cáo gọi thêm `POST .../submit` |
+| Nút "Làm báo cáo mới" (`reset-report-dialog.tsx`) | Xóa bản nháp, remount form | Bỏ `submissionId` đã nhớ, `POST /submissions` tạo bài mới |
 | `features/leave-guard` | Cảnh báo khi còn thay đổi chưa lưu | Giữ nguyên. Điều kiện "chưa lưu" đổi thành "chưa đồng bộ lên máy chủ" |
 | `features/evidence` | Chỉ giữ `File` trong bộ nhớ | `POST` từng tệp, lưu `evidenceId` trả về thay cho `crypto.randomUUID()` |
 | `features/company/components/company-profile-form.tsx` | Controlled form, giá trị do `survey-workspace` giữ; chỉ hiện "đã ghi nhận" | Gọi `PUT .../company` khi bấm lưu |
@@ -488,7 +511,7 @@ Mock data dùng UUID cố định trong `data/ids.ts`, có thể dùng nguyên c
 ## 10. Lộ trình triển khai gợi ý
 
 1. Tạo `apps/api`: `package.json`, `tsconfig.json` kế thừa `tsconfig.base.json`, `src/app.ts`, `GET /health`.
-2. Chuyển `isQuestionComplete` và danh sách lựa chọn doanh nghiệp vào `@esg/shared` (mục 2.2 và 3.2).
+2. Chuyển `isQuestionComplete`, `validateReport` và danh sách lựa chọn doanh nghiệp vào `@esg/shared` (mục 2.2 và 3.2).
 3. Cài Drizzle, viết `schema.ts`, chạy migration đầu tiên, viết script seed từ `apps/web/src/data`.
 4. Làm `GET /survey` và nối `surveyService` ở web. Đây là bước đầu tiên có thể kiểm chứng toàn tuyến.
 5. Làm các API `/admin/*` và nối store của admin. Thêm middleware `require-admin`.
@@ -500,7 +523,7 @@ Mock data dùng UUID cố định trong `data/ids.ts`, có thể dùng nguyên c
 ## 11. Câu hỏi còn mở
 
 - Người dùng có cần đăng nhập để tiếp tục bài khảo sát trên nhiều thiết bị không, hay chỉ cần link riêng?
-- Sau khi nộp, báo cáo ESG được tạo thế nào (bước 3 "Báo cáo ESG của bạn" trong thiết kế tham khảo): xuất PDF, trang xem trực tuyến, hay chưa làm?
+- Báo cáo PDF hiện tạo ở trình duyệt (mục 3.4). Khi có backend có cần lưu bản PDF đã xuất, hay chỉ tạo lại từ dữ liệu khi cần? Việc "Tạo báo cáo" có đặt bài thành `submitted` (khóa chỉnh sửa) không?
 - Một doanh nghiệp có nhiều bài khảo sát theo từng năm báo cáo không? Nếu có, cần thêm khái niệm `Company` tách khỏi `Submission`.
 - Cách chấm điểm (mục 12) có đúng như dự kiến không?
 - Có cho phép nhiều quản trị viên không, và có cần nhật ký thay đổi bộ câu hỏi không?
@@ -518,7 +541,7 @@ File Word `Bo_cau_hoi_danh_gia_ESG.docx` có dòng "Điểm: ....../20" ở cu�
 | `in_progress` | 1 |
 | `not_implemented` | 0 |
 
-Cần chốt: điểm hiển thị ở đâu (đầu nhóm, cột Hành trình, báo cáo cuối), có tính điểm theo từng trụ cột và tổng không, có xếp loại theo ngưỡng không, câu chưa trả lời tính thế nào. Khi làm, đặt hàm tính điểm trong `@esg/shared` để web và api dùng chung, và thêm vào `GET /submissions/:id/progress`.
+Cần chốt: điểm hiển thị ở đâu (đầu nhóm, khối Tiến độ, báo cáo cuối), có tính điểm theo từng trụ cột và tổng không, có xếp loại theo ngưỡng không, câu chưa trả lời tính thế nào. Khi làm, đặt hàm tính điểm trong `@esg/shared` để web và api dùng chung, và thêm vào `GET /submissions/:id/progress`.
 
 ### 12.2 Lưu bằng chứng trong bản nháp
 
@@ -526,6 +549,19 @@ Bản nháp ở trình duyệt chỉ lưu câu trả lời, mô tả và thông 
 
 ### 12.3 Khác
 
+- Mở rộng báo cáo: người lập và ngày lập, nhúng ảnh bằng chứng, so sánh kỳ trước, khuyến nghị theo nhóm, ghi phiên bản bộ câu hỏi vào báo cáo.
 - Chặn nút Back của trình duyệt khi còn thay đổi chưa lưu (hiện chỉ chặn đóng tab, tải lại và liên kết `GuardedLink`).
 - Bản dịch cho bộ chuyển ngôn ngữ (hiện chỉ đổi thuộc tính `lang`).
 - Rà soát câu hỏi nhắc tên riêng một doanh nghiệp (ví dụ câu về cổ phiếu LIX) nếu dùng cho mọi doanh nghiệp.
+
+## 13. Bắt đầu làm backend trong cuộc hội thoại mới
+
+Hai file `README.md` và `docs/backend-spec.md` là điểm khởi đầu nhưng chưa đủ, vì người đọc không nhìn thấy mã nguồn. Gửi kèm ở tin nhắn đầu:
+
+- `package.json` gốc, `pnpm-workspace.yaml`, `tsconfig.base.json`.
+- Toàn bộ `packages/shared/src/*` (hợp đồng mà API phải bám theo).
+- `apps/web/src/data/*` (làm dữ liệu seed).
+- `apps/web/src/features/survey/lib/{progress.ts, report-validation.ts, report-data.ts}` và `types.ts` (logic cần chuyển sang shared).
+- `apps/web/src/features/survey/services/survey.service.ts`, `store/survey-content-store.ts`, `hooks/use-survey-answers.ts` (các điểm sẽ nối API).
+
+Quy ước làm việc cần nhắc lại: làm theo từng phần ("tiếp tục" để sang phần kế), trả file đầy đủ, không comment trong mã, commit theo Conventional Commits có scope và viết bằng tiếng Anh.

@@ -11,13 +11,14 @@ export function SiteHeader() {
           href="/"
           className="flex items-center gap-2 text-lg font-bold text-foreground"
         >
+          {/* eslint-disable @next/next/no-img-element */}
           <img
             src="logo-full.png"
             alt="ESG Report Online Logo"
             className="h-8 w-auto max-h-full object-contain"
           />
         </GuardedLink>
-        <div className="order-3 flex w-full items-center justify-center gap-3 pb-2 md:absolute md:left-1/2 md:order-none md:w-auto md:-translate-x-1/2 md:pb-0">
+        <div className="order-3 flex w-full items-center justify-center gap-3 pb-2 md:absolute md:left-1/2 md:order-0 md:w-auto md:-translate-x-1/2 md:pb-0">
           <span className="text-sm font-medium text-primary">
             Hồ sơ doanh nghiệp
           </span>

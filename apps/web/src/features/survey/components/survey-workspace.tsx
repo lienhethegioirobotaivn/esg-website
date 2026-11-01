@@ -118,6 +118,7 @@ function LoadedSurveyWorkspace({
     initial.savedAt !== null,
   );
   const [company, setCompany] = useState<CompanyFormValues>(initial.company);
+  const [logo, setLogo] = useState<File | null>(null);
   const { answers, actions } = useSurveyAnswers(initial.answers);
 
   const {
@@ -142,8 +143,8 @@ function LoadedSurveyWorkspace({
     onSave: draft.persist,
   });
 
-  const reportExport = useReportExport({ company, entries, answers });
-  const reportPreview = useReportPreview({ company, entries, answers });
+  const reportExport = useReportExport({ company, entries, answers, logo });
+  const reportPreview = useReportPreview({ company, entries, answers, logo });
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
 
@@ -223,7 +224,12 @@ function LoadedSurveyWorkspace({
       />
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
         <aside aria-label="Thông tin doanh nghiệp" className="min-w-0">
-          <CompanyProfileForm values={company} onFieldChange={updateCompany} />
+          <CompanyProfileForm
+            values={company}
+            onFieldChange={updateCompany}
+            logo={logo}
+            onLogoChange={setLogo}
+          />
         </aside>
 
         <section

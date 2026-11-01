@@ -11,9 +11,13 @@ import { LOGO_ACCEPTED_TYPES, validateLogoFile } from "../lib/validate-logo";
 
 const INPUT_ID = "company-logo";
 
-export function LogoUploader() {
+interface LogoUploaderProps {
+  file: File | null;
+  onChange: (file: File | null) => void;
+}
+
+export function LogoUploader({ file, onChange }: LogoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const previewUrl = useMemo(
@@ -41,11 +45,11 @@ export function LogoUploader() {
       return;
     }
     setError(null);
-    setFile(selected);
+    onChange(selected);
   }
 
   function handleRemove() {
-    setFile(null);
+    onChange(null);
     setError(null);
   }
 

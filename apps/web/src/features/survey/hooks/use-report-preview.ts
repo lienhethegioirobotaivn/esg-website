@@ -10,6 +10,7 @@ interface UseReportPreviewInput {
   company: CompanyFormValues;
   entries: readonly GroupEntry[];
   answers: AnswerMap;
+  logo: File | null;
 }
 
 export interface ReportPreview {
@@ -29,6 +30,7 @@ export function useReportPreview({
   company,
   entries,
   answers,
+  logo,
 }: UseReportPreviewInput): ReportPreviewState {
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +55,7 @@ export function useReportPreview({
         entries,
         answers,
         draftNotice,
+        logo,
       });
       setPreview((current) => {
         if (current) {

@@ -1,4 +1,11 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import {
+  Document,
+  Image,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+} from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 
 import { toPercent } from "../lib/report-data";
@@ -8,6 +15,7 @@ import type {
   StatusCounts,
 } from "../lib/report-data";
 import { REPORT_FONT_FAMILY } from "./fonts";
+import type { ReportLogo } from "./report-logo";
 
 const COLORS = {
   text: "#1a1a1a",
@@ -30,6 +38,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     lineHeight: 1.4,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  headerText: { flex: 1 },
   title: { fontSize: 20, fontWeight: 700, lineHeight: 1.3 },
   subtitle: {
     fontSize: 11,
@@ -294,7 +309,21 @@ function Section({
   );
 }
 
-export function ReportDocument({ data }: { data: ReportData }) {
+const LOGO_MAX_HEIGHT = 52;
+const LOGO_MAX_WIDTH = 140;
+
+function getLogoSize(logo: ReportLogo): { width: number; height: number } {
+  const ratio = logo.width / logo.height;
+  const width = Math.min(LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT * ratio);
+  return { width, height: width / ratio };
+}
+
+interface ReportDocumentProps {
+  data: ReportData;
+  logo?: ReportLogo | null;
+}
+
+export function ReportDocument({ data, logo = null }: ReportDocumentProps) {
   const { company, totals } = data;
   const exportedAt = formatDateTime(data.exportedAt);
   const periodText = getPeriodText(company);
@@ -308,11 +337,16 @@ export function ReportDocument({ data }: { data: ReportData }) {
       language="vi"
     >
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Báo cáo tự đánh giá ESG</Text>
-        <Text style={styles.subtitle}>
-          {companyName} · {periodText}
-        </Text>
-        <Text style={styles.meta}>Xuất ngày {exportedAt}</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Báo cáo tự đánh giá ESG</Text>
+            <Text style={styles.subtitle}>
+              {companyName} · {periodText}
+            </Text>
+            <Text style={styles.meta}>Xuất ngày {exportedAt}</Text>
+          </View>
+          {logo ? <Image src={logo.src} style={getLogoSize(logo)} /> : null}
+        </View>
         {data.draftNotice !== null ? (
           <View style={styles.draftBox}>
             <Text>

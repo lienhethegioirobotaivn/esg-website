@@ -13,6 +13,7 @@ interface UseReportExportInput {
   company: CompanyFormValues;
   entries: readonly GroupEntry[];
   answers: AnswerMap;
+  logo: File | null;
 }
 
 interface ReportExport {
@@ -27,6 +28,7 @@ export function useReportExport({
   company,
   entries,
   answers,
+  logo,
 }: UseReportExportInput): ReportExport {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function useReportExport({
     setError(null);
     setIsExporting(true);
     try {
-      const blob = await createReportBlob({ company, entries, answers });
+      const blob = await createReportBlob({ company, entries, answers, logo });
       downloadBlob(blob, buildReportFileName(company));
     } catch {
       setError("Không tạo được file PDF. Vui lòng thử lại.");

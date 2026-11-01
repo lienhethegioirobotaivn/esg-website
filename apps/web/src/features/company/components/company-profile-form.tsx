@@ -18,11 +18,15 @@ type FormErrors = Partial<Record<CompanyField, string>>;
 interface CompanyProfileFormProps {
   values: CompanyFormValues;
   onFieldChange: (field: CompanyField, value: string) => void;
+  logo: File | null;
+  onLogoChange: (file: File | null) => void;
 }
 
 export function CompanyProfileForm({
   values,
   onFieldChange,
+  logo,
+  onLogoChange,
 }: CompanyProfileFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaved, setIsSaved] = useState(false);
@@ -85,7 +89,7 @@ export function CompanyProfileForm({
           />
         </Field>
 
-        <LogoUploader />
+        <LogoUploader file={logo} onChange={onLogoChange} />
 
         <Field
           label="Lĩnh vực hoạt động"

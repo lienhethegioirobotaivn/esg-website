@@ -73,6 +73,7 @@ export interface ReportData {
   readonly pillars: readonly ReportPillar[];
   readonly aspects: readonly ReportAspect[];
   readonly improvements: readonly ReportImprovementGroup[];
+  readonly draftNotice: string | null;
 }
 
 export interface OptionLookup {
@@ -84,11 +85,19 @@ function getStatusLabel(status: AnswerValue | null): string {
   if (status === null) {
     return "Chưa trả lời";
   }
-  return ANSWER_OPTIONS.find((option) => option.value === status)?.label ?? status;
+  return (
+    ANSWER_OPTIONS.find((option) => option.value === status)?.label ?? status
+  );
 }
 
 export function emptyCounts(): StatusCounts {
-  return { implemented: 0, in_progress: 0, not_implemented: 0, unanswered: 0, total: 0 };
+  return {
+    implemented: 0,
+    in_progress: 0,
+    not_implemented: 0,
+    unanswered: 0,
+    total: 0,
+  };
 }
 
 export function addToCounts(
@@ -127,6 +136,7 @@ export function buildReportData(input: {
   exportedAt: string;
   industryOptions: readonly OptionLookup[];
   headcountOptions: readonly OptionLookup[];
+  draftNotice?: string | null;
 }): ReportData {
   const { company, entries, answers } = input;
 
@@ -177,7 +187,9 @@ export function buildReportData(input: {
       questions,
     });
 
-    const open = questions.filter((question) => question.status !== "implemented");
+    const open = questions.filter(
+      (question) => question.status !== "implemented",
+    );
     if (open.length > 0) {
       improvementMap.push({
         pillarName: entry.pillarName,
@@ -193,7 +205,10 @@ export function buildReportData(input: {
     return {
       name,
       groups,
-      counts: groups.reduce((sum, group) => mergeCounts(sum, group.counts), emptyCounts()),
+      counts: groups.reduce(
+        (sum, group) => mergeCounts(sum, group.counts),
+        emptyCounts(),
+      ),
     };
   });
 
@@ -210,7 +225,11 @@ export function buildReportData(input: {
     },
     totals,
     pillars,
-    aspects: [...aspectCounts.entries()].map(([label, counts]) => ({ label, counts })),
+    aspects: [...aspectCounts.entries()].map(([label, counts]) => ({
+      label,
+      counts,
+    })),
     improvements: improvementMap,
+    draftNotice: input.draftNotice ?? null,
   };
 }

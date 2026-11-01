@@ -1,4 +1,4 @@
-import { Check, FileDown } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { Fragment } from "react";
 
 import { Button, Card } from "@/components/ui";
@@ -17,9 +17,7 @@ interface JourneyProgressProps {
   answers: AnswerMap;
   activeGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
-  onExport: () => void;
-  isExporting: boolean;
-  exportError: string | null;
+  onReset: () => void;
 }
 
 export function JourneyProgress({
@@ -27,9 +25,7 @@ export function JourneyProgress({
   answers,
   activeGroupId,
   onSelectGroup,
-  onExport,
-  isExporting,
-  exportError,
+  onReset,
 }: JourneyProgressProps) {
   const allQuestions = entries.flatMap((entry) => entry.group.questions);
   const completedQuestions = countCompleted(allQuestions, answers);
@@ -128,21 +124,16 @@ export function JourneyProgress({
 
       <div className="mt-3 border-t border-border pt-3">
         <Button
+          variant="secondary"
           className="w-full"
-          onClick={onExport}
-          disabled={isExporting}
-          leadingIcon={<FileDown aria-hidden className="size-4" />}
+          onClick={onReset}
+          leadingIcon={<RotateCcw aria-hidden className="size-4" />}
         >
-          {isExporting ? "Đang tạo file PDF..." : "Xuất báo cáo PDF"}
+          Làm báo cáo mới
         </Button>
         <p className="mt-2 text-xs text-subtle">
-          Cần nhập đủ thông tin doanh nghiệp và trả lời tất cả câu hỏi.
+          Xóa toàn bộ nội dung đã nhập để bắt đầu lại từ đầu.
         </p>
-        {exportError ? (
-          <p role="alert" className="mt-2 text-xs text-danger-600">
-            {exportError}
-          </p>
-        ) : null}
       </div>
     </Card>
   );

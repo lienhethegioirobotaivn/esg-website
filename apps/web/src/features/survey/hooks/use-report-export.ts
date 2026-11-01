@@ -1,13 +1,12 @@
 import { useState } from "react";
 
 import type { CompanyFormValues } from "@/features/company";
-import { headcountOptions, industryOptions } from "@/data";
 import { downloadBlob } from "@/lib/download-blob";
 
-import { buildReportData } from "../lib/report-data";
 import { buildReportFileName } from "../lib/report-file-name";
 import { validateReport } from "../lib/report-validation";
 import type { ReportValidation } from "../lib/report-validation";
+import { createReportBlob } from "../report/create-report";
 import type { AnswerMap, GroupEntry } from "../types";
 
 interface UseReportExportInput {
@@ -48,16 +47,7 @@ export function useReportExport({
     setError(null);
     setIsExporting(true);
     try {
-      const data = buildReportData({
-        company,
-        entries,
-        answers,
-        exportedAt: new Date().toISOString(),
-        industryOptions,
-        headcountOptions,
-      });
-      const { generateReportBlob } = await import("../report/generate-report");
-      const blob = await generateReportBlob(data);
+      const blob = await createReportBlob({ company, entries, answers });
       downloadBlob(blob, buildReportFileName(company));
     } catch {
       setError("Không tạo được file PDF. Vui lòng thử lại.");

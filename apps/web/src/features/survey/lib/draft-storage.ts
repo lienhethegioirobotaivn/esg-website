@@ -64,3 +64,12 @@ export function saveDraft(content: DraftContent): boolean {
   notifyListeners();
   return true;
 }
+
+export function clearDraft(): void {
+  try {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    return;
+  }
+  notifyListeners();
+}

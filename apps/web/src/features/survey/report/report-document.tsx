@@ -1,9 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 
-import {
-  toPercent,
-} from "../lib/report-data";
+import { toPercent } from "../lib/report-data";
 import type {
   ReportData,
   ReportQuestion,
@@ -33,7 +31,12 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   title: { fontSize: 20, fontWeight: 700, lineHeight: 1.3 },
-  subtitle: { fontSize: 11, color: COLORS.muted, marginTop: 4, lineHeight: 1.3 },
+  subtitle: {
+    fontSize: 11,
+    color: COLORS.muted,
+    marginTop: 4,
+    lineHeight: 1.3,
+  },
   h2: {
     fontSize: 12,
     fontWeight: 700,
@@ -44,7 +47,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  h3: { fontSize: 10, fontWeight: 700, marginTop: 10, marginBottom: 4, lineHeight: 1.3 },
+  h3: {
+    fontSize: 10,
+    fontWeight: 700,
+    marginTop: 10,
+    marginBottom: 4,
+    lineHeight: 1.3,
+  },
   infoRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
@@ -110,11 +119,25 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.line,
     paddingTop: 4,
   },
+  draftBox: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: COLORS.in_progress,
+    padding: 6,
+    color: COLORS.text,
+  },
   disclaimer: { marginTop: 14, fontSize: 8, color: COLORS.muted },
 });
 
 function statusColor(status: ReportQuestion["status"]): string {
   return status === null ? COLORS.muted : COLORS[status];
+}
+
+function getPeriodText(company: ReportData["company"]): string {
+  if (company.period === "") {
+    return `Năm ${company.year}`;
+  }
+  return `${company.period} năm ${company.year}`;
 }
 
 function formatDateTime(iso: string): string {
@@ -152,7 +175,9 @@ function StatBox({
   isLast?: boolean;
 }) {
   return (
-    <View style={isLast ? [styles.statBox, styles.statBoxLast] : styles.statBox}>
+    <View
+      style={isLast ? [styles.statBox, styles.statBoxLast] : styles.statBox}
+    >
       <Text style={[styles.statNumber, { color }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -161,9 +186,21 @@ function StatBox({
 
 function StackedBar({ counts }: { counts: StatusCounts }) {
   const segments = [
-    { key: "implemented", color: COLORS.implemented, value: counts.implemented },
-    { key: "in_progress", color: COLORS.in_progress, value: counts.in_progress },
-    { key: "not_implemented", color: COLORS.not_implemented, value: counts.not_implemented },
+    {
+      key: "implemented",
+      color: COLORS.implemented,
+      value: counts.implemented,
+    },
+    {
+      key: "in_progress",
+      color: COLORS.in_progress,
+      value: counts.in_progress,
+    },
+    {
+      key: "not_implemented",
+      color: COLORS.not_implemented,
+      value: counts.not_implemented,
+    },
   ].filter((segment) => segment.value > 0);
   return (
     <View style={styles.bar}>
@@ -229,7 +266,9 @@ function QuestionDetail({ question }: { question: ReportQuestion }) {
       {question.evidence.length > 0 ? (
         <Text style={styles.detailLine}>
           Bằng chứng:{" "}
-          {question.evidence.map((item) => `${item.name} (${item.size})`).join("; ")}
+          {question.evidence
+            .map((item) => `${item.name} (${item.size})`)
+            .join("; ")}
         </Text>
       ) : null}
     </View>
@@ -258,20 +297,30 @@ function Section({
 export function ReportDocument({ data }: { data: ReportData }) {
   const { company, totals } = data;
   const exportedAt = formatDateTime(data.exportedAt);
-  const periodText = `${company.period} năm ${company.year}`;
+  const periodText = getPeriodText(company);
+  const companyName =
+    company.name === "" ? "Chưa nhập tên doanh nghiệp" : company.name;
 
   return (
     <Document
-      title={`Báo cáo ESG ${company.name} ${periodText}`}
+      title={`Báo cáo ESG ${companyName} ${periodText}`}
       author="ESGstudio"
       language="vi"
     >
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>Báo cáo tự đánh giá ESG</Text>
         <Text style={styles.subtitle}>
-          {company.name} · {periodText}
+          {companyName} · {periodText}
         </Text>
         <Text style={styles.meta}>Xuất ngày {exportedAt}</Text>
+        {data.draftNotice !== null ? (
+          <View style={styles.draftBox}>
+            <Text>
+              <Text style={styles.bold}>BẢN NHÁP. </Text>
+              {data.draftNotice}
+            </Text>
+          </View>
+        ) : null}
 
         <Section title="1. Thông tin doanh nghiệp">
           <InfoRow label="Tên doanh nghiệp" value={company.name} />
@@ -365,11 +414,18 @@ export function ReportDocument({ data }: { data: ReportData }) {
           data.improvements.map((group) => (
             <View key={group.groupPosition}>
               <Text style={styles.h3} minPresenceAhead={40}>
-                {group.pillarName} · Nhóm {group.groupPosition}: {group.groupTitle}
+                {group.pillarName} · Nhóm {group.groupPosition}:{" "}
+                {group.groupTitle}
               </Text>
               {group.items.map((item) => (
                 <View key={item.number} style={styles.tableRow} wrap={false}>
-                  <Text style={{ width: 88, color: statusColor(item.status), fontWeight: 700 }}>
+                  <Text
+                    style={{
+                      width: 88,
+                      color: statusColor(item.status),
+                      fontWeight: 700,
+                    }}
+                  >
                     {item.statusLabel}
                   </Text>
                   <Text style={{ flex: 1 }}>
@@ -413,7 +469,9 @@ function PageFooter() {
     <View style={styles.footer} fixed>
       <Text>ESGstudio · Báo cáo tự đánh giá ESG</Text>
       <Text
-        render={({ pageNumber, totalPages }) => `Trang ${pageNumber}/${totalPages}`}
+        render={({ pageNumber, totalPages }) =>
+          `Trang ${pageNumber}/${totalPages}`
+        }
       />
     </View>
   );

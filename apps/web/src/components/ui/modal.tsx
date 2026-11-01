@@ -4,13 +4,31 @@ import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 
+type ModalSize = "md" | "lg";
+
 interface ModalProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  size?: ModalSize;
 }
 
-export function Modal({ title, onClose, children }: ModalProps) {
+const dialogSizeClassNames: Record<ModalSize, string> = {
+  md: "max-w-2xl",
+  lg: "max-w-5xl",
+};
+
+const panelSizeClassNames: Record<ModalSize, string> = {
+  md: "max-h-[85vh]",
+  lg: "h-[90vh]",
+};
+
+const bodySizeClassNames: Record<ModalSize, string> = {
+  md: "overflow-y-auto p-6",
+  lg: "flex min-h-0 flex-1 flex-col p-4",
+};
+
+export function Modal({ title, onClose, children, size = "md" }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -36,9 +54,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
           onClose();
         }
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-2xl rounded-card border border-border bg-surface p-0 text-foreground shadow-xl backdrop:bg-foreground/40"
+      className={`m-auto w-[calc(100%-2rem)] ${dialogSizeClassNames[size]} rounded-card border border-border bg-surface p-0 text-foreground shadow-xl backdrop:bg-foreground/40`}
     >
-      <div className="flex max-h-[85vh] flex-col">
+      <div className={`flex flex-col ${panelSizeClassNames[size]}`}>
         <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-4">
           <h2 id={titleId} className="text-lg">
             {title}
@@ -52,7 +70,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
             <X aria-hidden className="size-5" />
           </button>
         </div>
-        <div className="overflow-y-auto p-6">{children}</div>
+        <div className={bodySizeClassNames[size]}>{children}</div>
       </div>
     </dialog>
   );

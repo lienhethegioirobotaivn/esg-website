@@ -11,6 +11,7 @@ import { headcountOptions, industryOptions } from "@/data";
 import { REPORT_PERIOD_OPTIONS } from "../constants";
 import type { CompanyField, CompanyFormValues } from "../constants";
 import { isCompanyField } from "../lib/company-values";
+import { LogoUploader } from "./logo-uploader";
 
 type FormErrors = Partial<Record<CompanyField, string>>;
 
@@ -83,6 +84,8 @@ export function CompanyProfileForm({
             aria-describedby={errors.name ? "company-name-error" : undefined}
           />
         </Field>
+
+        <LogoUploader />
 
         <Field
           label="Lĩnh vực hoạt động"

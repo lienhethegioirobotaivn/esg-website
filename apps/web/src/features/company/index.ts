@@ -1,4 +1,10 @@
 export { CompanyProfileForm } from "./components/company-profile-form";
-export { COMPANY_FIELDS, COMPANY_INITIAL_VALUES } from "./constants";
+export {
+  COMPANY_FIELDS,
+  COMPANY_FIELD_IDS,
+  COMPANY_FIELD_LABELS,
+  COMPANY_INITIAL_VALUES,
+  REPORT_PERIOD_OPTIONS,
+} from "./constants";
 export type { CompanyField, CompanyFormValues } from "./constants";
-export { pickCompanyValues } from "./lib/company-values";
+export { isCompanyField, pickCompanyValues } from "./lib/company-values";

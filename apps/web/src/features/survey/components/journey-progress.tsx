@@ -1,7 +1,7 @@
-import { Check } from "lucide-react";
+import { Check, FileDown } from "lucide-react";
 import { Fragment } from "react";
 
-import { Card } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { padNumber } from "@/lib/format";
 
@@ -17,6 +17,9 @@ interface JourneyProgressProps {
   answers: AnswerMap;
   activeGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
+  onExport: () => void;
+  isExporting: boolean;
+  exportError: string | null;
 }
 
 export function JourneyProgress({
@@ -24,6 +27,9 @@ export function JourneyProgress({
   answers,
   activeGroupId,
   onSelectGroup,
+  onExport,
+  isExporting,
+  exportError,
 }: JourneyProgressProps) {
   const allQuestions = entries.flatMap((entry) => entry.group.questions);
   const completedQuestions = countCompleted(allQuestions, answers);
@@ -119,6 +125,25 @@ export function JourneyProgress({
       <p className="mt-3 border-t border-border pt-3 text-xs text-subtle">
         Có thể làm các nhóm theo thứ tự bất kỳ.
       </p>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <Button
+          className="w-full"
+          onClick={onExport}
+          disabled={isExporting}
+          leadingIcon={<FileDown aria-hidden className="size-4" />}
+        >
+          {isExporting ? "Đang tạo file PDF..." : "Xuất báo cáo PDF"}
+        </Button>
+        <p className="mt-2 text-xs text-subtle">
+          Cần nhập đủ thông tin doanh nghiệp và trả lời tất cả câu hỏi.
+        </p>
+        {exportError ? (
+          <p role="alert" className="mt-2 text-xs text-danger-600">
+            {exportError}
+          </p>
+        ) : null}
+      </div>
     </Card>
   );
 }

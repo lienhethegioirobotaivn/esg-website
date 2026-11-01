@@ -34,10 +34,11 @@ export function QuestionCard({
 
   return (
     <article
+      id={`question-${question.id}`}
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
       className={cn(
-        "rounded-card border bg-surface p-4",
+        "scroll-mt-20 rounded-card border bg-surface p-4",
         isFocused ? "border-primary-600" : "border-border",
       )}
     >

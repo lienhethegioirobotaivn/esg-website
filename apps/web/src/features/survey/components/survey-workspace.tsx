@@ -1,27 +1,40 @@
 "use client";
 
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { Card } from "@/components/ui";
-import { CompanyProfileForm } from "@/features/company";
+import { COMPANY_FIELD_IDS, CompanyProfileForm } from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
 import { GuidancePanel } from "@/features/guidance";
 import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
 
 import { useSurvey } from "../hooks/use-survey";
+import { useReportExport } from "../hooks/use-report-export";
 import { useSurveyAnswers } from "../hooks/use-survey-answers";
 import { useSurveyDraft } from "../hooks/use-survey-draft";
 import { useSurveyNavigation } from "../hooks/use-survey-navigation";
 import { getDraftRaw, parseDraft } from "../lib/draft-storage";
 import { restoreDraft } from "../lib/draft-state";
 import { countCompleted } from "../lib/progress";
+import type { QuestionIssue } from "../lib/report-validation";
 import { flattenGroups } from "../lib/survey-tree";
 import { DraftBar } from "./draft-bar";
 import { DraftRestoredNotice } from "./draft-restored-notice";
+import { ExportIssuesDialog } from "./export-issues-dialog";
 import { GroupNavigator } from "./group-navigator";
 import { GroupSection } from "./group-section";
 import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
+
+type JumpTarget =
+  | { kind: "question"; id: string }
+  | { kind: "company"; field: CompanyField };
 
 function subscribeNothing(): () => void {
   return () => undefined;
@@ -84,6 +97,9 @@ function LoadedSurveyWorkspace() {
     onSave: draft.persist,
   });
 
+  const reportExport = useReportExport({ company, entries, answers });
+  const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
+
   const sectionRef = useRef<HTMLElement>(null);
   const [focusedQuestionId, setFocusedQuestionId] = useState<string | null>(null);
 
@@ -103,6 +119,38 @@ function LoadedSurveyWorkspace() {
   function updateCompany(field: CompanyField, value: string) {
     setCompany((current) => ({ ...current, [field]: value }));
   }
+
+  function jumpToQuestion(issue: QuestionIssue) {
+    reportExport.closeValidation();
+    selectGroup(issue.groupId);
+    setFocusedQuestionId(issue.questionId);
+    setJumpTarget({ kind: "question", id: issue.questionId });
+  }
+
+  function jumpToCompany(field: CompanyField) {
+    reportExport.closeValidation();
+    setJumpTarget({ kind: "company", field });
+  }
+
+  useEffect(() => {
+    if (jumpTarget === null) {
+      return;
+    }
+    const target = document.getElementById(
+      jumpTarget.kind === "question"
+        ? `question-${jumpTarget.id}`
+        : COMPANY_FIELD_IDS[jumpTarget.field],
+    );
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusable =
+      jumpTarget.kind === "question"
+        ? target.querySelector<HTMLElement>("input, textarea, select, button")
+        : target;
+    focusable?.focus({ preventScroll: true });
+  }, [jumpTarget]);
 
   function goToGroup(groupId: string) {
     selectGroup(groupId);
@@ -216,8 +264,20 @@ function LoadedSurveyWorkspace() {
           answers={answers}
           activeGroupId={activeEntry?.group.id ?? null}
           onSelectGroup={goToGroup}
+          onExport={() => void reportExport.exportReport()}
+          isExporting={reportExport.isExporting}
+          exportError={reportExport.error}
         />
       </aside>
+
+      {reportExport.validation ? (
+        <ExportIssuesDialog
+          validation={reportExport.validation}
+          onJumpToCompany={jumpToCompany}
+          onJumpToQuestion={jumpToQuestion}
+          onClose={reportExport.closeValidation}
+        />
+      ) : null}
 
       <LeaveDialog />
     </div>

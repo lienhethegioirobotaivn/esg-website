@@ -37,10 +37,10 @@ export function JourneyProgress({
   const evidenceCount = countEvidence(allQuestions, answers);
 
   return (
-    <Card className="p-5">
+    <Card className="p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[0.9375rem]">Hành trình của bạn</h2>
-        <span className="text-sm font-semibold text-primary-700">{percent}%</span>
+        <h2 className="text-base">Tiến độ</h2>
+        <span className="text-sm font-semibold">{percent}%</span>
       </div>
 
       <div
@@ -49,10 +49,10 @@ export function JourneyProgress({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-muted"
+        className="mt-2 h-2 overflow-hidden border border-border bg-surface-muted"
       >
         <div
-          className="h-full rounded-full bg-primary-600 transition-[width] duration-300"
+          className="h-full bg-primary-600"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -73,7 +73,7 @@ export function JourneyProgress({
           return (
             <Fragment key={entry.group.id}>
               {startsPillar ? (
-                <li className="px-2.5 pb-1 pt-3 text-[0.6875rem] font-semibold uppercase tracking-wider text-subtle first:pt-0">
+                <li className="px-2.5 pb-1 pt-3 text-xs font-semibold text-foreground first:pt-0">
                   {entry.pillarName}
                 </li>
               ) : null}
@@ -83,18 +83,18 @@ export function JourneyProgress({
                   onClick={() => onSelectGroup(entry.group.id)}
                   aria-current={isActive ? "step" : undefined}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left text-[0.8125rem] transition-colors",
+                    "flex w-full items-center gap-3 rounded-control px-2.5 py-1.5 text-left text-[0.8125rem]",
                     isActive
-                      ? "bg-primary-50 font-medium text-primary-900"
+                      ? "bg-surface-muted font-semibold text-foreground"
                       : "text-muted hover:bg-surface-muted",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium",
+                      "flex size-6 shrink-0 items-center justify-center rounded-control text-xs",
                       isComplete
                         ? "bg-primary-700 text-white"
-                        : "border border-border bg-surface text-subtle",
+                        : "border border-border-strong text-subtle",
                     )}
                   >
                     {isComplete ? (
@@ -116,8 +116,8 @@ export function JourneyProgress({
         })}
       </ul>
 
-      <p className="mt-4 border-t border-border pt-3 text-xs text-subtle">
-        Có thể hoàn thành theo thứ tự bạn muốn.
+      <p className="mt-3 border-t border-border pt-3 text-xs text-subtle">
+        Có thể làm các nhóm theo thứ tự bất kỳ.
       </p>
     </Card>
   );

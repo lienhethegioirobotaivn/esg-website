@@ -10,17 +10,15 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <main>
-      <Container className="py-10">
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-          Hồ sơ ESG, bắt đầu từ đây
-          <span className="text-primary-500">.</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-muted">
-          Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp. Điền thông
-          tin, thêm minh chứng và hoàn thành bộ câu hỏi theo thứ tự bạn muốn.
+      <Container className="py-6">
+        <h1 className="text-2xl font-bold">TẠO BÁO CÁO ESG MIỄN PHÍ</h1>
+        <p className="mt-2 max-w-3xl text-muted">
+          Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp chuẩn EU.
+          Điền thông tin, thêm minh chứng và tải về báo cáo của bạn. Chứng nhận
+          chuẩn ESG ngay hôm nay!
         </p>
 
-        <div className="mt-10">
+        <div className="mt-6">
           <SurveyWorkspace />
         </div>
       </Container>

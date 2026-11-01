@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   description: "Nền tảng khảo sát ESG nội bộ miễn phí dành cho doanh nghiệp.",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon.ico",
   },
 };
 

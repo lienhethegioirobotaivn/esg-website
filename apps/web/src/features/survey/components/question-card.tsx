@@ -3,7 +3,6 @@ import type { Question, RequirementLevel } from "@esg/shared";
 import { Field, Textarea } from "@/components/ui";
 import { EvidenceUploader } from "@/features/evidence";
 import { cn } from "@/lib/cn";
-import { padNumber } from "@/lib/format";
 
 import type { SurveyAnswerActions } from "../hooks/use-survey-answers";
 import type { AnswerDraft } from "../types";
@@ -38,17 +37,15 @@ export function QuestionCard({
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
       className={cn(
-        "rounded-card border bg-surface p-5 transition-colors",
-        isFocused ? "border-primary-300 shadow-card" : "border-border",
+        "rounded-card border bg-surface p-4",
+        isFocused ? "border-primary-600" : "border-border",
       )}
     >
       <div className="flex gap-3">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-surface-muted text-xs font-medium text-muted">
-          {padNumber(number)}
-        </span>
+        <span className="shrink-0 font-semibold text-muted">{number}.</span>
 
         <div className="min-w-0 flex-1 space-y-4">
-          <h4 className="text-[0.9375rem] font-medium leading-snug">
+          <h4 className="text-[0.9375rem] font-semibold leading-snug">
             {question.text}
           </h4>
 

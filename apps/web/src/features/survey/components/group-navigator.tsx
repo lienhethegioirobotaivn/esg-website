@@ -20,9 +20,9 @@ export function GroupNavigator({
   onNext,
 }: GroupNavigatorProps) {
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4 sm:px-8">
+    <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3">
       <Button
-        variant="ghost"
+        variant="secondary"
         onClick={onPrevious}
         disabled={!hasPrevious}
         leadingIcon={<ArrowLeft aria-hidden className="size-4" />}

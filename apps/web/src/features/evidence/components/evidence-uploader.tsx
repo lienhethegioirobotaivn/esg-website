@@ -64,10 +64,7 @@ export function EvidenceUploader({
                 key={item.id}
                 className="flex items-center gap-3 rounded-control border border-border bg-surface-muted px-3 py-2"
               >
-                <Icon
-                  aria-hidden
-                  className="size-4 shrink-0 text-primary-600"
-                />
+                <Icon aria-hidden className="size-4 shrink-0 text-muted" />
                 <span
                   className="min-w-0 flex-1 truncate text-sm"
                   title={item.file.name}
@@ -81,7 +78,7 @@ export function EvidenceUploader({
                   type="button"
                   onClick={() => onRemove(item.id)}
                   aria-label={`Xóa ${item.file.name}`}
-                  className="rounded-md p-1 text-subtle transition-colors hover:bg-danger-50 hover:text-danger-600"
+                  className="rounded-md p-1 text-subtle hover:bg-danger-50 hover:text-danger-600"
                 >
                   <X aria-hidden className="size-4" />
                 </button>
@@ -95,7 +92,7 @@ export function EvidenceUploader({
         <button
           type="button"
           onClick={openFilePicker}
-          className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border-strong bg-surface px-4 py-4 text-sm text-muted transition-colors hover:border-primary-400 hover:bg-primary-50 hover:text-primary-700"
+          className="flex w-full items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-4 py-3 text-sm hover:bg-surface-muted"
         >
           <Upload aria-hidden className="size-4" />
           Tải lên bằng chứng
@@ -106,7 +103,7 @@ export function EvidenceUploader({
         <button
           type="button"
           onClick={openFilePicker}
-          className="inline-flex items-center gap-2 rounded-control border border-dashed border-border-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-primary-400 hover:bg-primary-50 hover:text-primary-700"
+          className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-sm hover:bg-surface-muted"
         >
           <Plus aria-hidden className="size-4" />
           Thêm bằng chứng
@@ -130,8 +127,8 @@ export function EvidenceUploader({
 
       <p className="text-xs text-subtle">
         PDF hoặc ảnh, mỗi tệp tối đa{" "}
-        {formatFileSize(MAX_EVIDENCE_FILE_SIZE_BYTES)}. Đã tải {items.length}/
-        {MAX_EVIDENCE_FILES} tệp.
+        {formatFileSize(MAX_EVIDENCE_FILE_SIZE_BYTES)}. Đã tải{" "}
+        {items.length}/{MAX_EVIDENCE_FILES} tệp.
       </p>
     </div>
   );

@@ -2,7 +2,6 @@ import type { Survey } from "@esg/shared";
 
 import { cn } from "@/lib/cn";
 
-import { PILLAR_ICON_COMPONENTS } from "../constants";
 import { countCompleted } from "../lib/progress";
 import type { AnswerMap } from "../types";
 
@@ -23,10 +22,9 @@ export function PillarTabs({
     <div
       role="tablist"
       aria-label="Phần ESG"
-      className="-m-1 flex gap-2 overflow-x-auto p-1"
+      className="grid grid-cols-3 border-b border-border-strong"
     >
       {survey.map((pillar) => {
-        const Icon = PILLAR_ICON_COMPONENTS[pillar.icon];
         const questions = pillar.groups.flatMap((group) => group.questions);
         const isActive = pillar.id === activePillarId;
         return (
@@ -40,16 +38,15 @@ export function PillarTabs({
             disabled={pillar.groups.length === 0}
             onClick={() => onSelectPillar(pillar.id)}
             className={cn(
-              "flex min-w-22 flex-1 shrink-0 flex-col items-center justify-center gap-0.5 rounded-control border px-2 py-2.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:flex-row sm:gap-2 sm:px-4 sm:py-3",
+              "-mb-px border-b-2 px-4 py-2 text-center text-sm disabled:cursor-not-allowed disabled:opacity-50",
               isActive
-                ? "border-primary-300 bg-primary-100 font-medium text-primary-900"
-                : "border-border bg-surface text-muted enabled:hover:border-border-strong",
+                ? "border-primary-700 font-semibold text-foreground"
+                : "border-transparent text-muted enabled:hover:text-foreground",
             )}
           >
-            <Icon aria-hidden className="hidden size-4 shrink-0 sm:block" />
-            <span className="whitespace-nowrap">{pillar.name}</span>
+            {pillar.name}{" "}
             <span className="text-xs text-subtle">
-              {countCompleted(questions, answers)}/{questions.length}
+              ({countCompleted(questions, answers)}/{questions.length})
             </span>
           </button>
         );

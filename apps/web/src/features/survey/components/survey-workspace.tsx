@@ -121,23 +121,19 @@ function LoadedSurveyWorkspace() {
         className="min-w-0 scroll-mt-20"
       >
         <Card>
-          <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-subtle">
-                Bộ câu hỏi ESG
-              </p>
-              <h2 id="survey-heading" className="mt-1 text-xl">
-                Mỗi câu trả lời, một bước tiến.
-              </h2>
-            </div>
-            <p className="shrink-0 rounded-control border border-border bg-surface-muted px-3 py-1.5 text-sm text-muted">
-              <span className="font-semibold text-foreground">{completedTotal}</span>{" "}
-              / {allQuestions.length} câu
+          <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+            <h2 id="survey-heading" className="text-base">
+              Bộ câu hỏi đánh giá ESG
+            </h2>
+            <p className="shrink-0 text-sm text-muted">
+              Đã xong{" "}
+              <span className="font-semibold text-foreground">{completedTotal}</span>
+              /{allQuestions.length} câu
             </p>
           </div>
 
           {isNoticeVisible && initial.savedAt !== null ? (
-            <div className="mt-5 px-6 sm:px-8">
+            <div className="mt-4 px-5">
               <DraftRestoredNotice
                 savedAt={initial.savedAt}
                 onDismiss={() => setIsNoticeVisible(false)}
@@ -145,7 +141,7 @@ function LoadedSurveyWorkspace() {
             </div>
           ) : null}
 
-          <div className="mt-5 px-6 sm:px-8">
+          <div className="mt-4 px-5">
             <PillarTabs
               survey={survey}
               activePillarId={activePillarId}
@@ -160,7 +156,7 @@ function LoadedSurveyWorkspace() {
             aria-labelledby={
               activePillarId ? `pillar-tab-${activePillarId}` : undefined
             }
-            className="mt-4 border-t border-border px-6 py-6 sm:px-8"
+            className="px-5 py-5"
           >
             {activeEntry ? (
               <GroupSection

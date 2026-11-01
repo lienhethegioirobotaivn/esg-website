@@ -27,7 +27,7 @@ function getStatus(props: DraftBarProps): string {
 export function DraftBar(props: DraftBarProps) {
   const { isDirty, saveFailed, onSave } = props;
   return (
-    <div className="border-t border-border px-6 py-5 sm:px-8">
+    <div className="border-t border-border px-5 py-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p

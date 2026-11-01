@@ -12,7 +12,7 @@ export function DraftRestoredNotice({
   return (
     <div
       role="status"
-      className="flex items-start justify-between gap-3 rounded-control border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900"
+      className="flex items-start justify-between gap-3 rounded-control border border-border-strong bg-surface-muted px-3 py-2 text-sm"
     >
       <p>
         Đã khôi phục bản nháp lưu lúc {formatSavedAt(savedAt)}. Tệp bằng chứng
@@ -21,7 +21,7 @@ export function DraftRestoredNotice({
       <button
         type="button"
         onClick={onDismiss}
-        className="shrink-0 font-medium text-primary-700 hover:underline"
+        className="shrink-0 text-primary-700 underline"
       >
         Đóng
       </button>

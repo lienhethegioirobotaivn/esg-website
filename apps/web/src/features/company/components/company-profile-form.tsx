@@ -1,7 +1,7 @@
 "use client";
 
 import { companyProfileSchema } from "@esg/shared";
-import { Building2, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -59,19 +59,13 @@ export function CompanyProfileForm({
 
   return (
     <Card>
-      <div className="flex items-center gap-3 border-b border-border p-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-50 text-primary-700">
-          <Building2 aria-hidden className="size-5" />
-        </span>
-        <div>
-          <h2 className="text-[0.9375rem]">Doanh nghiệp của bạn</h2>
-          <p className="text-xs text-subtle">Thông tin dùng trong báo cáo ESG</p>
-        </div>
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="text-base">Thông tin doanh nghiệp</h2>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4 p-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 p-4">
         <p className="text-[0.8125rem] leading-relaxed text-muted">
-          Chỉ 7 thông tin để đặt báo cáo vào đúng bối cảnh doanh nghiệp.
+          Các mục có dấu * là bắt buộc.
         </p>
 
         <Field

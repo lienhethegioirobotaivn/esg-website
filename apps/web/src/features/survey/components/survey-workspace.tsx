@@ -27,20 +27,19 @@ import { restoreDraft } from "../lib/draft-state";
 import { countCompleted } from "../lib/progress";
 import type { QuestionIssue } from "../lib/report-validation";
 import { flattenGroups } from "../lib/survey-tree";
-import { DraftBar } from "./draft-bar";
 import { DraftRestoredNotice } from "./draft-restored-notice";
 import { ExportIssuesDialog } from "./export-issues-dialog";
-import { GroupNavigator } from "./group-navigator";
+import { GroupFooter } from "./group-footer";
 import { GroupSection } from "./group-section";
 import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
+import { ProgressSummary } from "./progress-summary";
 import { ReportActions } from "./report-actions";
 import { ReportPreviewDialog } from "./report-preview-dialog";
 import { ResetReportDialog } from "./reset-report-dialog";
 
 type JumpTarget =
-  | { kind: "question"; id: string }
-  | { kind: "company"; field: CompanyField };
+  { kind: "question"; id: string } | { kind: "company"; field: CompanyField };
 
 function subscribeNothing(): () => void {
   return () => undefined;
@@ -50,11 +49,11 @@ interface SurveyWorkspaceProps {
   intro: ReactNode;
 }
 
-function Hero({ intro, actions }: { intro: ReactNode; actions: ReactNode }) {
+function Hero({ intro, aside }: { intro: ReactNode; aside?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
+    <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
       <div className="min-w-0 md:flex-1">{intro}</div>
-      {actions}
+      {aside}
     </div>
   );
 }
@@ -76,22 +75,18 @@ export function SurveyWorkspace({ intro }: SurveyWorkspaceProps) {
   if (!isClient) {
     return (
       <>
-        <Hero
-          intro={intro}
-          actions={
-            <ReportActions
-              onPreview={() => undefined}
-              onExport={() => undefined}
-              isPreviewLoading={false}
-              isExporting={false}
-              error={null}
-              disabled
-            />
-          }
-        />
+        <Hero intro={intro} />
         <div
           aria-busy
           className="h-96 animate-pulse rounded-card border border-border bg-surface-muted"
+        />
+        <ReportActions
+          onPreview={() => undefined}
+          onExport={() => undefined}
+          isPreviewLoading={false}
+          isExporting={false}
+          error={null}
+          disabled
         />
       </>
     );
@@ -216,13 +211,13 @@ function LoadedSurveyWorkspace({
     <>
       <Hero
         intro={intro}
-        actions={
-          <ReportActions
-            onPreview={() => void reportPreview.openPreview()}
-            onExport={() => void reportExport.exportReport()}
-            isPreviewLoading={reportPreview.isLoading}
-            isExporting={reportExport.isExporting}
-            error={reportExport.error ?? reportPreview.error}
+        aside={
+          <ProgressSummary
+            completed={completedTotal}
+            total={allQuestions.length}
+            savedAt={draft.savedAt}
+            isDirty={draft.isDirty}
+            saveFailed={draft.saveFailed}
           />
         }
       />
@@ -237,17 +232,10 @@ function LoadedSurveyWorkspace({
           className="min-w-0 scroll-mt-20"
         >
           <Card>
-            <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+            <div className="border-b border-border px-5 py-3">
               <h2 id="survey-heading" className="text-base">
                 Bộ câu hỏi đánh giá ESG
               </h2>
-              <p className="shrink-0 text-sm text-muted">
-                Đã xong{" "}
-                <span className="font-semibold text-foreground">
-                  {completedTotal}
-                </span>
-                /{allQuestions.length} câu
-              </p>
             </div>
 
             {isNoticeVisible && initial.savedAt !== null ? (
@@ -294,25 +282,21 @@ function LoadedSurveyWorkspace({
               )}
             </div>
 
-            <DraftBar
-              savedAt={draft.savedAt}
-              isDirty={draft.isDirty}
-              saveFailed={draft.saveFailed}
-              onSave={draft.saveNow}
-            />
-
             {activeEntry ? (
-              <GroupNavigator
+              <GroupFooter
                 position={activeIndex + 1}
                 total={entries.length}
                 hasPrevious={previousEntry !== null}
                 hasNext={nextEntry !== null}
+                isDirty={draft.isDirty}
+                saveFailed={draft.saveFailed}
                 onPrevious={() => {
                   if (previousEntry) {
                     goToGroup(previousEntry.group.id);
                   }
                 }}
-                onNext={() => {
+                onSaveAndContinue={() => {
+                  draft.saveNow();
                   if (nextEntry) {
                     goToGroup(nextEntry.group.id);
                   }
@@ -364,6 +348,14 @@ function LoadedSurveyWorkspace({
 
         <LeaveDialog />
       </div>
+
+      <ReportActions
+        onPreview={() => void reportPreview.openPreview()}
+        onExport={() => void reportExport.exportReport()}
+        isPreviewLoading={reportPreview.isLoading}
+        isExporting={reportExport.isExporting}
+        error={reportExport.error ?? reportPreview.error}
+      />
     </>
   );
 }

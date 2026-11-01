@@ -20,31 +20,33 @@ export function ReportActions({
   disabled = false,
 }: ReportActionsProps) {
   return (
-    <div className="flex shrink-0 flex-col gap-2 md:items-end">
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          className="flex-1 md:flex-none"
-          onClick={onPreview}
-          disabled={disabled || isPreviewLoading}
-          leadingIcon={<Eye aria-hidden className="size-4" />}
-        >
-          {isPreviewLoading ? "Đang tạo bản xem trước..." : "Xem bản nháp"}
-        </Button>
-        <Button
-          className="flex-1 md:flex-none"
-          onClick={onExport}
-          disabled={disabled || isExporting}
-          leadingIcon={<FileDown aria-hidden className="size-4" />}
-        >
-          {isExporting ? "Đang tạo file PDF..." : "Tạo báo cáo"}
-        </Button>
+    <div className="sticky bottom-0 z-30 -mx-5 mt-6 border-t border-border-strong bg-surface px-5 py-3 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
+        {error ? (
+          <p role="alert" className="text-xs text-danger-600 sm:mr-auto">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            className="flex-1 sm:flex-none"
+            onClick={onPreview}
+            disabled={disabled || isPreviewLoading}
+            leadingIcon={<Eye aria-hidden className="size-4" />}
+          >
+            {isPreviewLoading ? "Đang tạo bản xem trước..." : "Xem bản nháp"}
+          </Button>
+          <Button
+            className="flex-1 sm:flex-none"
+            onClick={onExport}
+            disabled={disabled || isExporting}
+            leadingIcon={<FileDown aria-hidden className="size-4" />}
+          >
+            {isExporting ? "Đang tạo file PDF..." : "Tạo báo cáo"}
+          </Button>
+        </div>
       </div>
-      {error ? (
-        <p role="alert" className="text-xs text-danger-600">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

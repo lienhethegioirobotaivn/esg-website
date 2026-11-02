@@ -1,11 +1,10 @@
 import { z } from "zod";
 
-import { ANSWER_VALUES } from "./constants";
-
-export const DRAFT_VERSION = 1;
+export const DRAFT_VERSION = 2;
 
 export const draftAnswerSchema = z.object({
-  value: z.enum(ANSWER_VALUES),
+  value: z.string().min(1),
+  number: z.string(),
   description: z.string(),
 });
 
@@ -13,8 +12,8 @@ export const draftSnapshotSchema = z.object({
   version: z.literal(DRAFT_VERSION),
   savedAt: z.string(),
   company: z.record(z.string(), z.string()),
-  answers: z.record(z.string().uuid(), draftAnswerSchema),
-  activeGroupId: z.string().uuid().nullable(),
+  answers: z.record(z.string().min(1), draftAnswerSchema),
+  activeGroupId: z.string().min(1).nullable(),
 });
 
 export type DraftAnswer = z.infer<typeof draftAnswerSchema>;

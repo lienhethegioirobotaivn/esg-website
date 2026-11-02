@@ -1,12 +1,14 @@
-import type { AnswerValue } from "@esg/shared";
+import { getAnswerFields, getChoiceLabel } from "@esg/shared";
+import type { Question } from "@esg/shared";
 
 import { REPORT_PERIOD_OPTIONS } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
 import { formatFileSize } from "@/lib/format";
 
-import { ANSWER_OPTIONS, ASPECT_LABELS } from "../constants";
 import { getDraft } from "./progress";
-import type { AnswerMap, GroupEntry } from "../types";
+import type { AnswerDraft, AnswerMap, GroupEntry } from "../types";
+
+export type ReportBucket = "implemented" | "in_progress" | "not_implemented";
 
 export interface StatusCounts {
   readonly implemented: number;
@@ -25,7 +27,8 @@ export interface ReportQuestion {
   readonly number: number;
   readonly text: string;
   readonly aspect: string;
-  readonly status: AnswerValue | null;
+  readonly status: ReportBucket | null;
+  readonly counted: boolean;
   readonly statusLabel: string;
   readonly description: string;
   readonly evidence: readonly ReportEvidence[];
@@ -81,13 +84,44 @@ export interface OptionLookup {
   readonly label: string;
 }
 
-function getStatusLabel(status: AnswerValue | null): string {
-  if (status === null) {
-    return "Chưa trả lời";
+function getBucket(question: Question, draft: AnswerDraft): ReportBucket | null {
+  if (question.inputType !== "PRACTICE") {
+    return null;
   }
+  switch (draft.value) {
+    case "yes":
+      return "implemented";
+    case "partial":
+      return "in_progress";
+    case "no":
+    case "unknown":
+      return "not_implemented";
+    default:
+      return null;
+  }
+}
+
+function isCounted(question: Question, draft: AnswerDraft): boolean {
+  return question.inputType === "PRACTICE" && draft.value !== "na";
+}
+
+function getStatusLabel(question: Question, draft: AnswerDraft): string {
   return (
-    ANSWER_OPTIONS.find((option) => option.value === status)?.label ?? status
+    getChoiceLabel(question.inputType, draft.value) ?? "Chưa trả lời"
   );
+}
+
+function getDetailText(question: Question, draft: AnswerDraft): string {
+  const fields = getAnswerFields(question.inputType, draft.value);
+  const parts: string[] = [];
+  if (fields.numberInput && draft.number.trim() !== "") {
+    const unit = question.unit === "" ? "" : ` ${question.unit}`;
+    parts.push(`Số liệu: ${draft.number.trim()}${unit}`);
+  }
+  if (fields.detail !== "none" && draft.description.trim() !== "") {
+    parts.push(draft.description.trim());
+  }
+  return parts.join(". ");
 }
 
 export function emptyCounts(): StatusCounts {
@@ -102,7 +136,7 @@ export function emptyCounts(): StatusCounts {
 
 export function addToCounts(
   counts: StatusCounts,
-  status: AnswerValue | null,
+  status: ReportBucket | null,
 ): StatusCounts {
   const key = status ?? "unanswered";
   return { ...counts, [key]: counts[key] + 1, total: counts.total + 1 };
@@ -151,21 +185,26 @@ export function buildReportData(input: {
     const questions: ReportQuestion[] = entry.group.questions.map(
       (question, questionIndex) => {
         const draft = getDraft(answers, question.id);
-        groupCounts = addToCounts(groupCounts, draft.value);
-        const aspect = ASPECT_LABELS[question.aspect];
-        aspectCounts.set(
-          aspect,
-          addToCounts(aspectCounts.get(aspect) ?? emptyCounts(), draft.value),
-        );
-        const isImplemented = draft.value === "implemented";
+        const bucket = getBucket(question, draft);
+        const counted = isCounted(question, draft);
+        if (counted) {
+          groupCounts = addToCounts(groupCounts, bucket);
+          const topic = question.topic === "" ? "Khác" : question.topic;
+          aspectCounts.set(
+            topic,
+            addToCounts(aspectCounts.get(topic) ?? emptyCounts(), bucket),
+          );
+        }
+        const fields = getAnswerFields(question.inputType, draft.value);
         return {
           number: questionIndex + 1,
           text: question.text,
-          aspect,
-          status: draft.value,
-          statusLabel: getStatusLabel(draft.value),
-          description: isImplemented ? draft.description.trim() : "",
-          evidence: isImplemented
+          aspect: question.topic,
+          status: bucket,
+          counted,
+          statusLabel: getStatusLabel(question, draft),
+          description: getDetailText(question, draft),
+          evidence: fields.evidence
             ? draft.evidence.map((item) => ({
                 name: item.file.name,
                 size: formatFileSize(item.file.size),
@@ -188,7 +227,7 @@ export function buildReportData(input: {
     });
 
     const open = questions.filter(
-      (question) => question.status !== "implemented",
+      (question) => question.counted && question.status !== "implemented",
     );
     if (open.length > 0) {
       improvementMap.push({

@@ -1,9 +1,11 @@
+import { getAnswerFields, isAnswerComplete } from "@esg/shared";
 import type { Question } from "@esg/shared";
 
 import type { AnswerDraft, AnswerMap } from "../types";
 
 export const EMPTY_DRAFT: AnswerDraft = {
   value: null,
+  number: "",
   description: "",
   evidence: [],
 };
@@ -17,20 +19,9 @@ export function isQuestionComplete(
   draft: AnswerDraft,
 ): boolean {
   if (draft.value === null) {
-    return false;
+    return !question.required;
   }
-  if (draft.value !== "implemented") {
-    return true;
-  }
-  const hasDescription = draft.description.trim().length > 0;
-  const hasEvidence = draft.evidence.length > 0;
-  if (question.descriptionRequirement === "required" && !hasDescription) {
-    return false;
-  }
-  if (question.evidenceRequirement === "required" && !hasEvidence) {
-    return false;
-  }
-  return true;
+  return isAnswerComplete(question, draft);
 }
 
 export function countCompleted(
@@ -57,6 +48,7 @@ export function countEvidence(
 ): number {
   return questions.reduce((total, question) => {
     const draft = getDraft(answers, question.id);
-    return draft.value === "implemented" ? total + draft.evidence.length : total;
+    const fields = getAnswerFields(question.inputType, draft.value);
+    return fields.evidence ? total + draft.evidence.length : total;
   }, 0);
 }

@@ -1,23 +1,24 @@
 import { z } from "zod";
 
 import {
+  INPUT_TYPES,
   PILLAR_ICONS,
-  QUESTION_ASPECTS,
-  REQUIREMENT_LEVELS,
+  QUESTION_SOURCES,
+  QUESTION_TIERS,
 } from "./constants";
 
-const idSchema = z.string().uuid();
+const idSchema = z.string().min(1);
 
 export const guidanceSchema = z.object({
-  title: z.string().min(1, "Vui lòng nhập tiêu đề hướng dẫn"),
-  body: z.string().min(1, "Vui lòng nhập nội dung hướng dẫn"),
+  title: z.string(),
+  body: z.string(),
   suggestedEvidence: z.string(),
   tip: z.string(),
 });
 
 export const pillarSchema = z.object({
   id: idSchema,
-  name: z.string().min(1, "Vui lòng nhập tên trụ cột"),
+  name: z.string().min(1),
   icon: z.enum(PILLAR_ICONS),
   order: z.number().int().nonnegative(),
 });
@@ -26,7 +27,7 @@ export const questionGroupSchema = z.object({
   id: idSchema,
   pillarId: idSchema,
   order: z.number().int().nonnegative(),
-  title: z.string().min(1, "Vui lòng nhập tên nhóm"),
+  title: z.string().min(1),
   description: z.string(),
 });
 
@@ -34,22 +35,15 @@ export const questionSchema = z.object({
   id: idSchema,
   groupId: idSchema,
   order: z.number().int().nonnegative(),
-  text: z.string().min(1, "Vui lòng nhập nội dung câu hỏi"),
-  aspect: z.enum(QUESTION_ASPECTS),
-  descriptionRequirement: z.enum(REQUIREMENT_LEVELS),
-  evidenceRequirement: z.enum(REQUIREMENT_LEVELS),
+  text: z.string().min(1),
+  topic: z.string(),
+  source: z.enum(QUESTION_SOURCES),
+  tier: z.enum(QUESTION_TIERS),
+  inputType: z.enum(INPUT_TYPES),
+  unit: z.string(),
+  required: z.boolean(),
+  improvementHint: z.string(),
   guidance: guidanceSchema,
-});
-
-export const pillarInputSchema = pillarSchema.omit({ id: true, order: true });
-
-export const questionGroupInputSchema = questionGroupSchema
-  .omit({ id: true, order: true })
-  .extend({ pillarId: idSchema });
-
-export const questionInputSchema = questionSchema.omit({
-  id: true,
-  order: true,
 });
 
 export const surveyGroupSchema = questionGroupSchema.extend({
@@ -66,9 +60,6 @@ export type Guidance = z.infer<typeof guidanceSchema>;
 export type Pillar = z.infer<typeof pillarSchema>;
 export type QuestionGroup = z.infer<typeof questionGroupSchema>;
 export type Question = z.infer<typeof questionSchema>;
-export type PillarInput = z.infer<typeof pillarInputSchema>;
-export type QuestionGroupInput = z.infer<typeof questionGroupInputSchema>;
-export type QuestionInput = z.infer<typeof questionInputSchema>;
 export type SurveyGroup = z.infer<typeof surveyGroupSchema>;
 export type SurveyPillar = z.infer<typeof surveyPillarSchema>;
 export type Survey = z.infer<typeof surveySchema>;

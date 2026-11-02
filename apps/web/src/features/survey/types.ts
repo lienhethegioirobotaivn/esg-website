@@ -1,9 +1,10 @@
-import type { AnswerValue, PillarIcon, SurveyGroup } from "@esg/shared";
+import type { PillarIcon, SurveyGroup } from "@esg/shared";
 
 import type { EvidenceItem } from "@/features/evidence";
 
 export interface AnswerDraft {
-  readonly value: AnswerValue | null;
+  readonly value: string | null;
+  readonly number: string;
   readonly description: string;
   readonly evidence: readonly EvidenceItem[];
 }

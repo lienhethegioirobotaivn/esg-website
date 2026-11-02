@@ -9,27 +9,54 @@ export const ACCEPTED_EVIDENCE_MIME_TYPES = [
   "image/webp",
 ] as const;
 
-export const ANSWER_VALUES = [
-  "implemented",
-  "in_progress",
-  "not_implemented",
-] as const;
-
-export const REQUIREMENT_LEVELS = ["required", "optional"] as const;
-
 export const PILLAR_ICONS = ["sprout", "users", "landmark"] as const;
 
-export const QUESTION_ASPECTS = [
-  "system",
-  "operation",
-  "process",
-  "environment",
-  "customer",
-  "society",
+export const PILLAR_CODES = ["E", "S", "G"] as const;
+
+export const INPUT_TYPES = [
+  "PRACTICE",
+  "INCIDENT",
+  "PRESENCE",
+  "NUMBER",
+  "INTEGER",
+  "TEXT",
+  "FUEL_TABLE",
+  "WORKFORCE_TABLE",
 ] as const;
 
-export type AnswerValue = (typeof ANSWER_VALUES)[number];
-export type RequirementLevel = (typeof REQUIREMENT_LEVELS)[number];
+export const QUESTION_TIERS = ["basic", "extended"] as const;
+
+export const COMMON_SOURCE = "COMMON";
+
+export const INDUSTRY_SOURCES = {
+  manufacturing: "MAN",
+  retail: "RET",
+  services: "SER",
+  it: "ICT",
+  construction: "CON",
+  agriculture: "AGR",
+  education: "EDU",
+  other: "OTH",
+} as const;
+
+export const QUESTION_SOURCES = [
+  COMMON_SOURCE,
+  ...Object.values(INDUSTRY_SOURCES),
+] as const;
+
+export const HEADCOUNT_TIERS = {
+  "lt-10": "basic",
+  "10-49": "basic",
+  "50-199": "extended",
+  "200-499": "extended",
+  "gte-500": "extended",
+} as const;
+
 export type PillarIcon = (typeof PILLAR_ICONS)[number];
-export type QuestionAspect = (typeof QUESTION_ASPECTS)[number];
+export type PillarCode = (typeof PILLAR_CODES)[number];
+export type InputType = (typeof INPUT_TYPES)[number];
+export type QuestionTier = (typeof QUESTION_TIERS)[number];
+export type QuestionSource = (typeof QUESTION_SOURCES)[number];
+export type IndustryValue = keyof typeof INDUSTRY_SOURCES;
+export type HeadcountValue = keyof typeof HEADCOUNT_TIERS;
 export type EvidenceMimeType = (typeof ACCEPTED_EVIDENCE_MIME_TYPES)[number];

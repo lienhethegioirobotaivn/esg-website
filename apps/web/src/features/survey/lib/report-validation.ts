@@ -1,4 +1,4 @@
-import { companyProfileSchema } from "@esg/shared";
+import { companyProfileSchema, getAnswerIssues } from "@esg/shared";
 import type { Question } from "@esg/shared";
 
 import { COMPANY_FIELDS } from "@/features/company";
@@ -9,8 +9,8 @@ import type { AnswerDraft, AnswerMap, GroupEntry } from "../types";
 
 export type QuestionIssueReason =
   | "unanswered"
-  | "missing-description"
-  | "missing-evidence";
+  | "missing-detail"
+  | "invalid-number";
 
 export interface CompanyIssue {
   readonly field: CompanyField;
@@ -35,32 +35,16 @@ export interface ReportValidation {
 }
 
 export const REASON_LABELS: Record<QuestionIssueReason, string> = {
-  unanswered: "Chưa chọn trạng thái",
-  "missing-description": "Thiếu mô tả",
-  "missing-evidence": "Thiếu bằng chứng",
+  unanswered: "Chưa trả lời",
+  "missing-detail": "Thiếu nội dung, ghi chú hoặc lý do",
+  "invalid-number": "Số liệu chưa hợp lệ",
 };
 
 export function getIncompleteReasons(
   question: Question,
   draft: AnswerDraft,
 ): QuestionIssueReason[] {
-  if (draft.value === null) {
-    return ["unanswered"];
-  }
-  if (draft.value !== "implemented") {
-    return [];
-  }
-  const reasons: QuestionIssueReason[] = [];
-  if (
-    question.descriptionRequirement === "required" &&
-    draft.description.trim().length === 0
-  ) {
-    reasons.push("missing-description");
-  }
-  if (question.evidenceRequirement === "required" && draft.evidence.length === 0) {
-    reasons.push("missing-evidence");
-  }
-  return reasons;
+  return getAnswerIssues(question, draft);
 }
 
 function isCompanyField(key: PropertyKey): key is CompanyField {

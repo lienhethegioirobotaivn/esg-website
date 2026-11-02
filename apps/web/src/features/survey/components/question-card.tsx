@@ -1,6 +1,7 @@
-import type { Question, RequirementLevel } from "@esg/shared";
+import { getAnswerFields } from "@esg/shared";
+import type { DetailKind, Question } from "@esg/shared";
 
-import { Field, Textarea } from "@/components/ui";
+import { Field, Input, Textarea } from "@/components/ui";
 import { EvidenceUploader } from "@/features/evidence";
 import { cn } from "@/lib/cn";
 
@@ -17,9 +18,19 @@ interface QuestionCardProps {
   onFocus: () => void;
 }
 
-function withOptionalSuffix(label: string, requirement: RequirementLevel) {
-  return requirement === "optional" ? `${label} (tùy chọn)` : label;
-}
+const DETAIL_LABELS: Record<Exclude<DetailKind, "none">, string> = {
+  note: "Ghi chú",
+  reason: "Lý do không áp dụng",
+  content: "Nội dung",
+};
+
+const DETAIL_PLACEHOLDERS: Record<Exclude<DetailKind, "none">, string> = {
+  note: "Nguồn số liệu, phương pháp hoặc cách doanh nghiệp đang thực hiện",
+  reason: "Nêu lý do câu hỏi không áp dụng với doanh nghiệp",
+  content: "Nhập nội dung trả lời",
+};
+
+const IMPROVEMENT_VALUES: readonly string[] = ["no", "unknown"];
 
 export function QuestionCard({
   question,
@@ -29,8 +40,16 @@ export function QuestionCard({
   actions,
   onFocus,
 }: QuestionCardProps) {
-  const descriptionId = `description-${question.id}`;
+  const detailId = `description-${question.id}`;
+  const numberId = `number-${question.id}`;
   const evidenceInputId = `evidence-${question.id}`;
+  const fields = getAnswerFields(question.inputType, draft.value);
+  const showImprovement =
+    draft.value !== null &&
+    IMPROVEMENT_VALUES.includes(draft.value) &&
+    question.improvementHint !== "";
+  const hasFields =
+    fields.numberInput || fields.detail !== "none" || fields.evidence;
 
   return (
     <article
@@ -52,46 +71,78 @@ export function QuestionCard({
 
           <AnswerChoiceGroup
             questionId={question.id}
+            inputType={question.inputType}
             value={draft.value}
             onChange={(value) => actions.select(question.id, value)}
           />
 
-          {draft.value === "implemented" ? (
-            <div className="space-y-4 border-t border-border pt-4">
-              <Field
-                label={withOptionalSuffix("Mô tả", question.descriptionRequirement)}
-                htmlFor={descriptionId}
-                required={question.descriptionRequirement === "required"}
-              >
-                <Textarea
-                  id={descriptionId}
-                  value={draft.description}
-                  onChange={(event) =>
-                    actions.describe(question.id, event.target.value)
-                  }
-                  placeholder="Mô tả ngắn gọn cách doanh nghiệp đang thực hiện"
-                  rows={3}
-                />
-              </Field>
+          {showImprovement ? (
+            <p className="rounded-control bg-surface-muted p-3 text-[0.8125rem] leading-relaxed text-muted">
+              {question.improvementHint}
+            </p>
+          ) : null}
 
-              <div className="space-y-1.5">
-                <p className="text-[0.8125rem] font-medium text-foreground">
-                  {withOptionalSuffix("Bằng chứng", question.evidenceRequirement)}
-                  {question.evidenceRequirement === "required" ? (
-                    <span aria-hidden className="ml-1 text-primary-600">
-                      *
-                    </span>
-                  ) : null}
-                </p>
-                <EvidenceUploader
-                  inputId={evidenceInputId}
-                  items={draft.evidence}
-                  onAdd={(file) => actions.addEvidence(question.id, file)}
-                  onRemove={(evidenceId) =>
-                    actions.removeEvidence(question.id, evidenceId)
+          {hasFields ? (
+            <div className="space-y-4 border-t border-border pt-4">
+              {fields.numberInput ? (
+                <Field
+                  label={
+                    question.unit === ""
+                      ? "Giá trị"
+                      : `Giá trị (${question.unit})`
                   }
-                />
-              </div>
+                  htmlFor={numberId}
+                  required
+                >
+                  <Input
+                    id={numberId}
+                    inputMode="decimal"
+                    value={draft.number}
+                    onChange={(event) =>
+                      actions.setNumber(question.id, event.target.value)
+                    }
+                    placeholder="Nhập số liệu trong kỳ báo cáo"
+                  />
+                </Field>
+              ) : null}
+
+              {fields.detail !== "none" ? (
+                <Field
+                  label={
+                    fields.detailRequired
+                      ? DETAIL_LABELS[fields.detail]
+                      : `${DETAIL_LABELS[fields.detail]} (tùy chọn)`
+                  }
+                  htmlFor={detailId}
+                  required={fields.detailRequired}
+                >
+                  <Textarea
+                    id={detailId}
+                    value={draft.description}
+                    onChange={(event) =>
+                      actions.describe(question.id, event.target.value)
+                    }
+                    placeholder={DETAIL_PLACEHOLDERS[fields.detail]}
+                    rows={3}
+                  />
+                </Field>
+              ) : null}
+
+              {fields.evidence ? (
+                <div className="space-y-1.5">
+                  <p className="text-[0.8125rem] font-medium text-foreground">
+                    Bằng chứng (tùy chọn)
+                  </p>
+                  <EvidenceUploader
+                    inputId={evidenceInputId}
+                    items={draft.evidence}
+                    onAdd={(file) => actions.addEvidence(question.id, file)}
+                    onRemove={(evidenceId) =>
+                      actions.removeEvidence(question.id, evidenceId)
+                    }
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

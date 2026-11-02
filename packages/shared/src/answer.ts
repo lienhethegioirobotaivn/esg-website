@@ -13,23 +13,13 @@ export const evidenceFileSchema = z.object({
   mimeType: z.enum(ACCEPTED_EVIDENCE_MIME_TYPES),
 });
 
-const answerBaseSchema = z.object({
+export const answerSchema = z.object({
   questionId: z.string().min(1),
+  value: z.string().min(1),
+  number: z.string(),
+  description: z.string(),
+  evidence: z.array(evidenceFileSchema).max(MAX_EVIDENCE_FILES),
 });
-
-export const answerSchema = z.discriminatedUnion("value", [
-  answerBaseSchema.extend({
-    value: z.literal("implemented"),
-    description: z.string(),
-    evidence: z.array(evidenceFileSchema).max(MAX_EVIDENCE_FILES),
-  }),
-  answerBaseSchema.extend({
-    value: z.literal("in_progress"),
-  }),
-  answerBaseSchema.extend({
-    value: z.literal("not_implemented"),
-  }),
-]);
 
 export type EvidenceFile = z.infer<typeof evidenceFileSchema>;
 export type Answer = z.infer<typeof answerSchema>;

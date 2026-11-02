@@ -273,7 +273,7 @@ function QuestionDetail({ question }: { question: ReportQuestion }) {
         <Text style={[styles.tag, { color: statusColor(question.status) }]}>
           {question.statusLabel}
         </Text>
-        {"   "}Khía cạnh: {question.aspect}
+        {"   "}Chủ đề: {question.aspect}
       </Text>
       {question.description !== "" ? (
         <Text style={styles.detailLine}>Mô tả: {question.description}</Text>
@@ -416,9 +416,9 @@ export function ReportDocument({ data, logo = null }: ReportDocumentProps) {
           />
         </Section>
 
-        <Section title="5. Thống kê theo khía cạnh" keepTogether>
+        <Section title="5. Thống kê theo chủ đề" keepTogether>
           <CountsTable
-            firstColumn="Khía cạnh"
+            firstColumn="Chủ đề"
             rows={data.aspects.map((aspect) => ({
               key: aspect.label,
               name: aspect.label,

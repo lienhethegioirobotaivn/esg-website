@@ -9,6 +9,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
+import { selectSurvey } from "@esg/shared";
+import type { Survey } from "@esg/shared";
 
 import { Card } from "@/components/ui";
 import { COMPANY_FIELD_IDS, CompanyProfileForm } from "@/features/company";
@@ -16,7 +18,6 @@ import type { CompanyField, CompanyFormValues } from "@/features/company";
 import { GuidancePanel } from "@/features/guidance";
 import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
 
-import { useSurvey } from "../hooks/use-survey";
 import { useReportExport } from "../hooks/use-report-export";
 import { useReportPreview } from "../hooks/use-report-preview";
 import { useSurveyAnswers } from "../hooks/use-survey-answers";
@@ -47,6 +48,7 @@ function subscribeNothing(): () => void {
 
 interface SurveyWorkspaceProps {
   intro: ReactNode;
+  survey: Survey;
 }
 
 function Hero({ intro, aside }: { intro: ReactNode; aside?: ReactNode }) {
@@ -58,7 +60,7 @@ function Hero({ intro, aside }: { intro: ReactNode; aside?: ReactNode }) {
   );
 }
 
-export function SurveyWorkspace({ intro }: SurveyWorkspaceProps) {
+export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
   const isClient = useSyncExternalStore(
     subscribeNothing,
     () => true,
@@ -95,6 +97,7 @@ export function SurveyWorkspace({ intro }: SurveyWorkspaceProps) {
     <LoadedSurveyWorkspace
       key={resetCount}
       intro={intro}
+      survey={survey}
       onReset={handleReset}
     />
   );
@@ -102,23 +105,32 @@ export function SurveyWorkspace({ intro }: SurveyWorkspaceProps) {
 
 function LoadedSurveyWorkspace({
   intro,
+  survey: fullSurvey,
   onReset,
 }: SurveyWorkspaceProps & { onReset: () => void }) {
-  const survey = useSurvey();
-  const entries = useMemo(() => flattenGroups(survey), [survey]);
-  const allQuestions = useMemo(
-    () => entries.flatMap((entry) => entry.group.questions),
-    [entries],
-  );
+  const allEntries = useMemo(() => flattenGroups(fullSurvey), [fullSurvey]);
 
   const [initial] = useState(() =>
-    restoreDraft(parseDraft(getDraftRaw()), entries),
+    restoreDraft(parseDraft(getDraftRaw()), allEntries),
   );
   const [isNoticeVisible, setIsNoticeVisible] = useState(
     initial.savedAt !== null,
   );
   const [company, setCompany] = useState<CompanyFormValues>(initial.company);
   const [logo, setLogo] = useState<File | null>(null);
+  const survey = useMemo(
+    () =>
+      selectSurvey(fullSurvey, {
+        industry: company.industry,
+        headcount: company.headcount,
+      }),
+    [fullSurvey, company.industry, company.headcount],
+  );
+  const entries = useMemo(() => flattenGroups(survey), [survey]);
+  const allQuestions = useMemo(
+    () => entries.flatMap((entry) => entry.group.questions),
+    [entries],
+  );
   const { answers, actions } = useSurveyAnswers(initial.answers);
 
   const {
@@ -132,6 +144,7 @@ function LoadedSurveyWorkspace({
 
   const draft = useSurveyDraft({
     entries,
+    allEntries,
     answers,
     company,
     activeGroupId: activeEntry?.group.id ?? null,
@@ -253,6 +266,13 @@ function LoadedSurveyWorkspace({
               </div>
             ) : null}
 
+            {company.industry === "" || company.headcount === "" ? (
+              <p className="mt-4 px-5 text-[0.8125rem] text-muted">
+                Chọn lĩnh vực hoạt động và quy mô nhân sự ở cột bên trái để xem
+                đầy đủ câu hỏi phù hợp với doanh nghiệp.
+              </p>
+            ) : null}
+
             <div className="mt-4 px-5">
               <PillarTabs
                 survey={survey}
@@ -282,8 +302,8 @@ function LoadedSurveyWorkspace({
                 />
               ) : (
                 <p className="rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
-                  Chưa có câu hỏi nào. Vui lòng thêm câu hỏi trong trang quản
-                  trị.
+                  Chưa có câu hỏi phù hợp. Vui lòng chọn lĩnh vực hoạt động và
+                  quy mô nhân sự để xem bộ câu hỏi.
                 </p>
               )}
             </div>

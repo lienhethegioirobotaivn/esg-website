@@ -1,5 +1,4 @@
 import { MAX_EVIDENCE_FILES } from "@esg/shared";
-import type { AnswerValue } from "@esg/shared";
 import { useMemo, useReducer } from "react";
 
 import type { EvidenceItem } from "@/features/evidence";
@@ -9,7 +8,8 @@ import { getDraft } from "../lib/progress";
 import type { AnswerDraft, AnswerMap } from "../types";
 
 type AnswerAction =
-  | { type: "select"; questionId: string; value: AnswerValue }
+  | { type: "select"; questionId: string; value: string }
+  | { type: "set-number"; questionId: string; number: string }
   | { type: "describe"; questionId: string; description: string }
   | { type: "add-evidence"; questionId: string; item: EvidenceItem }
   | { type: "remove-evidence"; questionId: string; evidenceId: string };
@@ -28,6 +28,11 @@ function answersReducer(state: AnswerMap, action: AnswerAction): AnswerMap {
       return updateDraft(state, action.questionId, (draft) => ({
         ...draft,
         value: action.value,
+      }));
+    case "set-number":
+      return updateDraft(state, action.questionId, (draft) => ({
+        ...draft,
+        number: action.number,
       }));
     case "describe":
       return updateDraft(state, action.questionId, (draft) => ({
@@ -49,7 +54,8 @@ function answersReducer(state: AnswerMap, action: AnswerAction): AnswerMap {
 }
 
 export interface SurveyAnswerActions {
-  select: (questionId: string, value: AnswerValue) => void;
+  select: (questionId: string, value: string) => void;
+  setNumber: (questionId: string, number: string) => void;
   describe: (questionId: string, description: string) => void;
   addEvidence: (questionId: string, file: File) => void;
   removeEvidence: (questionId: string, evidenceId: string) => void;
@@ -65,6 +71,8 @@ export function useSurveyAnswers(initialAnswers: AnswerMap = {}): {
     () => ({
       select: (questionId, value) =>
         dispatch({ type: "select", questionId, value }),
+      setNumber: (questionId, number) =>
+        dispatch({ type: "set-number", questionId, number }),
       describe: (questionId, description) =>
         dispatch({ type: "describe", questionId, description }),
       addEvidence: (questionId, file) =>

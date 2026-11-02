@@ -25,7 +25,8 @@ export function toDraftAnswers(answers: AnswerMap): Record<string, DraftAnswer> 
     if (draft.value !== null) {
       result[questionId] = {
         value: draft.value,
-        description: draft.value === "implemented" ? draft.description : "",
+        number: draft.number,
+        description: draft.description,
       };
     }
   }
@@ -69,7 +70,8 @@ export function restoreDraft(
     if (questionIds.has(questionId)) {
       answers[questionId] = {
         value: answer.value,
-        description: answer.value === "implemented" ? answer.description : "",
+        number: answer.number,
+        description: answer.description,
         evidence: [],
       };
     }

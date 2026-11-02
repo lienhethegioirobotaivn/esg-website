@@ -21,6 +21,7 @@ import type { AnswerMap, GroupEntry } from "../types";
 
 interface UseSurveyDraftInput {
   entries: readonly GroupEntry[];
+  allEntries: readonly GroupEntry[];
   answers: AnswerMap;
   company: CompanyFormValues;
   activeGroupId: string | null;
@@ -39,6 +40,7 @@ const EMPTY_KEY = serializeDraftContent(COMPANY_INITIAL_VALUES, {});
 
 export function useSurveyDraft({
   entries,
+  allEntries,
   answers,
   company,
   activeGroupId,
@@ -47,8 +49,8 @@ export function useSurveyDraft({
   const [saveFailed, setSaveFailed] = useState(false);
 
   const saved = useMemo(
-    () => restoreDraft(parseDraft(raw), entries),
-    [raw, entries],
+    () => restoreDraft(parseDraft(raw), allEntries),
+    [raw, allEntries],
   );
   const savedKey = saved.savedAt === null
     ? EMPTY_KEY

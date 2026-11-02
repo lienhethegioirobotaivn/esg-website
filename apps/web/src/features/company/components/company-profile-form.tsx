@@ -1,19 +1,43 @@
 "use client";
 
-import { companyProfileSchema } from "@esg/shared";
-import { Save } from "lucide-react";
+import {
+  ADVISORY_NEEDS,
+  ASSESSMENT_NEEDS,
+  companyProfileSchema,
+} from "@esg/shared";
+import { Loader2, Save } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
+import {
+  Button,
+  Card,
+  Field,
+  Input,
+  Select,
+  Switch,
+  Textarea,
+} from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
 
 import { REPORT_PERIOD_OPTIONS } from "../constants";
 import type { CompanyField, CompanyFormValues } from "../constants";
 import { isCompanyField } from "../lib/company-values";
+import { getReportCode, saveReportCode } from "../lib/report-code-storage";
+import { SaveCompanyError, saveCompany } from "../services/save-company";
 import { LogoUploader } from "./logo-uploader";
 
 type FormErrors = Partial<Record<CompanyField, string>>;
+
+const advisoryOptions = ADVISORY_NEEDS.map((value) => ({
+  value,
+  label: value,
+}));
+
+const assessmentOptions = ASSESSMENT_NEEDS.map((value) => ({
+  value,
+  label: value,
+}));
 
 interface CompanyProfileFormProps {
   values: CompanyFormValues;
@@ -29,16 +53,22 @@ export function CompanyProfileForm({
   onLogoChange,
 }: CompanyProfileFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedCode, setSavedCode] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function updateField(field: CompanyField, value: string) {
     onFieldChange(field, value);
     setErrors((current) => ({ ...current, [field]: undefined }));
-    setIsSaved(false);
+    setSavedCode(null);
+    setSubmitError(null);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSaving) {
+      return;
+    }
     const result = companyProfileSchema.safeParse({
       ...values,
       reportYear:
@@ -54,12 +84,33 @@ export function CompanyProfileForm({
         }
       }
       setErrors(nextErrors);
-      setIsSaved(false);
+      setSavedCode(null);
+      setSubmitError(null);
       return;
     }
 
     setErrors({});
-    setIsSaved(true);
+    setSavedCode(null);
+    setSubmitError(null);
+    setIsSaving(true);
+    try {
+      const saved = await saveCompany({
+        values,
+        logo,
+        reportCode: getReportCode(),
+      });
+      saveReportCode(saved.reportCode);
+      setSavedCode(saved.reportCode);
+    } catch (error) {
+      if (error instanceof SaveCompanyError) {
+        setErrors(error.fields);
+        setSubmitError(error.message);
+      } else {
+        setSubmitError("Không lưu được thông tin doanh nghiệp.");
+      }
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -90,6 +141,23 @@ export function CompanyProfileForm({
         </Field>
 
         <LogoUploader file={logo} onChange={onLogoChange} />
+
+        <Field
+          label="Mã số thuế (không bắt buộc)"
+          htmlFor="company-tax-code"
+          error={errors.taxCode}
+        >
+          <Input
+            id="company-tax-code"
+            value={values.taxCode}
+            onChange={(event) => updateField("taxCode", event.target.value)}
+            placeholder="Mã số thuế hoặc mã số doanh nghiệp"
+            aria-invalid={Boolean(errors.taxCode)}
+            aria-describedby={
+              errors.taxCode ? "company-tax-code-error" : undefined
+            }
+          />
+        </Field>
 
         <Field
           label="Lĩnh vực hoạt động"
@@ -205,18 +273,154 @@ export function CompanyProfileForm({
           />
         </Field>
 
+        <div className="space-y-4 border-t border-border pt-4">
+          <h3 className="text-sm font-semibold">
+            Thông tin liên hệ{" "}
+            <span className="font-normal text-subtle">(không bắt buộc)</span>
+          </h3>
+
+          <Field
+            label="Người liên hệ"
+            htmlFor="company-contact-name"
+            error={errors.contactName}
+          >
+            <Input
+              id="company-contact-name"
+              value={values.contactName}
+              onChange={(event) =>
+                updateField("contactName", event.target.value)
+              }
+              placeholder="Họ tên người phụ trách báo cáo"
+              aria-invalid={Boolean(errors.contactName)}
+              aria-describedby={
+                errors.contactName ? "company-contact-name-error" : undefined
+              }
+            />
+          </Field>
+
+          <Field label="Email" htmlFor="company-email" error={errors.email}>
+            <Input
+              id="company-email"
+              type="email"
+              inputMode="email"
+              value={values.email}
+              onChange={(event) => updateField("email", event.target.value)}
+              placeholder="ten@congty.vn"
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? "company-email-error" : undefined}
+            />
+          </Field>
+
+          <Field
+            label="Số điện thoại"
+            htmlFor="company-phone"
+            error={errors.phone}
+          >
+            <Input
+              id="company-phone"
+              type="tel"
+              inputMode="tel"
+              value={values.phone}
+              onChange={(event) => updateField("phone", event.target.value)}
+              placeholder="Số điện thoại liên hệ"
+              aria-invalid={Boolean(errors.phone)}
+              aria-describedby={errors.phone ? "company-phone-error" : undefined}
+            />
+          </Field>
+        </div>
+
+        <div className="space-y-4 border-t border-border pt-4">
+          <h3 className="text-sm font-semibold">
+            Nhu cầu và chia sẻ dữ liệu{" "}
+            <span className="font-normal text-subtle">(không bắt buộc)</span>
+          </h3>
+
+          <Field
+            label="Nhu cầu tư vấn"
+            htmlFor="company-advisory-need"
+            error={errors.advisoryNeed}
+          >
+            <Select
+              id="company-advisory-need"
+              value={values.advisoryNeed}
+              onChange={(event) =>
+                updateField("advisoryNeed", event.target.value)
+              }
+              options={advisoryOptions}
+              placeholder="Chọn thông tin"
+              className={values.advisoryNeed === "" ? "text-subtle" : undefined}
+            />
+          </Field>
+
+          <Field
+            label="Nhu cầu thẩm định"
+            htmlFor="company-assessment-need"
+            error={errors.assessmentNeed}
+          >
+            <Select
+              id="company-assessment-need"
+              value={values.assessmentNeed}
+              onChange={(event) =>
+                updateField("assessmentNeed", event.target.value)
+              }
+              options={assessmentOptions}
+              placeholder="Chọn thông tin"
+              className={
+                values.assessmentNeed === "" ? "text-subtle" : undefined
+              }
+            />
+          </Field>
+
+          <Switch
+            id="company-consent-b2b"
+            checked={values.consentB2B === "yes"}
+            onChange={(checked) =>
+              updateField("consentB2B", checked ? "yes" : "")
+            }
+            label="Đồng ý được liên hệ về nhu cầu kết nối đối tác"
+          />
+
+          <Switch
+            id="company-consent-data"
+            checked={values.consentData === "yes"}
+            onChange={(checked) =>
+              updateField("consentData", checked ? "yes" : "")
+            }
+            label="Đồng ý cho dùng dữ liệu đã tổng hợp, ẩn danh để nghiên cứu thị trường"
+          />
+
+          <p className="text-xs leading-relaxed text-subtle">
+            Hai lựa chọn trên không bắt buộc và không ảnh hưởng việc tạo báo
+            cáo. Mặc định là không đồng ý. Bạn có thể rút lại bất cứ lúc nào
+            bằng cách liên hệ ban quản trị.
+          </p>
+        </div>
+
         <Button
           type="submit"
           variant="secondary"
           className="w-full"
-          leadingIcon={<Save aria-hidden className="size-4" />}
+          disabled={isSaving}
+          leadingIcon={
+            isSaving ? (
+              <Loader2 aria-hidden className="size-4 animate-spin" />
+            ) : (
+              <Save aria-hidden className="size-4" />
+            )
+          }
         >
-          Lưu thông tin doanh nghiệp
+          {isSaving ? "Đang lưu..." : "Lưu thông tin doanh nghiệp"}
         </Button>
 
-        {isSaved ? (
+        {savedCode !== null ? (
           <p role="status" className="text-xs text-primary-700">
-            Đã ghi nhận thông tin (bản demo, chưa lưu vào máy chủ).
+            Đã lưu thông tin doanh nghiệp. Mã báo cáo của bạn: {savedCode}.
+          </p>
+        ) : null}
+
+        {submitError !== null ? (
+          <p role="alert" className="text-xs text-danger-600">
+            {submitError}
           </p>
         ) : null}
       </form>

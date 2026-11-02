@@ -13,7 +13,11 @@ import { selectSurvey } from "@esg/shared";
 import type { Survey } from "@esg/shared";
 
 import { Card } from "@/components/ui";
-import { COMPANY_FIELD_IDS, CompanyProfileForm } from "@/features/company";
+import {
+  COMPANY_FIELD_IDS,
+  CompanyProfileForm,
+  clearReportCode,
+} from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
 import { GuidancePanel } from "@/features/guidance";
 import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
@@ -70,6 +74,7 @@ export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
 
   const handleReset = useCallback(() => {
     clearDraft();
+    clearReportCode();
     setResetCount((count) => count + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);

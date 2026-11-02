@@ -1,10 +1,8 @@
-export const LOGO_ACCEPTED_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-] as const;
+import { LOGO_ACCEPTED_MIME_TYPES, MAX_LOGO_SIZE_BYTES } from "@esg/shared";
 
-export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+export const LOGO_ACCEPTED_TYPES = LOGO_ACCEPTED_MIME_TYPES;
+
+export const LOGO_MAX_BYTES = MAX_LOGO_SIZE_BYTES;
 
 export function validateLogoFile(file: File): string | null {
   const isAccepted = (LOGO_ACCEPTED_TYPES as readonly string[]).includes(

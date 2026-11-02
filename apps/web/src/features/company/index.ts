@@ -8,3 +8,4 @@ export {
 } from "./constants";
 export type { CompanyField, CompanyFormValues } from "./constants";
 export { isCompanyField, pickCompanyValues } from "./lib/company-values";
+export { clearReportCode } from "./lib/report-code-storage";

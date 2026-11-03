@@ -25,6 +25,7 @@ import type { CompanyField, CompanyFormValues } from "../constants";
 import { isCompanyField } from "../lib/company-values";
 import { getReportCode, saveReportCode } from "../lib/report-code-storage";
 import { SaveCompanyError, saveCompany } from "../services/save-company";
+import { BusinessProfileSection } from "./business-profile-section";
 import { LogoUploader } from "./logo-uploader";
 
 type FormErrors = Partial<Record<CompanyField, string>>;
@@ -272,6 +273,12 @@ export function CompanyProfileForm({
             rows={3}
           />
         </Field>
+
+        <BusinessProfileSection
+          values={values}
+          errors={errors}
+          onFieldChange={updateField}
+        />
 
         <div className="space-y-4 border-t border-border pt-4">
           <h3 className="text-sm font-semibold">

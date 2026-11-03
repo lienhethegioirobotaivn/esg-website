@@ -1,6 +1,10 @@
-import { REPORT_PERIODS, REPORT_PERIOD_LABELS } from "@esg/shared";
+import {
+  PROFILE_FIELDS,
+  REPORT_PERIODS,
+  REPORT_PERIOD_LABELS,
+} from "@esg/shared";
 
-export const COMPANY_FIELDS = [
+const BASE_COMPANY_FIELDS = [
   "name",
   "taxCode",
   "industry",
@@ -17,6 +21,8 @@ export const COMPANY_FIELDS = [
   "consentB2B",
   "consentData",
 ] as const;
+
+export const COMPANY_FIELDS = [...BASE_COMPANY_FIELDS, ...PROFILE_FIELDS] as const;
 
 export type CompanyField = (typeof COMPANY_FIELDS)[number];
 export type CompanyFormValues = Record<CompanyField, string>;
@@ -37,6 +43,21 @@ export const COMPANY_FIELD_LABELS: Record<CompanyField, string> = {
   assessmentNeed: "Nhu cầu thẩm định",
   consentB2B: "Đồng ý kết nối đối tác",
   consentData: "Đồng ý tổng hợp dữ liệu",
+  tradingName: "Tên giao dịch",
+  legalForm: "Loại hình pháp lý",
+  countries: "Quốc gia, vùng hoạt động",
+  sites: "Cơ sở trong phạm vi báo cáo",
+  secondarySectors: "Ngành bổ sung",
+  activities: "Sản phẩm, dịch vụ chính",
+  capabilities: "Hoạt động đặc thù",
+  hasEmployees: "Có người lao động trong kỳ",
+  hasContractors: "Có nhà thầu, lao động thuê ngoài",
+  markets: "Thị trường và nhóm khách hàng",
+  revenueBand: "Khoảng doanh thu",
+  supplierGroups: "Nhóm nhà cung cấp quan trọng",
+  downstreamGroups: "Nhóm đối tác đầu ra",
+  dataLimitations: "Giới hạn dữ liệu",
+  confirmingRole: "Vai trò người xác nhận",
 };
 
 export const COMPANY_FIELD_IDS: Record<CompanyField, string> = {
@@ -55,6 +76,21 @@ export const COMPANY_FIELD_IDS: Record<CompanyField, string> = {
   assessmentNeed: "company-assessment-need",
   consentB2B: "company-consent-b2b",
   consentData: "company-consent-data",
+  tradingName: "company-trading-name",
+  legalForm: "company-legal-form",
+  countries: "company-countries",
+  sites: "company-sites",
+  secondarySectors: "company-secondary-sectors",
+  activities: "company-activities",
+  capabilities: "company-capabilities",
+  hasEmployees: "company-has-employees",
+  hasContractors: "company-has-contractors",
+  markets: "company-markets",
+  revenueBand: "company-revenue-band",
+  supplierGroups: "company-supplier-groups",
+  downstreamGroups: "company-downstream-groups",
+  dataLimitations: "company-data-limitations",
+  confirmingRole: "company-confirming-role",
 };
 
 export const REPORT_PERIOD_OPTIONS = REPORT_PERIODS.map((value) => ({
@@ -80,4 +116,19 @@ export const COMPANY_INITIAL_VALUES: CompanyFormValues = {
   assessmentNeed: "",
   consentB2B: "",
   consentData: "",
+  tradingName: "",
+  legalForm: "",
+  countries: "",
+  sites: "",
+  secondarySectors: "",
+  activities: "",
+  capabilities: "",
+  hasEmployees: "",
+  hasContractors: "",
+  markets: "",
+  revenueBand: "",
+  supplierGroups: "",
+  downstreamGroups: "",
+  dataLimitations: "",
+  confirmingRole: "",
 };

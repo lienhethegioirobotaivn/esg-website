@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { getReportCode, saveCompany, saveReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
 import { downloadBlob } from "@/lib/download-blob";
 
@@ -38,19 +39,40 @@ export function useReportExport({
     if (isExporting) {
       return;
     }
-    const result = validateReport({ company, entries, answers });
-    if (!result.isValid) {
-      setError(null);
-      setValidation(result);
-      return;
-    }
-
-    setValidation(null);
-    setError(null);
     setIsExporting(true);
+    setError(null);
+    setValidation(null);
     try {
+      const result = validateReport({ company, entries, answers });
+      let saveFailed = false;
+      if (result.companyIssues.length === 0) {
+        try {
+          const saved = await saveCompany({
+            values: company,
+            logo,
+            reportCode: getReportCode(),
+          });
+          saveReportCode(saved.reportCode);
+        } catch {
+          saveFailed = true;
+        }
+      }
+
+      if (!result.isValid) {
+        setValidation(result);
+        if (saveFailed) {
+          setError("Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại.");
+        }
+        return;
+      }
+
       const blob = await createReportBlob({ company, entries, answers, logo });
       downloadBlob(blob, buildReportFileName(company));
+      if (saveFailed) {
+        setError(
+          "Đã tạo báo cáo nhưng chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại.",
+        );
+      }
     } catch {
       setError("Không tạo được file PDF. Vui lòng thử lại.");
     } finally {

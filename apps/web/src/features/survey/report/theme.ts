@@ -93,6 +93,8 @@ export const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 5,
   },
+  h3: { fontSize: 9.5, fontWeight: 700, color: COLORS.navy, lineHeight: 1.35, marginBottom: 2 },
+  answer: { fontSize: 9, fontWeight: 700, color: COLORS.blue, lineHeight: 1.4, marginBottom: 1 },
   intro: { fontSize: 9, color: COLORS.muted, lineHeight: 1.5, marginBottom: 10 },
   body: { fontSize: 9, lineHeight: 1.5 },
   note: { fontSize: 7.5, color: COLORS.muted, lineHeight: 1.45, marginTop: 6 },

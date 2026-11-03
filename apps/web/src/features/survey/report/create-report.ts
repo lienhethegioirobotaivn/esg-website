@@ -5,13 +5,12 @@ import { getReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
 
 import { getDraft } from "../lib/progress";
-import { validateReport } from "../lib/report-validation";
+import { getReportDraftState } from "../lib/report-draft-state";
 import type { AnswerMap, GroupEntry } from "../types";
 import { collectEvidenceImages } from "./report-images";
 import { prepareReportLogo } from "./report-logo";
 
 const CONTENT_VERSION = "Bộ câu hỏi ESG v0.1";
-const CONFIRMATION_QUESTION_ID = "C-060";
 
 interface CreateReportInput {
   company: CompanyFormValues;
@@ -66,12 +65,7 @@ export async function createReportBlob(
   input: CreateReportInput,
 ): Promise<Blob> {
   const { company, entries, answers } = input;
-  const validation = validateReport({ company, entries, answers });
-  const confirmationApplies = entries.some((entry) =>
-    entry.group.questions.some((question) => question.id === CONFIRMATION_QUESTION_ID),
-  );
-  const confirmed = getDraft(answers, CONFIRMATION_QUESTION_ID).value === "yes";
-  const isDraft = !validation.isValid || (confirmationApplies && !confirmed);
+  const { isDraft } = getReportDraftState({ company, entries, answers });
 
   const model = buildReportModel({
     survey: toSurvey(entries),

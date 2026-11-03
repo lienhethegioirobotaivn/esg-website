@@ -422,3 +422,162 @@ export function EvidenceGallery({ images }: { images: readonly EvidenceImage[] }
 export function practiceTotal(counts: PracticeCounts): number {
   return counts.total;
 }
+
+export function Strip({ strip }: { strip: readonly string[] }) {
+  const [title, ...steps] = strip;
+  return (
+    <View
+      style={{ position: "absolute", left: 48, right: 48, bottom: 52, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: COLORS.line }}
+    >
+      <Text style={styles.label}>{(title ?? "").toUpperCase()}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+        {steps.map((step, index) => (
+          <View key={step} style={{ flexDirection: "row", alignItems: "center", flexGrow: 1, flexBasis: 0 }}>
+            <View
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: COLORS.blue,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ fontSize: 7, fontWeight: 700, color: COLORS.white }}>{index + 1}</Text>
+            </View>
+            <Text style={[styles.cellMuted, { marginLeft: 5 }]}>{step}</Text>
+            {index < steps.length - 1 ? (
+              <View style={{ flexGrow: 1, height: 0.5, backgroundColor: COLORS.muted, marginHorizontal: 6 }} />
+            ) : null}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export function QuestionCards({ items }: { items: readonly ReportItem[] }) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+      {items.map((item) => (
+        <View
+          key={item.id}
+          style={{
+            width: "50%",
+            paddingRight: 10,
+            marginBottom: 9,
+            paddingLeft: 7,
+            borderLeftWidth: 1.5,
+            borderLeftColor: COLORS.line,
+          }}
+          wrap={false}
+        >
+          <Text style={styles.h3}>{item.label}</Text>
+          <Text style={styles.answer}>{item.answer}</Text>
+          <Text style={styles.cellMuted}>{item.evidence}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const PILLAR_COLORS = { E: "#1E8E5A", S: "#164CFF", G: "#102642" } as const;
+
+export function PillarBadge({ code, label }: { code: "E" | "S" | "G"; label: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, marginBottom: 6 }}>
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          backgroundColor: PILLAR_COLORS[code],
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 11, fontWeight: 700, color: COLORS.white }}>{code}</Text>
+      </View>
+      <Text style={[styles.label, { marginLeft: 8, marginBottom: 0 }]}>{label.toUpperCase()}</Text>
+    </View>
+  );
+}
+
+const SDG_TILE_COLORS: Record<number, string> = {
+  3: "#4C9F38",
+  4: "#C5192D",
+  5: "#FF3A21",
+  6: "#26BDE2",
+  7: "#FCC30B",
+  8: "#A21942",
+  12: "#BF8B2E",
+  13: "#3F7E44",
+  16: "#00689D",
+  17: "#19486A",
+};
+
+const SDG_NAMES: Record<number, string> = {
+  3: "Sức khỏe và cuộc sống tốt",
+  4: "Giáo dục chất lượng",
+  5: "Bình đẳng giới",
+  6: "Nước sạch và vệ sinh",
+  7: "Năng lượng sạch và giá phải chăng",
+  8: "Việc làm tử tế và tăng trưởng kinh tế",
+  12: "Tiêu dùng và sản xuất có trách nhiệm",
+  13: "Hành động vì khí hậu",
+  16: "Hòa bình, công lý và thể chế vững mạnh",
+  17: "Quan hệ đối tác vì các mục tiêu",
+};
+
+export function FrameworkRow({
+  code,
+  title,
+  text,
+  goals,
+}: {
+  code: "E" | "S" | "G";
+  title: string;
+  text: string;
+  goals: readonly number[];
+}) {
+  return (
+    <View style={{ marginTop: 14 }} wrap={false}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View
+          style={{
+            width: 30,
+            height: 30,
+            backgroundColor: PILLAR_COLORS[code],
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: 700, color: COLORS.white }}>{code}</Text>
+        </View>
+        <View style={{ marginLeft: 10 }}>
+          <Text style={styles.h2}>{title}</Text>
+          <Text style={[styles.cellMuted, { marginTop: -3 }]}>{text}</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+        {goals.map((goal) => (
+          <View key={goal} style={{ width: "25%", paddingRight: 6, marginBottom: 6 }}>
+            <View
+              style={{
+                height: 46,
+                backgroundColor: SDG_TILE_COLORS[goal] ?? COLORS.navy,
+                padding: 5,
+                justifyContent: "space-between",
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: 700, color: COLORS.white }}>{goal}</Text>
+              <Text style={{ fontSize: 5.8, color: COLORS.white }}>{SDG_NAMES[goal] ?? ""}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}

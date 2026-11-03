@@ -39,6 +39,7 @@ import { GroupSection } from "./group-section";
 import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
 import { ProgressSummary } from "./progress-summary";
+import { getReportDraftState } from "../lib/report-draft-state";
 import { ReportActions } from "./report-actions";
 import { ReportPreviewDialog } from "./report-preview-dialog";
 import { ResetReportDialog } from "./reset-report-dialog";
@@ -163,6 +164,10 @@ function LoadedSurveyWorkspace({
 
   const reportExport = useReportExport({ company, entries, answers, logo });
   const reportPreview = useReportPreview({ company, entries, answers, logo });
+  const draftState = useMemo(
+    () => getReportDraftState({ company, entries, answers }),
+    [company, entries, answers],
+  );
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
 
@@ -386,6 +391,7 @@ function LoadedSurveyWorkspace({
         isPreviewLoading={reportPreview.isLoading}
         isExporting={reportExport.isExporting}
         error={reportExport.error ?? reportPreview.error}
+        draftState={draftState}
       />
     </>
   );

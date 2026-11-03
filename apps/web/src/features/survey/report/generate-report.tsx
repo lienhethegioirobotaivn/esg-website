@@ -1,17 +1,40 @@
 import { pdf } from "@react-pdf/renderer";
+import type { ReportModel } from "@esg/shared";
 
-import type { ReportData } from "../lib/report-data";
 import { registerReportFonts } from "./fonts";
-import type { ReportLogo } from "./report-logo";
 import { ReportDocument } from "./report-document";
+import type { TocKey } from "./report-document";
+import type { EvidenceImage } from "./pdf-parts";
+import type { ReportLogo } from "./report-logo";
 
 const DEFAULT_FONT_BASE_URL = "/fonts";
 
+interface GenerateInput {
+  model: ReportModel;
+  logo: ReportLogo | null;
+  images: readonly EvidenceImage[];
+  draftNotice: string | null;
+}
+
 export async function generateReportBlob(
-  data: ReportData,
+  input: GenerateInput,
   fontBaseUrl: string = DEFAULT_FONT_BASE_URL,
-  logo: ReportLogo | null = null,
 ): Promise<Blob> {
   registerReportFonts(fontBaseUrl);
-  return pdf(<ReportDocument data={data} logo={logo} />).toBlob();
+  const found: Partial<Record<TocKey, number>> = {};
+  const render = (pages: Partial<Record<TocKey, number>>) =>
+    pdf(
+      <ReportDocument
+        model={input.model}
+        logo={input.logo}
+        images={input.images}
+        draftNotice={input.draftNotice}
+        pages={pages}
+        onPage={(key, pageNumber) => {
+          found[key] = pageNumber;
+        }}
+      />,
+    ).toBlob();
+  await render({});
+  return render({ ...found });
 }

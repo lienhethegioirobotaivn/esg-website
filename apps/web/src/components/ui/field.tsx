@@ -4,6 +4,7 @@ interface FieldProps {
   label: string;
   htmlFor: string;
   required?: boolean;
+  hint?: string;
   error?: string;
   children: ReactNode;
 }
@@ -12,6 +13,7 @@ export function Field({
   label,
   htmlFor,
   required = false,
+  hint,
   error,
   children,
 }: FieldProps) {
@@ -28,6 +30,11 @@ export function Field({
           </span>
         ) : null}
       </label>
+      {hint ? (
+        <p id={`${htmlFor}-hint`} className="text-xs leading-relaxed text-subtle">
+          {hint}
+        </p>
+      ) : null}
       {children}
       {error ? (
         <p

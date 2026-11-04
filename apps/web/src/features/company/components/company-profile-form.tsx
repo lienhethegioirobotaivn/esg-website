@@ -26,6 +26,7 @@ import { isCompanyField } from "../lib/company-values";
 import { getReportCode, saveReportCode } from "../lib/report-code-storage";
 import { SaveCompanyError, saveCompany } from "../services/save-company";
 import { BusinessProfileSection } from "./business-profile-section";
+import { CollapsibleSection } from "./collapsible-section";
 import { LogoUploader } from "./logo-uploader";
 
 type FormErrors = Partial<Record<CompanyField, string>>;
@@ -120,7 +121,11 @@ export function CompanyProfileForm({
         <h2 className="text-base">Thông tin doanh nghiệp</h2>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4 p-4">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="max-h-[75vh] space-y-4 overflow-y-auto p-4"
+      >
         <p className="text-[0.8125rem] leading-relaxed text-muted">
           Các mục có dấu * là bắt buộc.
         </p>
@@ -269,7 +274,7 @@ export function CompanyProfileForm({
             id="company-report-scope"
             value={values.reportScope}
             onChange={(event) => updateField("reportScope", event.target.value)}
-            placeholder="Pháp nhân, cơ sở và hoạt động được bao gồm"
+            placeholder="Ví dụ: Toàn công ty, hoặc riêng văn phòng TP.HCM"
             rows={3}
           />
         </Field>
@@ -280,12 +285,7 @@ export function CompanyProfileForm({
           onFieldChange={updateField}
         />
 
-        <div className="space-y-4 border-t border-border pt-4">
-          <h3 className="text-sm font-semibold">
-            Thông tin liên hệ{" "}
-            <span className="font-normal text-subtle">(không bắt buộc)</span>
-          </h3>
-
+        <CollapsibleSection title="Thông tin liên hệ">
           <Field
             label="Người liên hệ"
             htmlFor="company-contact-name"
@@ -334,14 +334,9 @@ export function CompanyProfileForm({
               aria-describedby={errors.phone ? "company-phone-error" : undefined}
             />
           </Field>
-        </div>
+        </CollapsibleSection>
 
-        <div className="space-y-4 border-t border-border pt-4">
-          <h3 className="text-sm font-semibold">
-            Nhu cầu và chia sẻ dữ liệu{" "}
-            <span className="font-normal text-subtle">(không bắt buộc)</span>
-          </h3>
-
+        <CollapsibleSection title="Nhu cầu và chia sẻ dữ liệu">
           <Field
             label="Nhu cầu tư vấn"
             htmlFor="company-advisory-need"
@@ -401,7 +396,7 @@ export function CompanyProfileForm({
             cáo. Mặc định là không đồng ý. Bạn có thể rút lại bất cứ lúc nào
             bằng cách liên hệ ban quản trị.
           </p>
-        </div>
+        </CollapsibleSection>
 
         <Button
           type="submit"

@@ -40,6 +40,7 @@ import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
 import { ProgressSummary } from "./progress-summary";
 import { getReportDraftState } from "../lib/report-draft-state";
+import type { DraftJumpTarget } from "../lib/report-draft-state";
 import { ReportActions } from "./report-actions";
 import { ReportPreviewDialog } from "./report-preview-dialog";
 import { ResetReportDialog } from "./reset-report-dialog";
@@ -206,6 +207,22 @@ function LoadedSurveyWorkspace({
     setJumpTarget({ kind: "company", field });
   }
 
+  function jumpToDraftTarget(target: DraftJumpTarget) {
+    if (target.kind === "company") {
+      setJumpTarget({ kind: "company", field: target.field });
+      return;
+    }
+    const entry = entries.find((item) =>
+      item.group.questions.some((question) => question.id === target.questionId),
+    );
+    if (entry === undefined) {
+      return;
+    }
+    selectGroup(entry.group.id);
+    setFocusedQuestionId(target.questionId);
+    setJumpTarget({ kind: "question", id: target.questionId });
+  }
+
   useEffect(() => {
     if (jumpTarget === null) {
       return;
@@ -217,6 +234,10 @@ function LoadedSurveyWorkspace({
     );
     if (!target) {
       return;
+    }
+    const collapsed = target.closest("details");
+    if (collapsed && !collapsed.open) {
+      collapsed.open = true;
     }
     target.scrollIntoView({ behavior: "smooth", block: "center" });
     const focusable =
@@ -392,6 +413,7 @@ function LoadedSurveyWorkspace({
         isExporting={reportExport.isExporting}
         error={reportExport.error ?? reportPreview.error}
         draftState={draftState}
+        onJump={jumpToDraftTarget}
       />
     </>
   );

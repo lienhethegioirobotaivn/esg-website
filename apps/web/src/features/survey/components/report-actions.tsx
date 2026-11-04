@@ -2,7 +2,10 @@ import { Eye, FileDown } from "lucide-react";
 
 import { Button } from "@/components/ui";
 
-import type { ReportDraftState } from "../lib/report-draft-state";
+import type {
+  DraftJumpTarget,
+  ReportDraftState,
+} from "../lib/report-draft-state";
 
 interface ReportActionsProps {
   onPreview: () => void;
@@ -11,10 +14,17 @@ interface ReportActionsProps {
   isExporting: boolean;
   error: string | null;
   draftState?: ReportDraftState | null;
+  onJump?: (target: DraftJumpTarget) => void;
   disabled?: boolean;
 }
 
-function DraftNotice({ draftState }: { draftState: ReportDraftState }) {
+function DraftNotice({
+  draftState,
+  onJump,
+}: {
+  draftState: ReportDraftState;
+  onJump?: (target: DraftJumpTarget) => void;
+}) {
   if (!draftState.isDraft) {
     return (
       <div
@@ -35,7 +45,18 @@ function DraftNotice({ draftState }: { draftState: ReportDraftState }) {
       <p className="mt-1 text-muted">Lý do:</p>
       <ul className="mt-1 list-disc space-y-1 pl-5">
         {draftState.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
+          <li key={reason.text}>
+            {reason.text}{" "}
+            {onJump ? (
+              <button
+                type="button"
+                onClick={() => onJump(reason.target)}
+                className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-900"
+              >
+                Đi tới đây
+              </button>
+            ) : null}
+          </li>
         ))}
       </ul>
       <p className="mt-2 text-muted">
@@ -54,11 +75,14 @@ export function ReportActions({
   isExporting,
   error,
   draftState = null,
+  onJump,
   disabled = false,
 }: ReportActionsProps) {
   return (
     <div className="mt-6 flex flex-col gap-3 sm:items-end">
-      {draftState ? <DraftNotice draftState={draftState} /> : null}
+      {draftState ? (
+        <DraftNotice draftState={draftState} onJump={onJump} />
+      ) : null}
       <div className="flex gap-2">
         <Button
           variant="secondary"

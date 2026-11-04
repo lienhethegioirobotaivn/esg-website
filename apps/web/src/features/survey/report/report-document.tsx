@@ -184,42 +184,51 @@ export function ReportDocument({
 
   return (
     <Document title={`Báo cáo ESG ${meta.companyName}`} author="ESG Report Online" language="vi">
-      <Page size="A4" style={[styles.page, { paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0 }]}>
-        <View style={{ backgroundColor: COLORS.navy, height: 840 }}>
-          <View style={{ paddingHorizontal: 54, paddingTop: 70 }}>
-            <Text style={{ fontSize: 8, letterSpacing: 1.2, color: "#8FA4C8", lineHeight: 1.3 }}>
+      <Page size="A4" style={[styles.page, { backgroundColor: COLORS.white, paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0 }]}>
+        <View style={{ height: 840, paddingHorizontal: 64 }}>
+          <View style={{ marginTop: 64, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <Text style={{ fontSize: 8, letterSpacing: 1.4, color: COLORS.muted, lineHeight: 1.3 }}>
               HỒ SƠ DOANH NGHIỆP
             </Text>
             {logo ? (
-              <View style={{ marginTop: 22, backgroundColor: COLORS.white, padding: 10, alignSelf: "flex-start" }}>
-                <Image
-                  src={logo.src}
-                  style={{ width: Math.min(150, (logo.width / logo.height) * 48), height: 48, objectFit: "contain" }}
-                />
-              </View>
+              <Image
+                src={logo.src}
+                style={{ width: Math.min(130, (logo.width / logo.height) * 44), height: 44, objectFit: "contain" }}
+              />
             ) : null}
-            <Text style={{ fontSize: 36, fontWeight: 700, color: COLORS.white, lineHeight: 1.2, marginTop: 40 }}>
+          </View>
+          <View style={{ marginTop: 150 }}>
+            <View style={{ width: 36, height: 3, backgroundColor: COLORS.ink }} />
+            <Text style={{ fontSize: 40, fontWeight: 700, color: COLORS.ink, lineHeight: 1.15, marginTop: 22 }}>
               BÁO CÁO ESG
             </Text>
             {year ? (
-              <Text style={{ fontSize: 26, fontWeight: 700, color: "#8FB1FF", lineHeight: 1.2, marginTop: 6 }}>
-                {year}
-              </Text>
+              <Text style={{ fontSize: 28, color: COLORS.muted, lineHeight: 1.2, marginTop: 4 }}>{year}</Text>
             ) : null}
-            <Text style={{ fontSize: 20, fontWeight: 700, color: COLORS.white, lineHeight: 1.3, marginTop: 34 }}>
+            <Text style={{ fontSize: 18, fontWeight: 700, color: COLORS.ink, lineHeight: 1.35, marginTop: 44 }}>
               {meta.companyName}
             </Text>
-            <Text style={{ fontSize: 10, color: "#B8C4DA", lineHeight: 1.4, marginTop: 8 }}>
+            <Text style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.4, marginTop: 10 }}>
               Môi trường • Xã hội • Quản trị
             </Text>
-            <Text style={{ fontSize: 10, color: "#B8C4DA", lineHeight: 1.4, marginTop: 4 }}>
+            <Text style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.4, marginTop: 3 }}>
               Kỳ báo cáo {meta.period}
             </Text>
           </View>
-          <View style={{ position: "absolute", left: 54, right: 54, bottom: 56 }}>
-            <Text style={{ fontSize: 11, color: COLORS.white, lineHeight: 1.5 }}>{COPY.coverTagline}</Text>
-            <Text style={{ fontSize: 8, color: "#8FA4C8", lineHeight: 1.5, marginTop: 4 }}>{COPY.coverNote}</Text>
-            <Text style={{ fontSize: 9, fontWeight: 700, color: COLORS.white, letterSpacing: 1, marginTop: 14 }}>
+          <View
+            style={{
+              position: "absolute",
+              left: 64,
+              right: 64,
+              bottom: 56,
+              borderTopWidth: 0.5,
+              borderTopColor: COLORS.line,
+              paddingTop: 12,
+            }}
+          >
+            <Text style={{ fontSize: 10, color: COLORS.ink, lineHeight: 1.5 }}>{COPY.coverTagline}</Text>
+            <Text style={{ fontSize: 8, color: COLORS.muted, lineHeight: 1.5, marginTop: 4 }}>{COPY.coverNote}</Text>
+            <Text style={{ fontSize: 8, fontWeight: 700, color: COLORS.ink, letterSpacing: 1.2, marginTop: 12 }}>
               ESG REPORT ONLINE
             </Text>
           </View>

@@ -81,7 +81,9 @@ export const COPY = {
   actionsNote:
     "Các khuyến nghị chưa được xác nhận được quản lý như gợi ý bổ sung, không được trình bày thành cam kết của doanh nghiệp.",
   imagesIntro:
-    "Hình ảnh hỗ trợ người đọc hiểu bối cảnh và cách thực hiện. Mỗi hình cần có nội dung mô tả, địa điểm hoặc phạm vi liên quan và mã tham chiếu để tránh sử dụng ảnh ngoài bối cảnh.",
+    "Hình ảnh hỗ trợ người đọc hiểu bối cảnh và cách thực hiện. Các hình được nhóm theo câu hỏi mà doanh nghiệp đã tải lên, kèm ghi chú chung của câu đó và mã tham chiếu để tránh sử dụng ảnh ngoài bối cảnh.",
+  evidenceNoNote: "Doanh nghiệp không nhập ghi chú cho câu này.",
+  evidenceOtherFiles: "Tệp khác của câu này, không hiển thị hình trong báo cáo:",
   imagesNote:
     "Chỉ sử dụng hình ảnh đã được cho phép và phù hợp với quyền chia sẻ của bản báo cáo. Một hình ảnh không tự chứng minh kết quả cho cả kỳ hoặc toàn bộ cơ sở.",
   evidenceIntro:

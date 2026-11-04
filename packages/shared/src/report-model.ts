@@ -27,6 +27,7 @@ import type {
   ReportAction,
   ReportAnswerInput,
   ReportAppendixRow,
+  ReportEvidenceGroup,
   ReportEvidenceRow,
   ReportGap,
   ReportItem,
@@ -119,24 +120,12 @@ function joinSentences(parts: readonly (string | null)[]): string | null {
   return text === "" ? null : text;
 }
 
-const MAX_NOTE_LENGTH = 160;
-
-function describeEvidence(
-  question: Question,
-  draft: ReportAnswerInput,
-  fileName: string,
-): string {
-  const note = clean(draft.description);
-  const shortNote =
-    note.length > MAX_NOTE_LENGTH ? `${note.slice(0, MAX_NOTE_LENGTH)}…` : note;
+function describeEvidence(question: Question, fileName: string): string {
   return [
     `${question.id} — ${REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text)}`,
     `Tệp: ${fileName}`,
     `Minh chứng cho câu: ${question.text}`,
-    shortNote !== "" ? `Ghi chú của doanh nghiệp: ${shortNote}` : null,
-  ]
-    .filter((line): line is string => line !== null)
-    .join("\n");
+  ].join("\n");
 }
 
 function listLabels(labels: readonly string[]): string {
@@ -640,6 +629,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const focus = focusLabels.length > 0 ? `Tập trung xem xét: ${focusLabels.join("; ")}.` : null;
 
   const evidenceRows: ReportEvidenceRow[] = [];
+  const evidenceGroups: ReportEvidenceGroup[] = [];
   const appendixRows: ReportAppendixRow[] = [];
   for (const { question } of entries) {
     const draft = draftOf(question.id);
@@ -649,12 +639,24 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       evidence: evidenceText(question, draft),
     });
     if (getAnswerFields(question.inputType, draft.value).evidence) {
+      const files: { code: string; name: string }[] = [];
       for (const file of draft.evidence) {
+        const code = `EV-${String(evidenceRows.length + 1).padStart(3, "0")}`;
         evidenceRows.push({
-          id: `EV-${String(evidenceRows.length + 1).padStart(3, "0")}`,
-          description: describeEvidence(question, draft, file.name),
+          id: code,
+          description: describeEvidence(question, file.name),
           scope: period,
           status: "Đã đính kèm; chưa xác minh",
+        });
+        files.push({ code, name: file.name });
+      }
+      if (files.length > 0) {
+        evidenceGroups.push({
+          questionId: question.id,
+          label: labelOf(question),
+          text: question.text,
+          note: orNull(draft.description),
+          files,
         });
       }
     }
@@ -800,6 +802,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     },
     evidence: {
       rows: evidenceRows,
+      groups: evidenceGroups,
       limitations: joinSentences(limitationParts) ?? "",
       permittedReferences: input.contentVersion,
       verificationStatement:

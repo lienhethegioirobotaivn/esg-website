@@ -46,6 +46,7 @@ interface CompanyProfileFormProps {
   onFieldChange: (field: CompanyField, value: string) => void;
   logo: File | null;
   onLogoChange: (file: File | null) => void;
+  onSaved?: () => void;
 }
 
 export function CompanyProfileForm({
@@ -53,6 +54,7 @@ export function CompanyProfileForm({
   onFieldChange,
   logo,
   onLogoChange,
+  onSaved,
 }: CompanyProfileFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -102,6 +104,7 @@ export function CompanyProfileForm({
         reportCode: getReportCode(),
       });
       saveReportCode(saved.reportCode);
+      onSaved?.();
       setSavedCode(saved.reportCode);
     } catch (error) {
       if (error instanceof SaveCompanyError) {
@@ -260,7 +263,9 @@ export function CompanyProfileForm({
               min={2000}
               max={2100}
               value={values.reportYear}
-              onChange={(event) => updateField("reportYear", event.target.value)}
+              onChange={(event) =>
+                updateField("reportYear", event.target.value)
+              }
               aria-invalid={Boolean(errors.reportYear)}
               aria-describedby={
                 errors.reportYear ? "company-report-year-error" : undefined
@@ -314,7 +319,9 @@ export function CompanyProfileForm({
               onChange={(event) => updateField("email", event.target.value)}
               placeholder="ten@congty.vn"
               aria-invalid={Boolean(errors.email)}
-              aria-describedby={errors.email ? "company-email-error" : undefined}
+              aria-describedby={
+                errors.email ? "company-email-error" : undefined
+              }
             />
           </Field>
 
@@ -331,7 +338,9 @@ export function CompanyProfileForm({
               onChange={(event) => updateField("phone", event.target.value)}
               placeholder="Số điện thoại liên hệ"
               aria-invalid={Boolean(errors.phone)}
-              aria-describedby={errors.phone ? "company-phone-error" : undefined}
+              aria-describedby={
+                errors.phone ? "company-phone-error" : undefined
+              }
             />
           </Field>
         </CollapsibleSection>

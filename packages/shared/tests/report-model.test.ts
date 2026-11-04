@@ -233,6 +233,25 @@ describe("buildReportModel", () => {
     assert.equal(model.improvement.actions[0]?.due, "Chưa xác định");
   });
 
+  it("gom minh chứng theo câu hỏi kèm ghi chú chung", () => {
+    const { groups } = model.evidence;
+    assert.equal(groups.length, 2);
+    assert.equal(groups[0]?.questionId, "C-001");
+    assert.equal(groups[0]?.label, "Phân công theo dõi môi trường");
+    assert.equal(groups[0]?.text, "Câu C-001");
+    assert.equal(groups[0]?.note, "Có đầu mối");
+    assert.deepEqual(groups[0]?.files, [{ code: "EV-001", name: "bang-dien.png" }]);
+    assert.equal(groups[1]?.files[0]?.code, "EV-002");
+
+    const many = build({
+      "C-001": a("yes", "", "", ["a.png", "b.png"]),
+    });
+    assert.equal(many.evidence.groups[0]?.note, null);
+    assert.equal(many.evidence.groups[0]?.files.length, 2);
+    assert.equal(many.evidence.groups[1]?.files[0]?.code, "EV-003");
+    assert.equal(many.evidence.rows.length, 3);
+  });
+
   it("module ngành chỉ gồm câu của ngành đang chọn", () => {
     assert.equal(model.modules.length, 1);
     assert.equal(model.modules[0]?.source, "ICT");

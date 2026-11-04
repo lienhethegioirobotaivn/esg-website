@@ -46,7 +46,8 @@ import { ReportPreviewDialog } from "./report-preview-dialog";
 import { ResetReportDialog } from "./reset-report-dialog";
 
 type JumpTarget =
-  { kind: "question"; id: string } | { kind: "company"; field: CompanyField };
+  | { kind: "question"; id: string }
+  | { kind: "company"; field: CompanyField };
 
 function subscribeNothing(): () => void {
   return () => undefined;
@@ -213,7 +214,9 @@ function LoadedSurveyWorkspace({
       return;
     }
     const entry = entries.find((item) =>
-      item.group.questions.some((question) => question.id === target.questionId),
+      item.group.questions.some(
+        (question) => question.id === target.questionId,
+      ),
     );
     if (entry === undefined) {
       return;
@@ -273,6 +276,7 @@ function LoadedSurveyWorkspace({
             onFieldChange={updateCompany}
             logo={logo}
             onLogoChange={setLogo}
+            onSaved={draft.persist}
           />
         </aside>
 

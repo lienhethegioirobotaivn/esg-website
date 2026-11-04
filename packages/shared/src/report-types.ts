@@ -70,6 +70,19 @@ export interface ReportEvidenceRow {
   readonly status: string;
 }
 
+export interface ReportEvidenceFile {
+  readonly code: string;
+  readonly name: string;
+}
+
+export interface ReportEvidenceGroup {
+  readonly questionId: string;
+  readonly label: string;
+  readonly text: string;
+  readonly note: string | null;
+  readonly files: readonly ReportEvidenceFile[];
+}
+
 export interface ReportAppendixRow {
   readonly id: string;
   readonly text: string;
@@ -197,6 +210,7 @@ export interface ReportModel {
   };
   readonly evidence: {
     readonly rows: readonly ReportEvidenceRow[];
+    readonly groups: readonly ReportEvidenceGroup[];
     readonly limitations: string;
     readonly permittedReferences: string;
     readonly verificationStatement: string;

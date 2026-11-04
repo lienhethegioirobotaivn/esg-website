@@ -387,7 +387,8 @@ export function SupplyChainFlow({
 
 export interface EvidenceImage {
   readonly code: string;
-  readonly caption: string;
+  readonly questionId: string;
+  readonly fileName: string;
   readonly src: string;
 }
 
@@ -411,7 +412,7 @@ export function EvidenceGallery({ images }: { images: readonly EvidenceImage[] }
             <Image src={image.src} style={{ maxHeight: 132, maxWidth: "100%", objectFit: "contain" }} />
           </View>
           <Text style={[styles.cellMuted, { marginTop: 3 }]}>
-            {image.code} — {image.caption}
+            {image.code} • {image.fileName}
           </Text>
         </View>
       ))}

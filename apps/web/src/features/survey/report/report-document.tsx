@@ -1,5 +1,6 @@
 import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
 import type { ReportMetric, ReportModel } from "@esg/shared";
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 import { COPY } from "./copy";
@@ -92,14 +93,6 @@ function has(...parts: readonly unknown[]): boolean {
   });
 }
 
-function chunk<T>(list: readonly T[], size: number): T[][] {
-  const result: T[][] = [];
-  for (let index = 0; index < list.length; index += size) {
-    result.push(list.slice(index, index + size));
-  }
-  return result;
-}
-
 function reportYear(period: string): string | null {
   const match = period.match(/(\d{4})\D*$/);
   return match?.[1] ?? null;
@@ -147,7 +140,10 @@ export function ReportDocument({
     </Page>
   );
 
-  const evidencePages = chunk(images, 2);
+  const imageCodes = new Set(images.map((image) => image.code));
+  const evidenceGroups = evidence.groups.filter((group) =>
+    group.files.some((file) => imageCodes.has(file.code)),
+  );
   const hasEnergy = has(environment.electricity, environment.fuel, environment.energy.items.length > 0, environment.energy.assessment);
   const hasGhg = has(environment.scope1, environment.scope2, environment.climate.items.length > 0);
   const hasWater = has(environment.water, environment.wastewater, environment.waterSection.items.length > 0, environment.waterSection.assessment);
@@ -971,39 +967,65 @@ export function ReportDocument({
           })
         : null}
 
-      {evidencePages.map((group, pageIndex) =>
-        topic({
-          id: `images-${pageIndex}`,
-          kicker: pageIndex === 0 ? "R07 / CĂN CỨ TRỰC QUAN" : "R07 / HỒ SƠ MINH CHỨNG",
-          title: pageIndex === 0 ? "Hình ảnh và minh chứng chọn lọc" : "Tài liệu tham chiếu trong kỳ",
-          intro: pageIndex === 0 ? COPY.imagesIntro : COPY.evidenceRefsIntro,
-          tocKey: pageIndex === 0 && r07First === "images" ? "R07" : undefined,
-          strip: strips.traceable,
-          children: (
-            <>
-              {group.map((image) => (
-                <View key={image.code} style={{ marginTop: 10 }} wrap={false}>
-                  <View
-                    style={{
-                      height: 185,
-                      backgroundColor: COLORS.panel,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: 4,
-                    }}
-                  >
-                    <Image src={image.src} style={{ maxHeight: 177, maxWidth: "100%", objectFit: "contain" }} />
-                  </View>
-                  <Text style={[styles.cellMuted, { marginTop: 3 }]}>
-                    {image.code} • {image.caption}
-                  </Text>
-                </View>
-              ))}
-              {pageIndex === 0 ? <Note>{COPY.imagesNote}</Note> : null}
-            </>
-          ),
-        }),
-      )}
+      {evidenceGroups.length > 0
+        ? topic({
+            id: "images",
+            kicker: "R07 / CĂN CỨ TRỰC QUAN",
+            title: "Hình ảnh và minh chứng chọn lọc",
+            intro: COPY.imagesIntro,
+            tocKey: r07First === "images" ? "R07" : undefined,
+            strip: strips.traceable,
+            children: (
+              <>
+                {evidenceGroups.map((group) => {
+                  const shown = group.files.filter((file) => imageCodes.has(file.code));
+                  const others = group.files.filter((file) => !imageCodes.has(file.code));
+                  return (
+                    <Fragment key={group.questionId}>
+                      <View style={{ marginTop: 12 }} wrap={false} minPresenceAhead={210}>
+                        <Text style={styles.label}>{`${group.questionId} • CÂU HỎI CÓ MINH CHỨNG`}</Text>
+                        <Text style={styles.h3}>{group.label}</Text>
+                        <Text style={styles.body}>{group.text}</Text>
+                        <Text style={[styles.cellMuted, { marginTop: 4 }]}>
+                          {group.note !== null
+                            ? `Ghi chú của doanh nghiệp: ${group.note}`
+                            : COPY.evidenceNoNote}
+                        </Text>
+                      </View>
+                      {shown.map((file) => {
+                        const image = images.find((entry) => entry.code === file.code);
+                        return image ? (
+                          <View key={file.code} style={{ marginTop: 6 }} wrap={false}>
+                            <View
+                              style={{
+                                height: 175,
+                                backgroundColor: COLORS.panel,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                padding: 4,
+                              }}
+                            >
+                              <Image src={image.src} style={{ maxHeight: 167, maxWidth: "100%", objectFit: "contain" }} />
+                            </View>
+                            <Text style={[styles.cellMuted, { marginTop: 3 }]}>
+                              {image.code} • Tệp: {image.fileName}
+                            </Text>
+                          </View>
+                        ) : null;
+                      })}
+                      {others.length > 0 ? (
+                        <Text style={[styles.cellMuted, { marginTop: 4 }]}>
+                          {COPY.evidenceOtherFiles} {others.map((file) => `${file.code} (${file.name})`).join("; ")}
+                        </Text>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+                <Note>{COPY.imagesNote}</Note>
+              </>
+            ),
+          })
+        : null}
 
       {topic({
         id: "refs",

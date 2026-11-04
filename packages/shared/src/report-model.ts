@@ -99,10 +99,7 @@ const SECTION_IDS = {
 
 const NO_EVIDENCE = "—";
 const PENDING_PRIORITY = "Chờ người có thẩm quyền lựa chọn";
-const MAX_GAP_ROWS = 8;
-const MAX_ACTIONS = 8;
 const MAX_LISTED = 3;
-const MAX_UNANSWERED_IDS = 30;
 
 function isIndustry(value: string): value is IndustryValue {
   return value in INDUSTRY_SOURCES;
@@ -142,9 +139,8 @@ function describeEvidence(
     .join("\n");
 }
 
-function listLabels(labels: readonly string[], max = MAX_LISTED): string {
-  const shown = labels.slice(0, max).join("; ");
-  return labels.length > max ? `${shown} và ${labels.length - max} nội dung khác` : shown;
+function listLabels(labels: readonly string[]): string {
+  return labels.join("; ");
 }
 
 export function buildReportModel(input: ReportBuildInput): ReportModel {
@@ -474,7 +470,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
 
   const priorities = rankedGaps.slice(0, MAX_LISTED).map(actionText);
 
-  const actions: ReportAction[] = rankedGaps.slice(0, MAX_ACTIONS).map((gap) => ({
+  const actions: ReportAction[] = rankedGaps.map((gap) => ({
     description: `${actionText(gap)} (căn cứ ${gap.entry.question.id}: ${gap.reason})`,
     owner: "Chưa phân công",
     due: "Chưa xác định",
@@ -508,8 +504,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   }
   const gapsByTopic: ChartDatum[] = [...topicCounts.entries()]
     .map(([label, value]) => ({ label, value }))
-    .sort((left, right) => right.value - left.value)
-    .slice(0, MAX_GAP_ROWS);
+    .sort((left, right) => right.value - left.value);
 
   const envIncident = item("C-019");
   const integrityIncident = item("C-046");
@@ -668,9 +663,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const unansweredSummary =
     unanswered.length === 0
       ? null
-      : `${unanswered.length} nội dung chưa khai báo: ${unanswered.slice(0, MAX_UNANSWERED_IDS).join(", ")}${
-          unanswered.length > MAX_UNANSWERED_IDS ? ` và ${unanswered.length - MAX_UNANSWERED_IDS} nội dung khác` : ""
-        }.`;
+      : `${unanswered.length} nội dung chưa khai báo: ${unanswered.join(", ")}.`;
 
   const confirmed = draftOf("C-060").value === "yes";
   const reportId = input.reportCode ?? "Chưa lưu hồ sơ";
@@ -797,7 +790,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     },
     modules,
     improvement: {
-      gaps: gapRows.slice(0, MAX_GAP_ROWS),
+      gaps: gapRows,
       followups,
       focus,
       actions,

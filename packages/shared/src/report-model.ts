@@ -122,6 +122,26 @@ function joinSentences(parts: readonly (string | null)[]): string | null {
   return text === "" ? null : text;
 }
 
+const MAX_NOTE_LENGTH = 160;
+
+function describeEvidence(
+  question: Question,
+  draft: ReportAnswerInput,
+  fileName: string,
+): string {
+  const note = clean(draft.description);
+  const shortNote =
+    note.length > MAX_NOTE_LENGTH ? `${note.slice(0, MAX_NOTE_LENGTH)}…` : note;
+  return [
+    `${question.id} — ${REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text)}`,
+    `Tệp: ${fileName}`,
+    `Minh chứng cho câu: ${question.text}`,
+    shortNote !== "" ? `Ghi chú của doanh nghiệp: ${shortNote}` : null,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 function listLabels(labels: readonly string[], max = MAX_LISTED): string {
   const shown = labels.slice(0, max).join("; ");
   return labels.length > max ? `${shown} và ${labels.length - max} nội dung khác` : shown;
@@ -617,10 +637,9 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   });
   const followups =
     missingEvidence.length > 0
-      ? `Bổ sung hoặc đối chiếu căn cứ cho: ${listLabels(
-          missingEvidence.map((id) => REPORT_QUESTION_LABELS[id] ?? id),
-          5,
-        )}.`
+      ? `Bổ sung hoặc đối chiếu căn cứ cho: ${missingEvidence
+          .map((id) => REPORT_QUESTION_LABELS[id] ?? id)
+          .join("; ")}.`
       : null;
   const focusLabels = rankedGaps.slice(0, MAX_LISTED).map((gap) => labelOf(gap.entry.question));
   const focus = focusLabels.length > 0 ? `Tập trung xem xét: ${focusLabels.join("; ")}.` : null;
@@ -638,7 +657,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       for (const file of draft.evidence) {
         evidenceRows.push({
           id: `EV-${String(evidenceRows.length + 1).padStart(3, "0")}`,
-          description: `${question.id} — ${labelOf(question)}: ${file.name}`,
+          description: describeEvidence(question, draft, file.name),
           scope: period,
           status: "Đã đính kèm; chưa xác minh",
         });
@@ -734,7 +753,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
         practiceSentence(environmentIds),
       ]),
       overviewGaps:
-        environmentGapLabels.length > 0 ? `Cần làm rõ: ${listLabels(environmentGapLabels, 5)}.` : null,
+        environmentGapLabels.length > 0 ? `Cần làm rõ: ${environmentGapLabels.join("; ")}.` : null,
       energy,
       fuel: metric("C-003"),
       climate,

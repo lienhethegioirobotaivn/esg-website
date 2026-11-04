@@ -995,7 +995,7 @@ export function ReportDocument({
                     <Image src={image.src} style={{ maxHeight: 177, maxWidth: "100%", objectFit: "contain" }} />
                   </View>
                   <Text style={[styles.cellMuted, { marginTop: 3 }]}>
-                    {image.code} — {image.caption}
+                    {image.code} • {image.caption}
                   </Text>
                 </View>
               ))}

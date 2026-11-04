@@ -4,7 +4,8 @@ import { getDraft } from "../lib/progress";
 import type { AnswerMap, GroupEntry } from "../types";
 import type { EvidenceImage } from "./pdf-parts";
 
-const MAX_IMAGES = 6;
+const MAX_IMAGES = 8;
+const MAX_NOTE_LENGTH = 160;
 const MAX_SIDE = 1000;
 const IMAGE_QUALITY = 0.82;
 
@@ -28,6 +29,26 @@ async function toDataUrl(file: File): Promise<string> {
   }
 }
 
+function buildCaption(
+  id: string,
+  text: string,
+  topic: string,
+  fileName: string,
+  description: string,
+): string {
+  const note = description.trim();
+  const shortNote =
+    note.length > MAX_NOTE_LENGTH ? `${note.slice(0, MAX_NOTE_LENGTH)}…` : note;
+  return [
+    `${id} — ${REPORT_QUESTION_LABELS[id] ?? (topic || text)}`,
+    `Tệp: ${fileName}`,
+    `Minh chứng cho câu: ${text}`,
+    shortNote !== "" ? `Ghi chú của doanh nghiệp: ${shortNote}` : null,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 export async function collectEvidenceImages(
   entries: readonly GroupEntry[],
   answers: AnswerMap,
@@ -48,7 +69,7 @@ export async function collectEvidenceImages(
         try {
           images.push({
             code: `EV-${String(counter).padStart(3, "0")}`,
-            caption: `${question.id} ${REPORT_QUESTION_LABELS[question.id] ?? question.topic}: ${item.file.name}`,
+            caption: buildCaption(question.id, question.text, question.topic, item.file.name, draft.description),
             src: await toDataUrl(item.file),
           });
         } catch {

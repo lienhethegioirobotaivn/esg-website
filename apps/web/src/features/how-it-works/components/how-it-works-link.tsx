@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
 
 import { Button, Modal } from "@/components/ui";
 
@@ -16,14 +15,13 @@ export function HowItWorksLink() {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-haspopup="dialog"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-[#006644] transition-colors"
       >
-        <span>Cách hoạt động</span>
-        <ArrowUpRight className="h-4 w-4" />
+        <span>Hướng dẫn</span>
       </button>
 
       {isOpen ? (
-        <Modal title="Cách hoạt động" onClose={() => setIsOpen(false)}>
+        <Modal title="Hướng dẫn" onClose={() => setIsOpen(false)}>
           <ol className="space-y-4">
             {HOW_IT_WORKS_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-3">

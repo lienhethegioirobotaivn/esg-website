@@ -12,7 +12,7 @@ export const HOW_IT_WORKS_STEPS: readonly HowItWorksStep[] = [
   {
     title: "Trả lời các câu hỏi",
     description:
-      "Bộ câu hỏi chia thành ba phần Môi trường, Xã hội, Quản trị, mỗi phần có nhiều nhóm. Mỗi câu chọn Đã thực hiện, Đang thực hiện hoặc Chưa thực hiện. Với Đã thực hiện, hãy mô tả việc đã làm và đính kèm bằng chứng (PDF hoặc ảnh, tối đa 10 tệp).",
+      "Bộ câu hỏi chia thành ba phần Môi trường, Xã hội, Quản trị, mỗi phần có nhiều nhóm. Mỗi câu có các lựa chọn. Có một số lựa chọn yêu cầu mô tả và đính kèm tệp bằng chứng (PDF hoặc ảnh).",
   },
   {
     title: "Lưu bản nháp",

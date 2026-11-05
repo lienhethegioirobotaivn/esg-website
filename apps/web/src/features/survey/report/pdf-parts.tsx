@@ -426,6 +426,80 @@ export function EvidenceGallery({ images }: { images: readonly EvidenceImage[] }
   );
 }
 
+export interface TimelineStep {
+  readonly label: string;
+  readonly status: string;
+}
+
+const TIMELINE_COLORS: Record<string, string> = {
+  "Chưa bắt đầu": COLORS.blue,
+  "Đang thực hiện": COLORS.partial,
+  "Hoàn thành": COLORS.yes,
+  "Tạm hoãn": COLORS.na,
+};
+
+const TIMELINE_PER_ROW = 5;
+
+export function PlanTimeline({ steps }: { steps: readonly TimelineStep[] }) {
+  if (steps.length === 0) {
+    return null;
+  }
+  const rows: { step: TimelineStep; number: number }[][] = [];
+  steps.forEach((step, index) => {
+    const rowIndex = Math.floor(index / TIMELINE_PER_ROW);
+    rows[rowIndex] = [...(rows[rowIndex] ?? []), { step, number: index + 1 }];
+  });
+  return (
+    <View style={{ marginTop: 8 }}>
+      <Text style={styles.label}>TIẾN ĐỘ KẾ HOẠCH HÀNH ĐỘNG</Text>
+      {rows.map((row, rowIndex) => (
+        <View key={rowIndex} style={{ flexDirection: "row", marginTop: 8 }} wrap={false}>
+          {row.map(({ step, number }, index) => (
+            <View key={number} style={{ width: `${100 / TIMELINE_PER_ROW}%` }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  style={{
+                    flexGrow: 1,
+                    flexBasis: 0,
+                    height: 1,
+                    backgroundColor: index === 0 ? "transparent" : COLORS.line,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: TIMELINE_COLORS[step.status] ?? COLORS.blue,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 8, fontWeight: 700, color: COLORS.white }}>{number}</Text>
+                </View>
+                <View
+                  style={{
+                    flexGrow: 1,
+                    flexBasis: 0,
+                    height: 1,
+                    backgroundColor: index === row.length - 1 ? "transparent" : COLORS.line,
+                  }}
+                />
+              </View>
+              <Text style={[styles.cellMuted, { marginTop: 4, paddingHorizontal: 4, textAlign: "center" }]}>
+                {step.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+      <Text style={[styles.cellMuted, { marginTop: 8 }]}>
+        Màu vòng số: xanh dương là Chưa bắt đầu, vàng là Đang thực hiện, xanh lá là Hoàn thành, xám là Tạm hoãn.
+      </Text>
+    </View>
+  );
+}
+
 export function practiceTotal(counts: PracticeCounts): number {
   return counts.total;
 }

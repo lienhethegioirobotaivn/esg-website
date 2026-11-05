@@ -80,6 +80,11 @@ export const COPY = {
     "Scope 1 là phát thải trực tiếp từ nguồn doanh nghiệp sở hữu hoặc kiểm soát, ví dụ nhiên liệu đốt cho phương tiện, máy phát điện hoặc lò hơi. Scope 2 là phát thải gián tiếp từ điện mua về sử dụng. Hai giá trị do doanh nghiệp tự khai, báo cáo không tự tính từ lượng điện hay nhiên liệu.",
   actionsIntro:
     "Lộ trình giúp chuyển nội dung rà soát thành công việc có người chịu trách nhiệm và cách theo dõi. Những cam kết dưới đây chỉ được trình bày khi doanh nghiệp đã cung cấp hoặc xác nhận nội dung tương ứng.",
+  actionsNoPlan:
+    "Doanh nghiệp chưa cung cấp kế hoạch hành động. Các nội dung dưới đây là đề xuất của hệ thống, chưa được doanh nghiệp xác nhận.",
+  actionsSuggestTitle: "Đề xuất cải thiện chưa được doanh nghiệp xác nhận",
+  actionsSuggestNote:
+    "Đề xuất được tạo từ trạng thái trả lời, không kèm người phụ trách, hạn hoàn thành hay trạng thái thực hiện. Mức gợi ý ưu tiên: Cao, Trung bình, Cần làm rõ trước.",
   actionsNote:
     "Các khuyến nghị chưa được xác nhận được quản lý như gợi ý bổ sung, không được trình bày thành cam kết của doanh nghiệp.",
   imagesIntro:

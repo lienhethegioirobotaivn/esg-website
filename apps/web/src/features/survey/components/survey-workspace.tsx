@@ -9,8 +9,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
-import { selectSurvey } from "@esg/shared";
-import type { Survey } from "@esg/shared";
+import { listImprovementSuggestions, selectSurvey } from "@esg/shared";
+import type { ImprovementPlanInput, Survey } from "@esg/shared";
 
 import { Card } from "@/components/ui";
 import {
@@ -29,13 +29,16 @@ import { useSurveyDraft } from "../hooks/use-survey-draft";
 import { useSurveyNavigation } from "../hooks/use-survey-navigation";
 import { clearDraft, getDraftRaw, parseDraft } from "../lib/draft-storage";
 import { restoreDraft } from "../lib/draft-state";
+import { clearPlan, loadPlan, savePlan } from "../lib/plan-storage";
 import { countCompleted } from "../lib/progress";
 import type { QuestionIssue } from "../lib/report-validation";
 import { flattenGroups } from "../lib/survey-tree";
+import { toReportAnswers, toSurvey } from "../report/create-report";
 import { DraftRestoredNotice } from "./draft-restored-notice";
 import { ExportIssuesDialog } from "./export-issues-dialog";
 import { GroupFooter } from "./group-footer";
 import { GroupSection } from "./group-section";
+import { ImprovementPlanCard } from "./improvement-plan-card";
 import { JourneyProgress } from "./journey-progress";
 import { PillarTabs } from "./pillar-tabs";
 import { ProgressSummary } from "./progress-summary";
@@ -78,6 +81,7 @@ export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
   const handleReset = useCallback(() => {
     clearDraft();
     clearReportCode();
+    clearPlan();
     setResetCount((count) => count + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -126,6 +130,7 @@ function LoadedSurveyWorkspace({
   );
   const [company, setCompany] = useState<CompanyFormValues>(initial.company);
   const [logo, setLogo] = useState<File | null>(null);
+  const [plan, setPlan] = useState<ImprovementPlanInput>(() => loadPlan());
   const survey = useMemo(
     () =>
       selectSurvey(fullSurvey, {
@@ -163,6 +168,16 @@ function LoadedSurveyWorkspace({
     hasEvidence: draft.hasEvidence,
     onSave: draft.persist,
   });
+
+  const suggestions = useMemo(
+    () => listImprovementSuggestions(toSurvey(entries), toReportAnswers(entries, answers)),
+    [entries, answers],
+  );
+
+  function changePlan(next: ImprovementPlanInput) {
+    setPlan(next);
+    savePlan(next);
+  }
 
   const reportExport = useReportExport({ company, entries, answers, logo });
   const reportPreview = useReportPreview({ company, entries, answers, logo });
@@ -409,6 +424,8 @@ function LoadedSurveyWorkspace({
 
         <LeaveDialog />
       </div>
+
+      <ImprovementPlanCard plan={plan} suggestions={suggestions} onChange={changePlan} />
 
       <ReportActions
         onPreview={() => void reportPreview.openPreview()}

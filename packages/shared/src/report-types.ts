@@ -10,6 +10,45 @@ export interface ReportAnswerInput {
   readonly evidence: readonly ReportEvidenceInput[];
 }
 
+export const PLAN_STATUSES = [
+  "Chưa bắt đầu",
+  "Đang thực hiện",
+  "Hoàn thành",
+  "Tạm hoãn",
+] as const;
+
+export type PlanStatus = (typeof PLAN_STATUSES)[number];
+
+export interface PlanTaskInput {
+  readonly id: string;
+  readonly fromId: string;
+  readonly description: string;
+  readonly owner: string;
+  readonly due: string;
+  readonly status: string;
+}
+
+export interface ImprovementPlanInput {
+  readonly tasks: readonly PlanTaskInput[];
+  readonly goal: string;
+  readonly resources: string;
+  readonly reviewCycle: string;
+}
+
+export const EMPTY_PLAN: ImprovementPlanInput = {
+  tasks: [],
+  goal: "",
+  resources: "",
+  reviewCycle: "",
+};
+
+export interface ReportSuggestion {
+  readonly id: string;
+  readonly text: string;
+  readonly basis: string;
+  readonly priority: string;
+}
+
 export interface ReportItem {
   readonly id: string;
   readonly label: string;
@@ -60,7 +99,7 @@ export interface ReportAction {
   readonly description: string;
   readonly owner: string;
   readonly due: string;
-  readonly status: string;
+  readonly status: PlanStatus;
 }
 
 export interface ReportEvidenceRow {
@@ -205,6 +244,7 @@ export interface ReportModel {
     readonly followups: string | null;
     readonly focus: string | null;
     readonly actions: readonly ReportAction[];
+    readonly suggestions: readonly ReportSuggestion[];
     readonly goal: string | null;
     readonly resources: string | null;
     readonly reviewCycle: string | null;

@@ -15,6 +15,7 @@ import {
   Panel,
   PillarBadge,
   PillarChart,
+  PlanTimeline,
   PracticeChart,
   QuestionCards,
   SectionHead,
@@ -160,7 +161,8 @@ export function ReportDocument({
   const hasSupply = has(governance.supply.items.length > 0, governance.supply.assessment, profile.supplierGroups.length > 0);
   const hasData = has(governance.data.items.length > 0, governance.data.assessment);
   const hasGaps = has(improvement.gaps.length > 0, improvement.followups, improvement.focus);
-  const hasActions = has(improvement.actions.length > 0, improvement.goal, improvement.resources, improvement.reviewCycle);
+  const hasPlan = has(improvement.actions.length > 0, improvement.goal, improvement.resources, improvement.reviewCycle);
+  const hasActions = has(hasPlan, improvement.suggestions.length > 0);
   const firstOf = (flags: readonly boolean[], names: readonly string[]): string | null => {
     const index = flags.findIndex(Boolean);
     return index === -1 ? null : (names[index] ?? null);
@@ -932,32 +934,65 @@ export function ReportDocument({
             title: "Kế hoạch hành động",
             intro: COPY.actionsIntro,
             tocKey: r06First === "actions" ? "R06" : undefined,
-            strip: strips.actions,
             children: (
               <>
-                <DataTable
-                  columns={[
-                    { title: "Công việc và căn cứ", width: "46%" },
-                    { title: "Phụ trách", width: "16%" },
-                    { title: "Thời hạn", width: "16%" },
-                    { title: "Trạng thái", width: "22%" },
-                  ]}
-                  rows={improvement.actions.map((action) => [
-                    action.description,
-                    action.owner,
-                    action.due,
-                    action.status,
-                  ])}
-                />
-                <SubHead>Mục tiêu và cách theo dõi</SubHead>
-                <Facts
-                  items={[
-                    { label: "Kết quả mong muốn", value: improvement.goal, full: true },
-                    { label: "Nguồn lực được xác nhận", value: improvement.resources },
-                    { label: "Chu kỳ xem xét", value: improvement.reviewCycle },
-                  ]}
-                />
-                <Note>{COPY.actionsNote}</Note>
+                {hasPlan ? (
+                  <>
+                    <PlanTimeline
+                      steps={improvement.actions.map((action) => ({
+                        label: action.description,
+                        status: action.status,
+                      }))}
+                    />
+                    <DataTable
+                      columns={[
+                        { title: "Công việc", width: "46%" },
+                        { title: "Phụ trách", width: "16%" },
+                        { title: "Thời hạn", width: "16%" },
+                        { title: "Trạng thái", width: "22%" },
+                      ]}
+                      rows={improvement.actions.map((action) => [
+                        action.description,
+                        action.owner,
+                        action.due,
+                        action.status,
+                      ])}
+                      splitRows
+                    />
+                    {has(improvement.goal, improvement.resources, improvement.reviewCycle) ? (
+                      <>
+                        <SubHead>Mục tiêu và cách theo dõi</SubHead>
+                        <Facts
+                          items={[
+                            { label: "Kết quả mong muốn", value: improvement.goal, full: true },
+                            { label: "Nguồn lực", value: improvement.resources, full: true },
+                            { label: "Chu kỳ xem xét", value: improvement.reviewCycle, full: true },
+                          ]}
+                        />
+                      </>
+                    ) : null}
+                    <Note>{COPY.actionsNote}</Note>
+                  </>
+                ) : (
+                  <Note>{COPY.actionsNoPlan}</Note>
+                )}
+                {improvement.suggestions.length > 0 ? (
+                  <>
+                    <SubHead>{COPY.actionsSuggestTitle}</SubHead>
+                    <DataTable
+                      columns={[
+                        { title: "Công việc và căn cứ", width: "74%" },
+                        { title: "Gợi ý ưu tiên", width: "26%" },
+                      ]}
+                      rows={improvement.suggestions.map((suggestion) => [
+                        `${suggestion.text} (${suggestion.basis})`,
+                        suggestion.priority,
+                      ])}
+                      splitRows
+                    />
+                    <Note>{COPY.actionsSuggestNote}</Note>
+                  </>
+                ) : null}
               </>
             ),
           })

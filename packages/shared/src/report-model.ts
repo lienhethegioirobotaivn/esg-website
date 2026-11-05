@@ -21,6 +21,7 @@ import {
   parseTableLines,
   splitCodes,
 } from "./profile";
+import { EMPTY_PLAN, PLAN_STATUSES } from "./report-types";
 import type {
   ChartDatum,
   PracticeCounts,
@@ -35,6 +36,10 @@ import type {
   ReportModel,
   ReportModule,
   ReportSection,
+  ReportSuggestion,
+  ImprovementPlanInput,
+  PlanStatus,
+  PlanTaskInput,
 } from "./report-types";
 import type { Question, Survey } from "./survey";
 
@@ -46,6 +51,7 @@ export interface ReportBuildInput {
   readonly generatedAt: string;
   readonly contentVersion: string;
   readonly isDraft: boolean;
+  readonly plan?: ImprovementPlanInput;
 }
 
 interface Entry {
@@ -141,10 +147,14 @@ function listLabels(labels: readonly string[]): string {
   return labels.join("; ");
 }
 
-export function buildReportModel(input: ReportBuildInput): ReportModel {
-  const { survey, company, answers } = input;
+interface Gap {
+  readonly rank: number;
+  readonly entry: Entry;
+  readonly reason: string;
+}
 
-  const entries: Entry[] = survey.flatMap((pillar) =>
+function buildEntries(survey: Survey): Entry[] {
+  return survey.flatMap((pillar) =>
     pillar.groups.flatMap((group) =>
       group.questions.map((question) => ({
         question,
@@ -154,6 +164,112 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       })),
     ),
   );
+}
+
+function labelFor(question: Question): string {
+  return REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text);
+}
+
+function rankGaps(
+  entries: readonly Entry[],
+  answers: Readonly<Record<string, ReportAnswerInput>>,
+): Gap[] {
+  const gaps: Gap[] = [];
+  for (const entry of entries) {
+    const { question } = entry;
+    const value = (answers[question.id] ?? EMPTY_ANSWER).value;
+    if (value === null || value === "na") {
+      continue;
+    }
+    if (question.inputType === "INCIDENT" && value === "yes") {
+      gaps.push({ rank: 0, entry, reason: "Có sự cố hoặc vụ việc được khai báo" });
+    } else if (question.inputType === "PRACTICE" && value === "no") {
+      gaps.push({ rank: 1, entry, reason: "Chưa có" });
+    } else if (question.inputType === "PRACTICE" && value === "partial") {
+      gaps.push({ rank: 2, entry, reason: "Có một phần" });
+    } else if (question.inputType === "PRACTICE" && value === "unknown") {
+      gaps.push({ rank: 3, entry, reason: "Chưa rõ" });
+    } else if (
+      question.inputType !== "PRACTICE" &&
+      question.inputType !== "INCIDENT" &&
+      question.inputType !== "PRESENCE" &&
+      value === "unknown"
+    ) {
+      gaps.push({ rank: 4, entry, reason: "Chưa có dữ liệu" });
+    }
+  }
+  return gaps
+    .map((gap, index) => ({ gap, index }))
+    .sort((left, right) => left.gap.rank - right.gap.rank || left.index - right.index)
+    .map(({ gap }) => gap);
+}
+
+function suggestionText(gap: Gap): string {
+  const { question } = gap.entry;
+  const hint = clean(question.improvementHint);
+  if (gap.rank === 0) {
+    return `Rà soát tình trạng xử lý và biện pháp khắc phục: ${labelFor(question)}`;
+  }
+  return hint !== "" ? hint : `Rà soát và bổ sung: ${labelFor(question)}`;
+}
+
+function toSuggestion(gap: Gap): ReportSuggestion {
+  return {
+    id: gap.entry.question.id,
+    text: suggestionText(gap),
+    basis: `căn cứ ${gap.entry.question.id}: ${gap.reason}`,
+    priority: priorityOf(gap.rank),
+  };
+}
+
+export function listImprovementSuggestions(
+  survey: Survey,
+  answers: Readonly<Record<string, ReportAnswerInput>>,
+): ReportSuggestion[] {
+  return rankGaps(buildEntries(survey), answers).map(toSuggestion);
+}
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const NOT_PROVIDED = "Chưa cung cấp";
+
+function formatDue(value: string): string {
+  const text = value.trim();
+  const match = ISO_DATE.exec(text);
+  if (match === null) {
+    return text === "" ? NOT_PROVIDED : text;
+  }
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function toPlanStatus(value: string): PlanStatus {
+  const found = PLAN_STATUSES.find((status) => status === value.trim());
+  return found ?? PLAN_STATUSES[0];
+}
+
+function sortTasks(tasks: readonly PlanTaskInput[]): PlanTaskInput[] {
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .sort((left, right) => {
+      const leftDue = ISO_DATE.test(left.task.due.trim()) ? left.task.due.trim() : null;
+      const rightDue = ISO_DATE.test(right.task.due.trim()) ? right.task.due.trim() : null;
+      if (leftDue !== null && rightDue !== null && leftDue !== rightDue) {
+        return leftDue < rightDue ? -1 : 1;
+      }
+      if (leftDue === null && rightDue !== null) {
+        return 1;
+      }
+      if (leftDue !== null && rightDue === null) {
+        return -1;
+      }
+      return left.index - right.index;
+    })
+    .map(({ task }) => task);
+}
+
+export function buildReportModel(input: ReportBuildInput): ReportModel {
+  const { survey, company, answers } = input;
+
+  const entries = buildEntries(survey);
   const lookup = new Map(entries.map((entry) => [entry.question.id, entry]));
 
   function draftOf(id: string): ReportAnswerInput {
@@ -161,7 +277,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   }
 
   function labelOf(question: Question): string {
-    return REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text);
+    return labelFor(question);
   }
 
   function answerText(question: Question, draft: ReportAnswerInput): string {
@@ -423,57 +539,23 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     }
   }
 
-  interface Gap {
-    readonly rank: number;
-    readonly entry: Entry;
-    readonly reason: string;
-  }
-  const gaps: Gap[] = [];
-  for (const entry of entries) {
-    const { question } = entry;
-    const value = draftOf(question.id).value;
-    if (value === null || value === "na") {
-      continue;
-    }
-    if (question.inputType === "INCIDENT" && value === "yes") {
-      gaps.push({ rank: 0, entry, reason: "Có sự cố hoặc vụ việc được khai báo" });
-    } else if (question.inputType === "PRACTICE" && value === "no") {
-      gaps.push({ rank: 1, entry, reason: "Chưa có" });
-    } else if (question.inputType === "PRACTICE" && value === "partial") {
-      gaps.push({ rank: 2, entry, reason: "Có một phần" });
-    } else if (question.inputType === "PRACTICE" && value === "unknown") {
-      gaps.push({ rank: 3, entry, reason: "Chưa rõ" });
-    } else if (
-      question.inputType !== "PRACTICE" &&
-      question.inputType !== "INCIDENT" &&
-      question.inputType !== "PRESENCE" &&
-      value === "unknown"
-    ) {
-      gaps.push({ rank: 4, entry, reason: "Chưa có dữ liệu" });
-    }
-  }
-  const rankedGaps = gaps
-    .map((gap, index) => ({ gap, index }))
-    .sort((left, right) => left.gap.rank - right.gap.rank || left.index - right.index)
-    .map(({ gap }) => gap);
-
-  function actionText(gap: Gap): string {
-    const { question } = gap.entry;
-    const hint = clean(question.improvementHint);
-    if (gap.rank === 0) {
-      return `Rà soát tình trạng xử lý và biện pháp khắc phục: ${labelOf(question)}`;
-    }
-    return hint !== "" ? hint : `Rà soát và bổ sung: ${labelOf(question)}`;
-  }
+  const rankedGaps = rankGaps(entries, answers);
+  const actionText = suggestionText;
 
   const priorities = rankedGaps.slice(0, MAX_LISTED).map(actionText);
 
-  const actions: ReportAction[] = rankedGaps.map((gap) => ({
-    description: `${actionText(gap)} (căn cứ ${gap.entry.question.id}: ${gap.reason})`,
-    owner: "Chưa phân công",
-    due: "Chưa xác định",
-    status: "Gợi ý, chưa xác nhận",
+  const plan = input.plan ?? EMPTY_PLAN;
+  const planTasks = plan.tasks.filter((task) => clean(task.description) !== "");
+  const confirmedIds = new Set(planTasks.map((task) => task.fromId).filter((id) => id !== ""));
+  const actions: ReportAction[] = sortTasks(planTasks).map((task) => ({
+    description: clean(task.description),
+    owner: orNull(task.owner) ?? NOT_PROVIDED,
+    due: formatDue(task.due),
+    status: toPlanStatus(task.status),
   }));
+  const suggestions: ReportSuggestion[] = rankedGaps
+    .filter((gap) => !confirmedIds.has(gap.entry.question.id))
+    .map(toSuggestion);
 
   const gapRows: ReportGap[] = [];
   const gapsByGroup = new Map<string, Gap[]>();
@@ -811,9 +893,10 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       followups,
       focus,
       actions,
-      goal: orNull(answers["C-058"]?.description),
-      resources: null,
-      reviewCycle: leadership,
+      suggestions,
+      goal: orNull(plan.goal),
+      resources: orNull(plan.resources),
+      reviewCycle: orNull(plan.reviewCycle),
     },
     evidence: {
       rows: evidenceRows,

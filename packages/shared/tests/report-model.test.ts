@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildReportModel } from "../src/report-model";
-import type { ReportAnswerInput } from "../src/report-types";
+import { buildReportModel, listImprovementSuggestions } from "../src/report-model";
+import type { ImprovementPlanInput, ReportAnswerInput } from "../src/report-types";
 import type { Question, Survey } from "../src/survey";
 
 function q(
@@ -144,8 +144,12 @@ const answers: Record<string, ReportAnswerInput> = {
   "C-060": a("yes", "", ""),
 };
 
-function build(overrides: Record<string, ReportAnswerInput> = {}) {
+function build(
+  overrides: Record<string, ReportAnswerInput> = {},
+  plan?: ImprovementPlanInput,
+) {
   return buildReportModel({
+    plan,
     survey,
     company,
     answers: { ...answers, ...overrides },
@@ -229,8 +233,9 @@ describe("buildReportModel", () => {
       "Lập kế hoạch giảm điện năng.",
       "Thử khôi phục sao lưu định kỳ.",
     ]);
-    assert.equal(model.improvement.actions[0]?.owner, "Chưa phân công");
-    assert.equal(model.improvement.actions[0]?.due, "Chưa xác định");
+    assert.equal(model.improvement.actions.length, 0);
+    assert.equal(model.improvement.suggestions[0]?.id, "C-051");
+    assert.equal(model.improvement.suggestions[0]?.priority, "Cao");
   });
 
   it("gom minh chứng theo câu hỏi kèm ghi chú chung", () => {
@@ -270,6 +275,46 @@ describe("buildReportModel", () => {
       (row) => row.title === "Năng lượng",
     );
     assert.equal(clarify?.priority, "Cần làm rõ trước");
+  });
+
+  it("kế hoạch do doanh nghiệp nhập thay cho đề xuất tự sinh", () => {
+    const plan: ImprovementPlanInput = {
+      tasks: [
+        { id: "a", fromId: "", description: "Việc muộn", owner: "", due: "2026-03-31", status: "Đang thực hiện" },
+        { id: "b", fromId: "C-051", description: "Sao lưu dữ liệu", owner: "Kỹ thuật", due: "2026-01-31", status: "Hoàn thành" },
+        { id: "c", fromId: "", description: "Chưa hạn", owner: "Vận hành", due: "", status: "không hợp lệ" },
+        { id: "d", fromId: "", description: "   ", owner: "Bỏ qua", due: "", status: "" },
+      ],
+      goal: "Giảm rủi ro dữ liệu",
+      resources: "",
+      reviewCycle: "Hằng quý",
+    };
+    const planned = build({}, plan).improvement;
+    assert.deepEqual(
+      planned.actions.map((action) => [action.description, action.owner, action.due, action.status]),
+      [
+        ["Sao lưu dữ liệu", "Kỹ thuật", "31/01/2026", "Hoàn thành"],
+        ["Việc muộn", "Chưa cung cấp", "31/03/2026", "Đang thực hiện"],
+        ["Chưa hạn", "Vận hành", "Chưa cung cấp", "Chưa bắt đầu"],
+      ],
+    );
+    assert.equal(planned.goal, "Giảm rủi ro dữ liệu");
+    assert.equal(planned.resources, null);
+    assert.equal(planned.reviewCycle, "Hằng quý");
+    assert.equal(planned.suggestions.some((item) => item.id === "C-051"), false);
+    assert.equal(planned.suggestions.some((item) => item.id === "C-004"), true);
+    assert.equal(model.improvement.goal, null);
+  });
+
+  it("liệt kê đề xuất không cần dựng cả báo cáo", () => {
+    const list = listImprovementSuggestions(
+      survey,
+      Object.fromEntries(Object.entries(answers)),
+    );
+    assert.deepEqual(
+      list.map((item) => item.id),
+      model.improvement.suggestions.map((item) => item.id),
+    );
   });
 
   it("phụ lục tách câu hỏi và câu trả lời", () => {

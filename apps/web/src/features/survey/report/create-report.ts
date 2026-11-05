@@ -4,6 +4,7 @@ import type { ReportAnswerInput, Survey } from "@esg/shared";
 import { getReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
 
+import { loadPlan } from "../lib/plan-storage";
 import { getDraft } from "../lib/progress";
 import { getReportDraftState } from "../lib/report-draft-state";
 import type { AnswerMap, GroupEntry } from "../types";
@@ -20,7 +21,7 @@ interface CreateReportInput {
   logo?: File | null;
 }
 
-function toSurvey(entries: readonly GroupEntry[]): Survey {
+export function toSurvey(entries: readonly GroupEntry[]): Survey {
   const pillars: Survey = [];
   entries.forEach((entry) => {
     const existing = pillars.find((pillar) => pillar.id === entry.pillarId);
@@ -39,7 +40,7 @@ function toSurvey(entries: readonly GroupEntry[]): Survey {
   return pillars;
 }
 
-function toReportAnswers(
+export function toReportAnswers(
   entries: readonly GroupEntry[],
   answers: AnswerMap,
 ): Record<string, ReportAnswerInput> {
@@ -75,6 +76,7 @@ export async function createReportBlob(
     generatedAt: new Date().toISOString(),
     contentVersion: CONTENT_VERSION,
     isDraft,
+    plan: loadPlan(),
   });
   const logo = input.logo
     ? await prepareReportLogo(input.logo).catch(() => null)

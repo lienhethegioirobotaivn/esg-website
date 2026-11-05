@@ -75,8 +75,7 @@ export function ImprovementPlanCard({
           <div className="space-y-5 border-t border-border px-5 py-4">
             <p className="text-[0.8125rem] leading-relaxed text-muted">
               Không bắt buộc. Nếu bạn không thêm đầu việc nào, báo cáo sẽ không
-              có phần kế hoạch của doanh nghiệp. Hệ thống không tự suy ra người
-              phụ trách, hạn hoàn thành hay trạng thái.
+              có phần kế hoạch của doanh nghiệp.
             </p>
 
             <div className="space-y-4">
@@ -187,11 +186,11 @@ export function ImprovementPlanCard({
                   Thêm từ đề xuất của hệ thống
                 </h3>
                 <p className="text-[0.8125rem] leading-relaxed text-muted">
-                  Đề xuất được tạo từ các câu trả lời còn khoảng trống. Bấm
-                  “Thêm” để đưa một đề xuất thành đầu việc của bạn, sau đó điền
-                  người phụ trách, hạn và trạng thái. Đề xuất chưa được thêm sẽ
-                  vẫn xuất hiện trong báo cáo dưới mục “Đề xuất cải thiện chưa
-                  được doanh nghiệp xác nhận”.
+                  Đề xuất được tạo từ các câu trả lời cần bổ sung hoặc làm rõ.
+                  Bấm “Thêm” để đưa một đề xuất thành đầu việc của bạn, sau đó
+                  điền người phụ trách, hạn và trạng thái. Đề xuất chưa được
+                  thêm sẽ vẫn xuất hiện trong báo cáo dưới mục “Đề xuất cải
+                  thiện chưa được doanh nghiệp xác nhận”.
                 </p>
                 {available.length === 0 ? (
                   <p className="text-[0.8125rem] text-muted">

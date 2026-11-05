@@ -588,6 +588,7 @@ export function ReportDocument({
                     <Panel label="Nhận định theo hồ sơ" text={environment.climate.assessment} soft />
                   </View>
                 </Cols>
+                <Note>{COPY.ghgNote}</Note>
                 <BarChart title="Phát thải trong phạm vi" data={charts.ghg} unit="tCO₂e" />
                 <QuestionCards items={environment.climate.items} />
               </>
@@ -908,21 +909,16 @@ export function ReportDocument({
               <>
                 <DataTable
                   columns={[
-                    { title: "Vấn đề", width: "30%" },
-                    { title: "Căn cứ", width: "40%" },
-                    { title: "Ưu tiên đã chọn", width: "30%" },
+                    { title: "Vấn đề", width: "24%" },
+                    { title: "Căn cứ", width: "56%" },
+                    { title: "Gợi ý ưu tiên", width: "20%" },
                   ]}
                   rows={improvement.gaps.map((gap) => [gap.title, gap.reason, gap.priority])}
+                  splitRows
                 />
                 <BarChart title="Khoảng trống theo chủ đề" data={charts.gapsByTopic} unit="" />
-                <Cols>
-                  <View style={{ width: "50%", paddingRight: 8 }}>
-                    <Panel label="Những việc cần xác minh thêm" text={improvement.followups} />
-                  </View>
-                  <View style={{ width: "50%" }}>
-                    <Panel label="Trọng tâm cho kỳ tiếp theo" text={improvement.focus} />
-                  </View>
-                </Cols>
+                <Panel label="Trọng tâm cho kỳ tiếp theo" text={improvement.focus} breakable />
+                <Panel label="Những việc cần xác minh thêm" text={improvement.followups} breakable />
                 <Note>{COPY.gapsNote}</Note>
               </>
             ),
@@ -1069,11 +1065,13 @@ export function ReportDocument({
           <>
             <DataTable
               columns={[
-                { title: "Mã câu", width: "12%" },
-                { title: "Nội dung và câu trả lời", width: "58%" },
-                { title: "Trạng thái căn cứ", width: "30%" },
+                { title: "Mã câu", width: "11%" },
+                { title: "Câu hỏi", width: "39%" },
+                { title: "Câu trả lời", width: "28%" },
+                { title: "Trạng thái căn cứ", width: "22%" },
               ]}
-              rows={appendix.rows.map((row) => [row.id, row.text, row.evidence])}
+              rows={appendix.rows.map((row) => [row.id, row.question, row.answer, row.evidence])}
+              repeatHeader
             />
             <Panel label="Nội dung chưa khai báo trong phạm vi" text={appendix.unansweredSummary} />
             <Note>{COPY.appendixNote}</Note>

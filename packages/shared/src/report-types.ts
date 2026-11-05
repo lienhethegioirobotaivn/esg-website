@@ -85,7 +85,8 @@ export interface ReportEvidenceGroup {
 
 export interface ReportAppendixRow {
   readonly id: string;
-  readonly text: string;
+  readonly question: string;
+  readonly answer: string;
   readonly evidence: string;
 }
 

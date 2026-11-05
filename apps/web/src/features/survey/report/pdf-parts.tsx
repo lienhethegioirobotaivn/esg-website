@@ -73,16 +73,18 @@ export function Panel({
   label,
   text,
   soft = false,
+  breakable = false,
 }: {
   label: string;
   text: string | null;
   soft?: boolean;
+  breakable?: boolean;
 }) {
   if (text === null || text === "") {
     return null;
   }
   return (
-    <View style={soft ? styles.panelSoft : styles.panel} wrap={false}>
+    <View style={soft ? styles.panelSoft : styles.panel} wrap={breakable}>
       <Text style={styles.label}>{label.toUpperCase()}</Text>
       <Text style={styles.body}>{text}</Text>
     </View>
@@ -148,16 +150,20 @@ interface Column {
 export function DataTable({
   columns,
   rows,
+  repeatHeader = false,
+  splitRows = false,
 }: {
   columns: readonly Column[];
   rows: readonly (readonly string[])[];
+  repeatHeader?: boolean;
+  splitRows?: boolean;
 }) {
   if (rows.length === 0) {
     return null;
   }
   return (
     <View style={{ marginTop: 8 }}>
-      <View style={styles.tableHead} wrap={false} fixed={false}>
+      <View style={styles.tableHead} wrap={false} fixed={repeatHeader}>
         {columns.map((column) => (
           <Text
             key={column.title}
@@ -168,7 +174,7 @@ export function DataTable({
         ))}
       </View>
       {rows.map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.tableRow} wrap={false}>
+        <View key={rowIndex} style={styles.tableRow} wrap={splitRows}>
           {columns.map((column, index) => (
             <Text
               key={column.title}

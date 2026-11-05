@@ -75,7 +75,9 @@ export const COPY = {
   gapsIntro:
     "Một kế hoạch có ích bắt đầu từ vấn đề được mô tả rõ và căn cứ có thể truy xuất. Các khoảng trống được phân biệt giữa thiếu thực hành, thiếu dữ liệu, thiếu minh chứng và vấn đề đang cần xử lý.",
   gapsNote:
-    "Mức ưu tiên do người có thẩm quyền rà soát và lựa chọn. Tình trạng sự cố không tự chuyển thành đã khắc phục chỉ vì có một hành động được đề xuất.",
+    "Gợi ý ưu tiên do hệ thống tạo từ trạng thái trả lời: sự cố và Chưa có là Cao; Có một phần là Trung bình; Chưa rõ và Chưa có dữ liệu là Cần làm rõ trước. Khi một nhóm có nhiều mức, nhóm lấy mức cao nhất. Đây chưa phải lựa chọn của người có thẩm quyền, và tình trạng sự cố không tự chuyển thành đã khắc phục chỉ vì có một hành động được đề xuất.",
+  ghgNote:
+    "Scope 1 là phát thải trực tiếp từ nguồn doanh nghiệp sở hữu hoặc kiểm soát, ví dụ nhiên liệu đốt cho phương tiện, máy phát điện hoặc lò hơi. Scope 2 là phát thải gián tiếp từ điện mua về sử dụng. Hai giá trị do doanh nghiệp tự khai, báo cáo không tự tính từ lượng điện hay nhiên liệu.",
   actionsIntro:
     "Lộ trình giúp chuyển nội dung rà soát thành công việc có người chịu trách nhiệm và cách theo dõi. Những cam kết dưới đây chỉ được trình bày khi doanh nghiệp đã cung cấp hoặc xác nhận nội dung tương ứng.",
   actionsNote:

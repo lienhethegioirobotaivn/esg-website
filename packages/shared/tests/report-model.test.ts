@@ -252,6 +252,32 @@ describe("buildReportModel", () => {
     assert.equal(many.evidence.rows.length, 3);
   });
 
+  it("khoảng trống nêu tên nội dung và gợi ý ưu tiên theo mức", () => {
+    const rows = model.improvement.gaps;
+    const data = rows.find((row) => row.title === "Dữ liệu");
+    assert.equal(
+      data?.reason,
+      "Chưa có: Xử lý sự cố dữ liệu\nChưa rõ: Sao lưu",
+    );
+    assert.equal(data?.priority, "Cao");
+    const energy = rows.find((row) => row.title === "Năng lượng");
+    assert.equal(
+      energy?.reason,
+      "Có một phần: Giảm tiêu thụ năng lượng\nChưa có dữ liệu: Nước",
+    );
+    assert.equal(energy?.priority, "Trung bình");
+    const clarify = build({ "C-004": a("yes"), "C-009": a("unknown") }).improvement.gaps.find(
+      (row) => row.title === "Năng lượng",
+    );
+    assert.equal(clarify?.priority, "Cần làm rõ trước");
+  });
+
+  it("phụ lục tách câu hỏi và câu trả lời", () => {
+    const row = model.appendix.rows.find((entry) => entry.id === "C-002");
+    assert.equal(row?.question, "Câu C-002");
+    assert.equal(row?.answer, "9600 kWh (Hóa đơn điện 12 tháng)");
+  });
+
   it("module ngành chỉ gồm câu của ngành đang chọn", () => {
     assert.equal(model.modules.length, 1);
     assert.equal(model.modules[0]?.source, "ICT");

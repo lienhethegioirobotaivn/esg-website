@@ -99,7 +99,16 @@ const SECTION_IDS = {
 } as const;
 
 const NO_EVIDENCE = "—";
-const PENDING_PRIORITY = "Chờ người có thẩm quyền lựa chọn";
+const PRIORITY_HIGH = "Cao";
+const PRIORITY_MEDIUM = "Trung bình";
+const PRIORITY_CLARIFY = "Cần làm rõ trước";
+
+function priorityOf(rank: number): string {
+  if (rank <= 1) {
+    return PRIORITY_HIGH;
+  }
+  return rank === 2 ? PRIORITY_MEDIUM : PRIORITY_CLARIFY;
+}
 const MAX_LISTED = 3;
 
 function isIndustry(value: string): value is IndustryValue {
@@ -473,17 +482,21 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     gapsByGroup.set(key, [...(gapsByGroup.get(key) ?? []), gap]);
   }
   for (const [title, list] of gapsByGroup) {
-    const count = (reason: string) => list.filter((gap) => gap.reason === reason).length;
+    const lineOf = (reason: string, heading: string): string | null => {
+      const names = list
+        .filter((gap) => gap.reason === reason)
+        .map((gap) => labelOf(gap.entry.question));
+      return names.length > 0 ? `${heading}: ${names.join("; ")}` : null;
+    };
     const parts = [
-      count("Có sự cố hoặc vụ việc được khai báo") > 0
-        ? `${count("Có sự cố hoặc vụ việc được khai báo")} sự cố được khai báo`
-        : null,
-      count("Chưa có") > 0 ? `${count("Chưa có")} nội dung chưa có` : null,
-      count("Có một phần") > 0 ? `${count("Có một phần")} nội dung có một phần` : null,
-      count("Chưa rõ") > 0 ? `${count("Chưa rõ")} nội dung chưa rõ` : null,
-      count("Chưa có dữ liệu") > 0 ? `${count("Chưa có dữ liệu")} số liệu chưa có` : null,
+      lineOf("Có sự cố hoặc vụ việc được khai báo", "Sự cố được khai báo"),
+      lineOf("Chưa có", "Chưa có"),
+      lineOf("Có một phần", "Có một phần"),
+      lineOf("Chưa rõ", "Chưa rõ"),
+      lineOf("Chưa có dữ liệu", "Chưa có dữ liệu"),
     ].filter((part): part is string => part !== null);
-    gapRows.push({ title, reason: parts.join("; "), priority: PENDING_PRIORITY });
+    const topRank = Math.min(...list.map((gap) => gap.rank));
+    gapRows.push({ title, reason: parts.join("\n"), priority: priorityOf(topRank) });
   }
 
   const topicCounts = new Map<string, number>();
@@ -621,9 +634,10 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   });
   const followups =
     missingEvidence.length > 0
-      ? `Bổ sung hoặc đối chiếu căn cứ cho: ${missingEvidence
-          .map((id) => REPORT_QUESTION_LABELS[id] ?? id)
-          .join("; ")}.`
+      ? [
+          "Bổ sung hoặc đối chiếu căn cứ cho:",
+          ...missingEvidence.map((id) => `• ${REPORT_QUESTION_LABELS[id] ?? id}`),
+        ].join("\n")
       : null;
   const focusLabels = rankedGaps.slice(0, MAX_LISTED).map((gap) => labelOf(gap.entry.question));
   const focus = focusLabels.length > 0 ? `Tập trung xem xét: ${focusLabels.join("; ")}.` : null;
@@ -635,7 +649,8 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     const draft = draftOf(question.id);
     appendixRows.push({
       id: question.id,
-      text: `${question.text} — ${answerText(question, draft)}`,
+      question: question.text,
+      answer: answerText(question, draft),
       evidence: evidenceText(question, draft),
     });
     if (getAnswerFields(question.inputType, draft.value).evidence) {

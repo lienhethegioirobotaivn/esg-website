@@ -1,33 +1,33 @@
 # ESGstudio
 
-Website khảo sát ESG nội bộ miễn phí cho doanh nghiệp. Người quản trị tạo bộ câu hỏi ở `/admin`, người dùng điền thông tin doanh nghiệp và trả lời bộ câu hỏi ở trang chủ. Bộ câu hỏi gồm ba phần cố định (**Môi trường**, **Xã hội**, **Quản trị**), mỗi phần có nhiều nhóm, mỗi nhóm có nhiều câu. Mỗi câu có ba trạng thái: **Đã thực hiện**, **Đang thực hiện**, **Chưa thực hiện**. Chọn **Đã thực hiện** thì kèm mô tả và bằng chứng (tối đa 10 tệp PDF hoặc ảnh).
+Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền thông tin, trả lời bộ câu hỏi theo ngành và quy mô, rồi xuất báo cáo PDF theo mẫu. Bối cảnh chi tiết và các quyết định đã chốt nằm ở [docs/boi-canh-du-an.md](docs/boi-canh-du-an.md).
 
 ## Trạng thái
 
 | Hạng mục | Trạng thái |
 | --- | --- |
-| `apps/web` (Next.js) | Hoàn thiện giao diện, chạy bằng dữ liệu mock |
-| `apps/api` (Express + Drizzle) | Chưa tạo |
-| `packages/shared` | Có: hằng số, schema Zod, kiểu dữ liệu dùng chung |
-| Bản nháp của người dùng | Có, lưu trong trình duyệt (`localStorage`): câu trả lời, mô tả, thông tin doanh nghiệp. Tệp bằng chứng chưa được lưu |
-| Lưu lên máy chủ | Chưa có. Bộ câu hỏi do admin chỉnh chỉ nằm trong bộ nhớ trình duyệt, tải lại trang là mất |
-| Xuất báo cáo PDF | Có, tạo ngay trên trình duyệt: xem bản nháp, kiểm tra thiếu câu, tải về |
-| Chấm điểm | Chưa làm (xem mục TODO) |
-| Đăng nhập `/admin` | Chưa có |
+| `apps/web` (Next.js) | Chạy với dữ liệu thật từ Google Sheet |
+| Bộ câu hỏi | Đọc từ Google Sheet, chỉ câu "Đã duyệt", theo ngành và quy mô nhân sự |
+| Lưu doanh nghiệp | Apps Script ghi vào Sheet "Data khách hàng", logo lưu Google Drive |
+| Bản nháp | Lưu trong trình duyệt (`localStorage`): câu trả lời, ghi chú, thông tin doanh nghiệp; tệp bằng chứng chưa lưu |
+| Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
+| Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
+| `apps/api` | Không dùng (đã thay bằng Sheet và Apps Script) |
+| `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
+| Chấm điểm | Chưa làm |
 
 ## Công nghệ
 
-- **Ngôn ngữ:** TypeScript chế độ nghiêm ngặt, không dùng `any`.
-- **Frontend:** Next.js (App Router), Tailwind CSS v4, lucide-react, zustand.
-- **Báo cáo PDF:** `@react-pdf/renderer`, tạo phía trình duyệt, font DejaVu Sans đặt ở `apps/web/public/fonts` để hiển thị đủ dấu tiếng Việt.
-- **Validate:** Zod, dùng chung giữa web và api qua `@esg/shared`.
-- **Backend (dự kiến):** Express, Drizzle ORM, PostgreSQL.
-- **Quản lý gói:** pnpm workspace.
+- TypeScript nghiêm ngặt, không `any`.
+- Next.js (App Router), Tailwind CSS v4, lucide-react, zod 4.
+- `@react-pdf/renderer`, phông DejaVu Sans ở `apps/web/public/fonts`.
+- Google Sheet (gviz CSV) và Google Apps Script làm nguồn dữ liệu và nơi lưu.
+- pnpm workspace.
 
 ## Yêu cầu môi trường
 
 - Node.js 20.9 trở lên.
-- pnpm. Phiên bản được khai báo trong trường `packageManager` ở `package.json` gốc. Nếu chưa có pnpm, chạy `corepack enable`.
+- pnpm theo `packageManager` ở `package.json` gốc (`corepack enable` nếu chưa có).
 
 ## Bắt đầu
 
@@ -36,111 +36,75 @@ pnpm install
 pnpm dev
 ```
 
-Mở `http://localhost:3000` để làm khảo sát và `http://localhost:3000/admin` để quản trị bộ câu hỏi.
+Mở `http://localhost:3000`.
+
+## Biến môi trường
+
+Đặt trong `apps/web/.env.local`. Không đưa giá trị thật vào git.
+
+| Biến | Ý nghĩa |
+| --- | --- |
+| `GOOGLE_SHEET_QUESTIONS_ID` | Id Google Sheet chứa bộ câu hỏi |
+| `GOOGLE_APPS_SCRIPT_URL` | Địa chỉ web app Apps Script để lưu doanh nghiệp |
+| `GOOGLE_APPS_SCRIPT_SECRET` | Mã bí mật, trùng với Script Properties trong Apps Script |
+| `SURVEY_REVALIDATE_SECONDS` | Thời gian cache bộ câu hỏi (mặc định 300 giây) |
+
+Biến tùy chọn để trống được xem như chưa đặt. Hướng dẫn cài Apps Script: [docs/huong-dan-cai-dat-apps-script.md](docs/huong-dan-cai-dat-apps-script.md).
 
 ## Lệnh thường dùng
-
-Chạy tại thư mục gốc:
 
 | Lệnh | Tác dụng |
 | --- | --- |
 | `pnpm dev` | Chạy `apps/web` ở chế độ phát triển |
-| `pnpm build` | Build `apps/web` cho production (có kiểm tra kiểu) |
-| `pnpm typecheck` | Kiểm tra kiểu TypeScript ở mọi package |
+| `pnpm build` | Build `apps/web` cho production |
+| `pnpm typecheck` | Kiểm tra kiểu ở mọi package |
 | `pnpm lint` | Chạy ESLint ở mọi package |
 
-Thêm thư viện cho một package cụ thể:
-
-```bash
-pnpm --filter web add <ten-goi>
-pnpm --filter @esg/shared add <ten-goi>
-```
+Test của `@esg/shared`: chạy trong `packages/shared` bằng `tsx --test`.
 
 ## Cấu trúc thư mục
 
 ```
 .
-├── apps/
-│   ├── web/                    Next.js
-│   │   └── src/
-│   │       ├── app/            Route: (public) là trang khảo sát, admin là trang quản trị
-│   │       ├── components/     ui (thành phần cơ bản) và layout (header, footer)
-│   │       ├── features/       Chia theo tính năng
-│   │       │   ├── survey/     3 tab ESG, nhóm, câu hỏi, tiến độ, bản nháp, báo cáo PDF, store nội dung
-│   │       │   ├── company/    Form thông tin doanh nghiệp (kỳ báo cáo, năm báo cáo)
-│   │       │   ├── evidence/   Tải bằng chứng
-│   │       │   ├── guidance/   Cột hướng dẫn bên phải
-│   │       │   ├── leave-guard/ Cảnh báo khi rời trang với bản nháp chưa lưu
-│   │       │   ├── how-it-works/ Liên kết và hộp thoại "Cách hoạt động" ở header
-│   │       │   ├── locale/     Chuyển ngôn ngữ (chưa có bản dịch)
-│   │       │   └── admin/      Quản trị nhóm và câu hỏi
-│   │       ├── data/           Dữ liệu mock
-│   │       └── lib/            Tiện ích dùng chung
-│   └── api/                    Express + Drizzle (chưa tạo)
-├── packages/
-│   └── shared/                 @esg/shared
-├── docs/                       Tài liệu kỹ thuật
+├── apps/web/src/
+│   ├── app/            Route: (public) là trang khảo sát, api/company lưu doanh nghiệp
+│   ├── components/     ui (thành phần cơ bản) và layout
+│   ├── features/
+│   │   ├── survey/     Tab ESG, câu hỏi, tiến độ, bản nháp, kế hoạch cải thiện, báo cáo PDF
+│   │   ├── company/    Form thông tin doanh nghiệp
+│   │   ├── evidence/   Tải bằng chứng
+│   │   ├── guidance/   Cột hướng dẫn bên phải
+│   │   ├── leave-guard/ Cảnh báo khi rời trang với bản nháp chưa lưu
+│   │   └── admin/      Quản trị (đang ẩn)
+│   └── server/         Đọc Google Sheet, dựng bộ câu hỏi, lưu doanh nghiệp (chỉ chạy phía server)
+├── packages/shared/    @esg/shared: kiểu, quy tắc câu trả lời, model báo cáo, test
+├── docs/               Tài liệu và mã Apps Script
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
 ```
 
-## Mô hình dữ liệu
+Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo thực tế khi cần.
 
-Bộ câu hỏi gồm ba cấp: **trụ cột**, **nhóm câu hỏi** thuộc trụ cột, và **câu hỏi** thuộc nhóm.
+## Luồng dữ liệu
 
-- Có đúng **3 trụ cột cố định**: Môi trường, Xã hội, Quản trị. Admin không thêm, sửa hay xóa trụ cột. Số nhóm và số câu hỏi thì không giới hạn.
-- Bộ câu hỏi hiện tại lấy từ file `Bo_cau_hoi_danh_gia_ESG.docx`: 8 nhóm (2 Môi trường, 3 Xã hội, 3 Quản trị), mỗi nhóm 10 câu, tổng 80 câu.
-- Mỗi câu có một **khía cạnh** (`aspect`): hệ thống, vận hành, quy trình, môi trường, khách hàng, xã hội.
-- Id của mọi thực thể là UUID. Không có mã câu hỏi kiểu `E001`. Giao diện hiển thị số thứ tự trong nhóm ("Câu 1", "Câu 2"...), tính từ vị trí hiện tại.
-- Thứ tự lưu bằng trường `order`.
-- Mỗi câu có hai thiết lập do quản trị viên chọn: mô tả và bằng chứng là **bắt buộc** hay **tùy chọn**.
-- Câu trả lời: `implemented` (kèm mô tả và bằng chứng), `in_progress`, `not_implemented`.
-- Thông tin doanh nghiệp gồm kỳ báo cáo (Quý 1, 2, 3, 4 hoặc Cả năm) và năm báo cáo (nhập số, mặc định năm hiện tại).
-
-Dữ liệu mock nằm trong `apps/web/src/data`. Dữ liệu quản trị viên chỉnh được giữ bằng store ở `features/survey/store`.
-
-## Bản nháp
-
-- Bản nháp lưu trong `localStorage` của trình duyệt (khóa `esg-studio:draft`), gồm thông tin doanh nghiệp, câu trả lời, mô tả và nhóm đang làm.
-- Tự lưu khi người dùng trả lời xong một nhóm. Nút **Lưu bản nháp** ở cuối trang để lưu thủ công. Mở lại trang sẽ khôi phục.
-- Đóng tab hoặc tải lại khi còn thay đổi chưa lưu: trình duyệt hiện hộp thoại xác nhận của nó. Với liên kết dẫn sang trang khác trong ứng dụng (`GuardedLink`), ứng dụng hiện hộp thoại riêng. Nút Back của trình duyệt chưa được chặn.
-- Tệp bằng chứng **chưa** được lưu trong bản nháp (xem TODO).
-
-## Báo cáo PDF
-
-- Nút **Xem bản nháp** mở hộp thoại chứa PDF sẽ xuất (có khung "BẢN NHÁP" nếu còn thiếu câu). Nút **Tạo báo cáo** kiểm tra dữ liệu rồi tải file về.
-- Kiểm tra: thông tin doanh nghiệp theo `companyProfileSchema`; mỗi câu chưa trả lời, thiếu mô tả hoặc thiếu bằng chứng (theo cùng quy tắc `isQuestionComplete`). Nếu có lỗi, hộp thoại liệt kê, bấm vào mục nào thì cuộn tới đúng ô hoặc câu đó.
-- Nội dung: thông tin doanh nghiệp, thống kê tổng (đã, đang, chưa thực hiện), theo trụ cột, theo nhóm, theo khía cạnh, danh sách điểm cần cải thiện, chi tiết từng câu, số trang.
-- Nút **Làm báo cáo mới** (cột Tiến độ) xóa bản nháp và toàn bộ câu trả lời sau khi người dùng xác nhận.
-
-## TODO
-
-- **Chấm điểm theo nhóm.** File Word có dòng "Điểm: ....../20" ở mỗi nhóm. Cách tính dự kiến: Đã thực hiện 2 điểm, Đang thực hiện 1 điểm, Chưa thực hiện 0 điểm. Đây là suy luận, cần xác nhận trước khi làm.
-- **Mở rộng báo cáo:** người lập báo cáo và ngày lập, nhúng ảnh bằng chứng, so sánh với kỳ trước, khuyến nghị theo từng nhóm.
-- **Lưu bằng chứng trong bản nháp.** Cần backend và kho lưu trữ tệp.
-- **Lưu lên máy chủ** và đăng nhập `/admin`.
-- **Bản dịch** cho bộ chuyển ngôn ngữ.
-- Một số câu hỏi trong file Word nhắc tên riêng của một doanh nghiệp cụ thể (ví dụ câu về cổ phiếu LIX). Cần rà soát nếu dùng cho mọi doanh nghiệp.
+1. Trang chủ đọc bộ câu hỏi từ Google Sheet (cache 5 phút), chọn câu theo ngành và quy mô nhân sự.
+2. Người dùng điền thông tin doanh nghiệp; "Lưu thông tin doanh nghiệp" gửi `POST /api/company` sang Apps Script và cũng ghi bản nháp trình duyệt.
+3. Câu trả lời, ghi chú và bằng chứng nằm trong trình duyệt. Có nút lưu bản nháp.
+4. Xuất báo cáo: lưu doanh nghiệp, dựng model bằng `buildReportModel`, dựng PDF bằng `ReportDocument` (hai lượt để có số trang mục lục).
 
 ## Quy ước
 
-- **Không dùng `any`.** Dữ liệu từ bên ngoài phải qua Zod trước khi dùng. ESLint bật `no-explicit-any` và `no-non-null-assertion`.
-- **Tổ chức theo tính năng.** Mỗi feature tự chứa `components`, `hooks`, `lib`, `services`, và chỉ xuất ra ngoài qua `index.ts`.
-- **Kiểu và schema dùng chung đặt ở `@esg/shared`.** Không khai báo lại ở `apps/web` hay `apps/api`.
-- **Giao diện:** màu, bo góc và bóng khai báo bằng token trong `apps/web/src/app/globals.css`. Không viết mã màu cố định trong component. Giao diện phẳng, đơn giản, dùng font hệ thống; không nhãn "miễn phí" trên giao diện.
-- **Nội dung giao diện bằng tiếng Việt.**
-- **Commit theo Conventional Commits**, có phạm vi (scope), viết bằng tiếng Anh. Ví dụ: `feat(web): add admin page`, `fix(shared): correct group schema`.
-
-## Triển khai
-
-Triển khai tạm `apps/web` lên Vercel:
-
-- **Root Directory:** `apps/web`.
-- Bật **Include source files outside of the Root Directory in the Build Step**, vì web phụ thuộc vào `packages/shared`.
-- Build Command, Install Command và Output Directory để mặc định.
-
-`apps/api` sau này sẽ triển khai riêng, không chạy trên Vercel.
+- Không dùng `any`; dữ liệu ngoài qua Zod. ESLint bật `no-explicit-any` và `no-non-null-assertion`.
+- Tổ chức theo tính năng; kiểu và schema dùng chung đặt ở `@esg/shared`.
+- Màu, bo góc dùng token trong `apps/web/src/app/globals.css`.
+- Giao diện bằng tiếng Việt; không có nhãn "miễn phí".
+- Commit theo Conventional Commits, có scope, viết bằng tiếng Anh. Ví dụ: `feat(report): add plan card`.
 
 ## Tài liệu
 
-- [Tài liệu kỹ thuật cho backend](docs/backend-spec.md): mô hình dữ liệu, lược đồ Drizzle, danh sách API, cấu trúc `apps/api`, lộ trình triển khai, các TODO.
+- [Bối cảnh dự án](docs/boi-canh-du-an.md)
+- [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
+- [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)
+- [So sánh báo cáo xuất và mẫu](docs/so-sanh-bao-cao-xuat-va-mau.md)
+- [Đối chiếu biến mẫu và nguồn dữ liệu](docs/doi-chieu-bien-mau-nguon-du-lieu.md)
+- `docs/backend-spec.md` là tài liệu cũ về backend Express, không còn đúng với kiến trúc hiện tại.

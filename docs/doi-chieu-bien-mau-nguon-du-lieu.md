@@ -111,10 +111,10 @@ Mỗi dòng bên dưới là một nhóm biến cùng nguồn, nên số dòng �
 | `confirmed_at, confirmation_status` | Câu C-060 (xác nhận) và ngày xuất | Tự tính/sinh |  |
 | `report_reference` | Mã báo cáo + ESG Report Online | Tự tính/sinh |  |
 
-## Việc cần sếp xác nhận
+<!-- ## Việc cần sếp xác nhận
 
 1. Các biến **Chưa có nguồn** (ảnh bìa, ảnh theo chủ đề, biểu đồ điện theo tháng, người phụ trách mục tiêu môi trường, hành động theo mảng môi trường và xã hội): bỏ hẳn hay bổ sung ô nhập sau?
 2. Biến `fuel.*` (bảng nhiên liệu): có cần tách từng dòng loại, lượng, đơn vị, nguồn trong báo cáo không?
 3. Biến `reporting_controls` và `permitted_references`: nội dung mong muốn là gì?
 4. Các biến **Cần kiểm tra** về trường doanh nghiệp (`countries`, `legal_form`, `confirming_role`): có ô nhập tương ứng trên form chưa? Cần mình kiểm tra với bản form hiện tại.
-5. `products_services` đang dùng chung dữ liệu với `activities`; có cần ô riêng không?
+5. `products_services` đang dùng chung dữ liệu với `activities`; có cần ô riêng không? -->

@@ -26,10 +26,10 @@ const notoSansSC = Noto_Sans_SC({
 
 export const metadata: Metadata = {
   title: {
-    default: "ESG Studio - Tạo hồ sơ ESG miễn phí",
-    template: "%s | ESGstudio",
+    default: "ESG Report Online - Tạo báo cáo ESG miễn phí",
+    template: "Tạo báo cáo ESG miễn phí",
   },
-  description: "Nền tảng khảo sát ESG nội bộ miễn phí dành cho doanh nghiệp.",
+  description: "Nền tảng tạo báo cáo ESG miễn phí dành cho doanh nghiệp.",
   icons: {
     icon: "/favicon.ico",
   },

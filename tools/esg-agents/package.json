@@ -1,0 +1,24 @@
+{
+  "name": "esg-agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "auto": "tsx --env-file=.env src/auto.ts",
+    "discover": "tsx --env-file=.env src/discover.ts",
+    "ping": "tsx --env-file=.env src/ping.ts",
+    "make-prompt": "tsx --env-file=.env src/make-prompt.ts",
+    "import-result": "tsx --env-file=.env src/import-result.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@esg/shared": "workspace:*",
+    "unpdf": "^2.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3"
+  }
+}

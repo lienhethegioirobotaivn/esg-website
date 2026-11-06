@@ -18,6 +18,14 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().min(1).optional(),
   ),
+  ENABLE_AI_TOOLS: z
+    .preprocess(emptyToUndefined, z.enum(["true", "false"]).default("false"))
+    .transform((value) => value === "true"),
+  GEMINI_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  GEMINI_MODEL: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("gemini-3.8-flash"),
+  ),
   SURVEY_REVALIDATE_SECONDS: z.preprocess(
     emptyToUndefined,
     z.coerce.number().int().min(0).default(300),

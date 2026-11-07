@@ -157,7 +157,7 @@ function toSheetColumns(company: CompanyProfile): Record<string, string | number
   };
 }
 
-async function callBridge(
+export async function callBridge(
   url: string,
   payload: Record<string, unknown>,
 ): Promise<BridgeResponse> {

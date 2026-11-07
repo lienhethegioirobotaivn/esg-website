@@ -19,6 +19,7 @@ import {
   clearReportCode,
 } from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
+import { FeedbackCard } from "@/features/contact";
 import { GuidancePanel } from "@/features/guidance";
 import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
 
@@ -452,6 +453,8 @@ function LoadedSurveyWorkspace({
         draftState={draftState}
         onJump={jumpToDraftTarget}
       />
+
+      <FeedbackCard />
     </>
   );
 }

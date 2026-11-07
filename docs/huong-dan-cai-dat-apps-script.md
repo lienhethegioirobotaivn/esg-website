@@ -61,3 +61,26 @@ Thêm 2 cột này vào **cuối dòng tiêu đề** (tên viết đúng). Nếu
 - Các cột ghi chú, người phụ trách, trạng thái chăm sóc… do người quản trị tự nhập. Script **không ghi đè** các cột này.
 - Script ghi vào dòng trống đầu tiên bên dưới tiêu đề, trong vùng đã có kiểm tra dữ liệu (dòng 6–205).
 - Nếu cần đổi khóa: đổi `SECRET` ở Script Properties và `.env.local` cùng lúc.
+
+## 8. Form Tư vấn, Kiểm định độc lập và Góp ý
+
+Header có menu **Tư vấn** (Tư vấn, Kiểm định độc lập), cuối trang khảo sát có ô **Góp ý**. Cả ba gửi qua cùng Apps Script.
+
+**Tab tiếp nhận tư vấn và kiểm định** (action `saveInquiry`): script tự tìm tab có cột `Mã yêu cầu` (tiêu đề nằm trong 30 dòng đầu). Muốn chỉ định tab, thêm Script Property `INQUIRY_SHEET_NAME`.
+
+- Web ghi các cột: `Mã yêu cầu` (dạng `TV-20261107-AB3K` hoặc `KD-...`), `Thời gian gửi`, `Loại yêu cầu` (Tư vấn / Kiểm định), `Tên doanh nghiệp`, `Thông tin / nhu cầu`, `Quy mô nhân sự`, `Ngành nghề`, `Số điện thoại`, `Email`.
+- Khi tạo dòng mới: `Trạng thái xử lý` = Mới tiếp nhận, `Mức ưu tiên` = Bình thường, `Nguồn gửi` = Website, `Đồng ý liên hệ` = Có, `Thời điểm đồng ý`, `Phiên bản form` = v1, `Đồng bộ lúc`.
+- Các cột còn lại (`Người phụ trách`, `Liên hệ lần đầu`, `Hẹn liên hệ tiếp`, `Kết quả / bước tiếp`, `Ghi chú nội bộ`) do người quản trị nhập, script không đụng tới.
+
+**Tab Góp ý** (action `saveFeedback`): script tự tạo tab `Góp ý` ở lần gửi đầu, gồm các cột `Mã góp ý`, `Thời gian gửi`, `Ý kiến`, `Email`, `Đã gửi email mời góp ý`, `Nguồn gửi`, `Phiên bản form`.
+
+**Email thông báo:** thêm Script Property `NOTIFY_EMAIL` (địa chỉ nhận yêu cầu và góp ý mới). Chưa khai báo thì bỏ qua bước gửi email.
+
+**Email mời góp ý sau 5 ngày:**
+
+1. Thêm Script Property `SITE_URL` (không bắt buộc, link đặt trong email).
+2. Chạy hàm `installFeedbackTrigger` một lần (cấp quyền gửi mail khi được hỏi). Hàm tạo trigger chạy mỗi ngày lúc 9 giờ.
+3. Mỗi ngày `sendFeedbackInvites` quét tab `Góp ý`: dòng có email, đã quá 5 ngày và cột `Đã gửi email mời góp ý` còn trống thì gửi email, rồi ghi thời điểm gửi vào cột đó (không gửi trùng).
+4. Gmail thường giới hạn khoảng 100 email mỗi ngày với tài khoản cá nhân.
+
+Cột nào thiếu tên thì dữ liệu của cột đó không được ghi, mọi cột còn lại vẫn lưu. Sau khi sửa `Code.gs`, nhớ triển khai **Phiên bản mới** (mục 4).

@@ -5,6 +5,7 @@ export * from "./company";
 export * from "./constants";
 export * from "./draft";
 export * from "./form-errors";
+export * from "./inquiry";
 export * from "./pillars";
 export * from "./profile";
 export * from "./report-format";

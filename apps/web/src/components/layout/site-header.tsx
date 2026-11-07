@@ -110,8 +110,8 @@ export function SiteHeader() {
               <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">
                 Giải pháp carbon
               </div>
-              <a
-                href="#"
+              <GuardedLink
+                href="/trong-rung"
                 className="flex items-center justify-between rounded-lg p-2.5 hover:bg-[#f3f4f6] transition-colors group/item text-[#111827]"
               >
                 <div className="flex items-center gap-3">
@@ -128,10 +128,10 @@ export function SiteHeader() {
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#6b7280] transition-transform group-hover/item:translate-x-0.5" />
-              </a>
+              </GuardedLink>
 
-              <a
-                href="#"
+              <GuardedLink
+                href="/mua-tin-chi-carbon"
                 className="mt-1 flex items-center justify-between rounded-lg p-2.5 hover:bg-[#f3f4f6] transition-colors group/item text-[#111827]"
               >
                 <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export function SiteHeader() {
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#6b7280] transition-transform group-hover/item:translate-x-0.5" />
-              </a>
+              </GuardedLink>
             </div>
           </div>
 
@@ -258,8 +258,8 @@ export function SiteHeader() {
                   }`}
                 >
                   <div className="overflow-hidden flex flex-col gap-1 pl-3">
-                    <a
-                      href="#"
+                    <GuardedLink
+                      href="/trong-rung"
                       onClick={() => setIsOpen(false)}
                       className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-[#f3f4f6] transition-colors"
                     >
@@ -274,10 +274,10 @@ export function SiteHeader() {
                           Tìm hiểu dự án trồng rừng
                         </div>
                       </div>
-                    </a>
+                    </GuardedLink>
 
-                    <a
-                      href="#"
+                    <GuardedLink
+                      href="/mua-tin-chi-carbon"
                       onClick={() => setIsOpen(false)}
                       className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-[#f3f4f6] transition-colors"
                     >
@@ -292,7 +292,7 @@ export function SiteHeader() {
                           Khám phá thị trường tín chỉ
                         </div>
                       </div>
-                    </a>
+                    </GuardedLink>
                   </div>
                 </div>
               </div>

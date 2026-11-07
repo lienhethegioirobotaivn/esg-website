@@ -66,7 +66,7 @@ export function SiteHeader() {
         >
           {/* eslint-disable @next/next/no-img-element */}
           <img
-            src="logo-full.png"
+            src="/logo-full.png"
             alt="ESG Report Online Logo"
             className="h-8 w-auto max-h-full object-contain"
           />

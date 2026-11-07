@@ -1,9 +1,6 @@
-export type PostSection = "thanh-tuu" | "tin-tuc";
+import type { PostBlock, PostSection, PostStatus } from "@esg/shared";
 
-export type PostBlock =
-  | { type: "paragraph"; text: string }
-  | { type: "heading"; text: string }
-  | { type: "callout"; title: string; text: string };
+export type { PostBlock, PostSection, PostStatus };
 
 export interface Post {
   id: string;
@@ -20,6 +17,7 @@ export interface Post {
   featured: boolean;
   popular: boolean;
   spotlight: boolean;
+  status: PostStatus;
   isSample: boolean;
   body: PostBlock[];
 }

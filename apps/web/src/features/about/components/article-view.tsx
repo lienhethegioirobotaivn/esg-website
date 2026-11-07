@@ -29,7 +29,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
           <ShareBar title={post.title} />
-          <LikeButton slug={post.slug} baseLikes={post.likes} />
+          <LikeButton section={post.section} slug={post.slug} likes={post.likes} />
         </div>
 
         <p className="mt-6 text-xl font-bold leading-relaxed">{post.summary}</p>
@@ -70,7 +70,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
-          <LikeButton slug={post.slug} baseLikes={post.likes} />
+          <LikeButton section={post.section} slug={post.slug} likes={post.likes} />
           <ShareBar title={post.title} />
         </div>
       </article>

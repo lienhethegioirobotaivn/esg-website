@@ -84,3 +84,29 @@ Header có menu **Tư vấn** (Tư vấn, Kiểm định độc lập), cuối t
 4. Gmail thường giới hạn khoảng 100 email mỗi ngày với tài khoản cá nhân.
 
 Cột nào thiếu tên thì dữ liệu của cột đó không được ghi, mọi cột còn lại vẫn lưu. Sau khi sửa `Code.gs`, nhớ triển khai **Phiên bản mới** (mục 4).
+
+## 9. Trang "Về ESG Report Online" và trang quản trị
+
+Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quản trị: `/quan-tri`.
+
+**Cập nhật Apps Script:** dán lại toàn bộ `docs/apps-script/Code.gs`, rồi **Triển khai > Quản lý bản triển khai > bút chì > Phiên bản mới > Triển khai** (sửa bản cũ, không tạo bản triển khai mới để giữ nguyên URL). Không cần thêm Script Property mới.
+
+**Tab tự tạo** ở lần ghi đầu tiên:
+
+- `Bài viết`: mỗi dòng là một bài (mã bài, mục, slug, chuyên mục, tiêu đề, tóm tắt, ảnh bìa, tác giả, phút đọc, ngày đăng, nổi bật, đọc nhiều, chuyên đề, trạng thái, nội dung JSON, lượt tim). Nên sửa bài qua trang quản trị. Không đổi tên cột.
+- `Số liệu thành tựu`: tối đa 8 dòng gồm thứ tự, giá trị, nhãn.
+
+**Ảnh:** script tự tạo thư mục con `Ảnh trang Về ESG Report Online` trong thư mục `FOLDER_ID`, chia sẻ "ai có đường liên kết đều xem được" để hiện ảnh trên web. Chỉ tải ảnh có thể công khai. Ảnh tối đa 3 MB, trình duyệt tự thu nhỏ về chiều rộng 1600px.
+
+**Biến môi trường** (`apps/web/.env.local` và Vercel):
+
+- `ADMIN_PASSWORD`: mật khẩu chung của người quản trị, tối thiểu 8 ký tự. Chưa đặt thì `/quan-tri` báo chưa cấu hình.
+- `ADMIN_SESSION_SECRET`: không bắt buộc, tối thiểu 16 ký tự, dùng ký phiên đăng nhập. Không đặt thì dùng `ADMIN_PASSWORD`. Đổi giá trị này sẽ đăng xuất mọi người.
+
+**Lưu ý vận hành:**
+
+- Khi chưa cấu hình Apps Script, web hiện dữ liệu mẫu. Khi đã cấu hình, web chỉ hiện dữ liệu thật (chưa có bài thì hiện thông báo trống, chưa có số liệu thì ẩn dải số liệu).
+- Bài lưu ở trạng thái Nháp không hiện ra công khai.
+- Trang công khai lưu đệm 60 giây, bài mới có thể hiện sau tối đa 1 phút.
+- Lượt tim không chống trùng theo người, mỗi trình duyệt thả được một lần cho mỗi bài.
+- Đăng nhập sai quá 5 lần trong 15 phút sẽ bị khóa tạm theo IP.

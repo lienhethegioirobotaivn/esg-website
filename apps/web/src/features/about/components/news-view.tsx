@@ -103,7 +103,9 @@ export function NewsView({ posts }: { posts: Post[] }) {
         </div>
       ) : (
         <p className="mt-5 rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
-          Không tìm thấy bài viết phù hợp.
+          {isFiltering
+            ? "Không tìm thấy bài viết phù hợp."
+            : "Chưa có bài viết nào được đăng."}
         </p>
       )}
 

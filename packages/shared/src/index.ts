@@ -4,6 +4,7 @@ export * from "./build-survey";
 export * from "./company";
 export * from "./constants";
 export * from "./draft";
+export * from "./about";
 export * from "./form-errors";
 export * from "./inquiry";
 export * from "./pillars";

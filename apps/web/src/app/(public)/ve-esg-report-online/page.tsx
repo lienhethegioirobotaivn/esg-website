@@ -24,9 +24,11 @@ export default async function AchievementsPage() {
       <h1 className="text-4xl font-bold text-primary-800">
         Thành tựu &amp; tác động
       </h1>
-      <div className="mt-6">
-        <StatsBand stats={stats} />
-      </div>
+      {stats ? (
+        <div className="mt-6">
+          <StatsBand stats={stats} />
+        </div>
+      ) : null}
       <div className="mt-8">
         <AchievementsView posts={posts} />
       </div>

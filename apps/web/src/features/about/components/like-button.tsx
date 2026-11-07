@@ -4,15 +4,17 @@ import { Heart } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
-import { useLiked } from "../hooks/use-liked";
+import { useLikes } from "../hooks/use-likes";
+import type { PostSection } from "../types";
 
 interface LikeButtonProps {
+  section: PostSection;
   slug: string;
-  baseLikes: number;
+  likes: number;
 }
 
-export function LikeButton({ slug, baseLikes }: LikeButtonProps) {
-  const [liked, toggle] = useLiked(slug);
+export function LikeButton({ section, slug, likes }: LikeButtonProps) {
+  const { liked, count, toggle } = useLikes(section, slug, likes);
   return (
     <button
       type="button"
@@ -28,7 +30,7 @@ export function LikeButton({ slug, baseLikes }: LikeButtonProps) {
         )}
       />
       Thả tim
-      <span className="tabular-nums">{baseLikes + (liked ? 1 : 0)}</span>
+      <span className="tabular-nums">{count}</span>
     </button>
   );
 }

@@ -76,9 +76,11 @@ export function AchievementsView({ posts }: { posts: Post[] }) {
             <PostCard key={post.id} post={post} />
           ))}
         </div>
-      ) : isFiltering ? (
+      ) : !main ? (
         <p className="mt-8 rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
-          Không tìm thấy hoạt động phù hợp.
+          {isFiltering
+            ? "Không tìm thấy hoạt động phù hợp."
+            : "Chưa có hoạt động nào được đăng."}
         </p>
       ) : null}
 

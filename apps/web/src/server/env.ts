@@ -18,6 +18,14 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().min(1).optional(),
   ),
+  ADMIN_PASSWORD: z.preprocess(
+    emptyToUndefined,
+    z.string().min(8, "ADMIN_PASSWORD phải có ít nhất 8 ký tự").optional(),
+  ),
+  ADMIN_SESSION_SECRET: z.preprocess(
+    emptyToUndefined,
+    z.string().min(16).optional(),
+  ),
   ENABLE_AI_TOOLS: z
     .preprocess(emptyToUndefined, z.enum(["true", "false"]).default("false"))
     .transform((value) => value === "true"),

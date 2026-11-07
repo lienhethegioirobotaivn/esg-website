@@ -45,6 +45,7 @@ function sample(input: SampleInput): Post {
     featured: input.featured ?? false,
     popular: input.popular ?? false,
     spotlight: input.spotlight ?? false,
+    status: "published",
     isSample: true,
     body: input.body ?? defaultBody(input.summary),
   };

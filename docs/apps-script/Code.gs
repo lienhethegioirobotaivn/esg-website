@@ -27,6 +27,16 @@ var FEEDBACK_SENT_COLUMN = 'Đã gửi email mời góp ý';
 var FEEDBACK_DELAY_DAYS = 5;
 var FEEDBACK_TRIGGER_HOUR = 9;
 var CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+var POSTS_SHEET_NAME = 'Bài viết';
+var POSTS_HEADERS = ['Mã bài', 'Mục', 'Slug', 'Chuyên mục', 'Tiêu đề', 'Tóm tắt', 'Ảnh bìa', 'Tác giả', 'Phút đọc', 'Ngày đăng', 'Nổi bật', 'Đọc nhiều', 'Chuyên đề', 'Trạng thái', 'Nội dung (JSON)', 'Lượt tim', 'Cập nhật lúc'];
+var POSTS_KEY = 'Mã bài';
+var STATS_SHEET_NAME = 'Số liệu thành tựu';
+var STATS_HEADERS = ['Thứ tự', 'Giá trị', 'Nhãn'];
+var ABOUT_IMAGES_FOLDER_NAME = 'Ảnh trang Về ESG Report Online';
+var ABOUT_IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+var MAX_ABOUT_IMAGE_BYTES = 3 * 1024 * 1024;
+var ABOUT_WRITE_ACTIONS = { savePost: true, deletePost: true, saveStats: true, likePost: true };
+var ABOUT_READ_ACTIONS = { listPosts: true, listStats: true, uploadImage: true };
 
 function doPost(e) {
   try {
@@ -51,6 +61,18 @@ function doPost(e) {
       } finally {
         contactLock.releaseLock();
       }
+    }
+    if (ABOUT_WRITE_ACTIONS[body.action] || ABOUT_READ_ACTIONS[body.action]) {
+      if (ABOUT_WRITE_ACTIONS[body.action]) {
+        var aboutLock = LockService.getScriptLock();
+        aboutLock.waitLock(20000);
+        try {
+          return json_(runAbout_(body, props));
+        } finally {
+          aboutLock.releaseLock();
+        }
+      }
+      return json_(runAbout_(body, props));
     }
     if (body.action !== 'saveCompany') {
       return json_({ ok: false, error: 'Hành động không được hỗ trợ.' });
@@ -394,6 +416,314 @@ function installFeedbackTrigger() {
     .everyDays(1)
     .atHour(FEEDBACK_TRIGGER_HOUR)
     .create();
+}
+
+function runAbout_(body, props) {
+  switch (body.action) {
+    case 'listPosts':
+      return { ok: true, posts: listPosts_(body.includeDrafts === true) };
+    case 'savePost':
+      return savePost_(body.post);
+    case 'deletePost':
+      return deletePost_(String(body.id || ''));
+    case 'likePost':
+      return likePost_(String(body.section || ''), String(body.slug || ''), Number(body.delta));
+    case 'listStats':
+      return { ok: true, items: listStats_() };
+    case 'saveStats':
+      return saveStats_(body.items);
+    case 'uploadImage':
+      return uploadAboutImage_(body.image, props);
+  }
+  throw new Error('Hành động không được hỗ trợ.');
+}
+
+function ensureTable_(name, headers) {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(name);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    sheet.getRange(2, 1, sheet.getMaxRows() - 1, headers.length).setNumberFormat('@');
+    return sheet;
+  }
+  var existing = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(function (value) {
+    return String(value).trim();
+  });
+  headers.forEach(function (header) {
+    if (existing.indexOf(header) === -1) {
+      var column = existing.length + 1;
+      sheet.getRange(1, column).setValue(header).setFontWeight('bold');
+      existing.push(header);
+    }
+  });
+  return sheet;
+}
+
+function readTable_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+  var header = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (value) {
+    return String(value).trim();
+  });
+  var columns = {};
+  header.forEach(function (name, index) {
+    if (name) {
+      columns[name] = index + 1;
+    }
+  });
+  var rows = [];
+  if (lastRow > 1) {
+    var data = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+    data.forEach(function (values, index) {
+      var record = { _row: index + 2 };
+      Object.keys(columns).forEach(function (name) {
+        record[name] = values[columns[name] - 1];
+      });
+      rows.push(record);
+    });
+  }
+  return { columns: columns, rows: rows };
+}
+
+function cellText_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  }
+  return value === null || value === undefined ? '' : String(value);
+}
+
+function postFromRecord_(record) {
+  var body = [];
+  try {
+    body = JSON.parse(cellText_(record['Nội dung (JSON)']) || '[]');
+  } catch (err) {
+    body = [];
+  }
+  return {
+    id: cellText_(record['Mã bài']),
+    section: cellText_(record['Mục']),
+    slug: cellText_(record['Slug']),
+    category: cellText_(record['Chuyên mục']),
+    title: cellText_(record['Tiêu đề']),
+    summary: cellText_(record['Tóm tắt']),
+    coverUrl: cellText_(record['Ảnh bìa']),
+    author: cellText_(record['Tác giả']),
+    readMinutes: Number(record['Phút đọc']) || 1,
+    publishedAt: cellText_(record['Ngày đăng']),
+    featured: cellText_(record['Nổi bật']) === 'Có',
+    popular: cellText_(record['Đọc nhiều']) === 'Có',
+    spotlight: cellText_(record['Chuyên đề']) === 'Có',
+    status: cellText_(record['Trạng thái']) === 'Nháp' ? 'draft' : 'published',
+    body: body,
+    likes: Math.max(0, Number(record['Lượt tim']) || 0)
+  };
+}
+
+function listPosts_(includeDrafts) {
+  var table = readTable_(ensureTable_(POSTS_SHEET_NAME, POSTS_HEADERS));
+  var posts = [];
+  table.rows.forEach(function (record) {
+    if (cellText_(record[POSTS_KEY]) === '') {
+      return;
+    }
+    var post = postFromRecord_(record);
+    if (includeDrafts || post.status === 'published') {
+      posts.push(post);
+    }
+  });
+  return posts;
+}
+
+function savePost_(post) {
+  if (!post || typeof post !== 'object') {
+    throw new Error('Thiếu dữ liệu bài viết.');
+  }
+  var sheet = ensureTable_(POSTS_SHEET_NAME, POSTS_HEADERS);
+  var table = readTable_(sheet);
+  var id = String(post.id || '');
+  var targetRow = 0;
+  var existingLikes = 0;
+  table.rows.forEach(function (record) {
+    var recordId = cellText_(record[POSTS_KEY]);
+    if (recordId === '') {
+      return;
+    }
+    if (id !== '' && recordId === id) {
+      targetRow = record._row;
+      existingLikes = Math.max(0, Number(record['Lượt tim']) || 0);
+    } else if (cellText_(record['Mục']) === post.section && cellText_(record['Slug']) === post.slug) {
+      throw new Error('Đường dẫn (slug) "' + post.slug + '" đã tồn tại trong mục này.');
+    }
+  });
+  if (id !== '' && targetRow === 0) {
+    throw new Error('Không tìm thấy bài viết cần sửa.');
+  }
+  if (id === '') {
+    id = 'P-' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd') + '-' + randomCode_(4);
+  }
+  if (targetRow === 0) {
+    targetRow = firstEmptyRow_(sheet, table.columns[POSTS_KEY]);
+  }
+
+  var values = {
+    'Mã bài': id,
+    'Mục': post.section,
+    'Slug': post.slug,
+    'Chuyên mục': post.category,
+    'Tiêu đề': post.title,
+    'Tóm tắt': post.summary,
+    'Ảnh bìa': post.coverUrl || '',
+    'Tác giả': post.author,
+    'Phút đọc': Number(post.readMinutes) || 1,
+    'Ngày đăng': post.publishedAt,
+    'Nổi bật': post.featured ? 'Có' : '',
+    'Đọc nhiều': post.popular ? 'Có' : '',
+    'Chuyên đề': post.spotlight ? 'Có' : '',
+    'Trạng thái': post.status === 'draft' ? 'Nháp' : 'Đã đăng',
+    'Nội dung (JSON)': JSON.stringify(post.body || []),
+    'Lượt tim': existingLikes,
+    'Cập nhật lúc': Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm:ss')
+  };
+  Object.keys(values).forEach(function (name) {
+    var column = table.columns[name];
+    if (column) {
+      sheet.getRange(targetRow, column).setNumberFormat('@').setValue(values[name]);
+    }
+  });
+  SpreadsheetApp.flush();
+  return { ok: true, id: id };
+}
+
+function firstEmptyRow_(sheet, keyColumn) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return 2;
+  }
+  var keys = sheet.getRange(2, keyColumn, lastRow - 1, 1).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]).trim() === '') {
+      return i + 2;
+    }
+  }
+  return lastRow + 1;
+}
+
+function randomCode_(length) {
+  var code = '';
+  for (var i = 0; i < length; i++) {
+    code += CODE_ALPHABET.charAt(Math.floor(Math.random() * CODE_ALPHABET.length));
+  }
+  return code;
+}
+
+function deletePost_(id) {
+  if (!id) {
+    throw new Error('Thiếu mã bài viết.');
+  }
+  var sheet = ensureTable_(POSTS_SHEET_NAME, POSTS_HEADERS);
+  var table = readTable_(sheet);
+  for (var i = 0; i < table.rows.length; i++) {
+    if (cellText_(table.rows[i][POSTS_KEY]) === id) {
+      sheet.deleteRow(table.rows[i]._row);
+      SpreadsheetApp.flush();
+      return { ok: true };
+    }
+  }
+  throw new Error('Không tìm thấy bài viết cần xóa.');
+}
+
+function likePost_(section, slug, delta) {
+  if (!section || !slug || (delta !== 1 && delta !== -1)) {
+    throw new Error('Dữ liệu thả tim không hợp lệ.');
+  }
+  var sheet = ensureTable_(POSTS_SHEET_NAME, POSTS_HEADERS);
+  var table = readTable_(sheet);
+  for (var i = 0; i < table.rows.length; i++) {
+    var record = table.rows[i];
+    if (cellText_(record['Mục']) === section && cellText_(record['Slug']) === slug) {
+      var likes = Math.max(0, (Number(record['Lượt tim']) || 0) + delta);
+      sheet.getRange(record._row, table.columns['Lượt tim']).setNumberFormat('@').setValue(likes);
+      SpreadsheetApp.flush();
+      return { ok: true, likes: likes };
+    }
+  }
+  throw new Error('Không tìm thấy bài viết.');
+}
+
+function listStats_() {
+  var table = readTable_(ensureTable_(STATS_SHEET_NAME, STATS_HEADERS));
+  var items = [];
+  table.rows.forEach(function (record) {
+    var value = cellText_(record['Giá trị']).trim();
+    var label = cellText_(record['Nhãn']).trim();
+    if (value === '' || label === '') {
+      return;
+    }
+    items.push({ order: Number(record['Thứ tự']) || 0, value: value, label: label });
+  });
+  items.sort(function (a, b) {
+    return a.order - b.order;
+  });
+  return items.map(function (item) {
+    return { value: item.value, label: item.label };
+  });
+}
+
+function saveStats_(items) {
+  if (!Array.isArray(items) || items.length > 8) {
+    throw new Error('Danh sách số liệu không hợp lệ.');
+  }
+  var sheet = ensureTable_(STATS_SHEET_NAME, STATS_HEADERS);
+  var table = readTable_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+  }
+  items.forEach(function (item, index) {
+    var row = index + 2;
+    sheet.getRange(row, table.columns['Thứ tự']).setNumberFormat('@').setValue(index + 1);
+    sheet.getRange(row, table.columns['Giá trị']).setNumberFormat('@').setValue(String(item.value));
+    sheet.getRange(row, table.columns['Nhãn']).setNumberFormat('@').setValue(String(item.label));
+  });
+  SpreadsheetApp.flush();
+  return { ok: true };
+}
+
+function aboutImagesFolder_(props) {
+  var folderId = props.getProperty('FOLDER_ID');
+  if (!folderId) {
+    throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
+  }
+  var root = DriveApp.getFolderById(folderId);
+  var existing = root.getFoldersByName(ABOUT_IMAGES_FOLDER_NAME);
+  return existing.hasNext() ? existing.next() : root.createFolder(ABOUT_IMAGES_FOLDER_NAME);
+}
+
+function uploadAboutImage_(image, props) {
+  if (!image || typeof image !== 'object') {
+    throw new Error('Thiếu dữ liệu ảnh.');
+  }
+  var extension = ABOUT_IMAGE_TYPES[image.mimeType];
+  if (!extension) {
+    throw new Error('Ảnh phải là JPG, PNG hoặc WEBP.');
+  }
+  var bytes = Utilities.base64Decode(String(image.base64 || ''));
+  if (bytes.length === 0 || bytes.length > MAX_ABOUT_IMAGE_BYTES) {
+    throw new Error('Ảnh rỗng hoặc lớn hơn 3 MB.');
+  }
+  var folder = aboutImagesFolder_(props);
+  var stamp = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd-HHmmss');
+  var file = folder.createFile(Utilities.newBlob(bytes, image.mimeType, stamp + '-' + randomCode_(4) + '.' + extension));
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (err) {
+    file.setTrashed(true);
+    throw new Error('Không bật được chế độ chia sẻ công khai cho ảnh. Kiểm tra chính sách chia sẻ của Drive.');
+  }
+  return { ok: true, url: 'https://lh3.googleusercontent.com/d/' + file.getId() + '=w1600' };
 }
 
 function saveLogo_(reportCode, logo, props) {

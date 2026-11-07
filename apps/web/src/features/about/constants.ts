@@ -1,4 +1,4 @@
-import type { PostSection } from "./types";
+import type { PostSection } from "@esg/shared";
 
 export const ABOUT_PATH = "/ve-esg-report-online";
 
@@ -27,6 +27,11 @@ export const NEWS_PAGE_SIZE = 8;
 export function isPostSection(value: string): value is PostSection {
   return value === "thanh-tuu" || value === "tin-tuc";
 }
+
+export const SECTION_CATEGORIES: Record<PostSection, readonly string[]> = {
+  "thanh-tuu": ACHIEVEMENT_CATEGORIES,
+  "tin-tuc": NEWS_CATEGORIES,
+};
 
 export function sectionPath(section: PostSection): string {
   return section === "tin-tuc" ? `${ABOUT_PATH}/tin-tuc` : ABOUT_PATH;

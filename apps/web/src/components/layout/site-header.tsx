@@ -1,10 +1,12 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Container } from "@/components/ui";
 import { LanguageSwitcher } from "@/features/locale";
 import { GuardedLink } from "@/features/leave-guard";
 import { HowItWorksLink } from "@/features/how-it-works";
+import { ABOUT_PATH } from "@/features/about/constants";
 import { ContactDialog, INQUIRY_COPY } from "@/features/contact";
 import type { InquiryKind } from "@esg/shared";
 import {
@@ -36,6 +38,9 @@ const CONSULT_ITEMS: readonly {
 ];
 
 export function SiteHeader() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const isAbout = pathname.startsWith(ABOUT_PATH);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [isConsultOpen, setIsConsultOpen] = useState(false);
@@ -70,19 +75,19 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           <GuardedLink
             href="/"
-            className="group relative pb-2 text-sm font-semibold text-[#006644]"
+            className={`group relative pb-2 text-sm ${
+              isHome
+                ? "font-semibold text-[#006644]"
+                : "font-medium text-[#374151] hover:text-[#006644] transition-colors"
+            }`}
           >
             Tạo báo cáo
-            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#006644] transition-all duration-300 ease-out" />
+            <span
+              className={`absolute bottom-0 left-0 h-0.5 bg-[#006644] transition-all duration-300 ease-out ${
+                isHome ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
           </GuardedLink>
-
-          <a
-            href="#"
-            className="group relative pb-2 text-sm font-medium text-[#374151] hover:text-[#006644] transition-colors"
-          >
-            Về ESG Report Online
-            <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-[#006644] transition-all duration-300 ease-out group-hover:w-full" />
-          </a>
 
           {/* <GuardedLink
             href="#"
@@ -152,6 +157,22 @@ export function SiteHeader() {
             </div>
           </div>
 
+          <GuardedLink
+            href={ABOUT_PATH}
+            className={`group relative pb-2 text-sm ${
+              isAbout
+                ? "font-semibold text-[#006644]"
+                : "font-medium text-[#374151] hover:text-[#006644] transition-colors"
+            }`}
+          >
+            Về ESG Report Online
+            <span
+              className={`absolute bottom-0 left-0 h-0.5 bg-[#006644] transition-all duration-300 ease-out ${
+                isAbout ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
+          </GuardedLink>
+
           <div className="relative group pb-2">
             <button
               type="button"
@@ -214,7 +235,11 @@ export function SiteHeader() {
               <GuardedLink
                 href="/"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between rounded-lg p-3 text-sm font-semibold text-[#006644] bg-[#006644]/5"
+                className={`flex items-center justify-between rounded-lg p-3 text-sm ${
+                  isHome
+                    ? "font-semibold text-[#006644] bg-[#006644]/5"
+                    : "font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+                }`}
               >
                 Tạo báo cáo
               </GuardedLink>
@@ -226,14 +251,6 @@ export function SiteHeader() {
               >
                 Báo cáo của tôi
               </GuardedLink> */}
-
-              <a
-                href="#"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between rounded-lg p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
-              >
-                Về ESG Report Online
-              </a>
 
               <div className="rounded-lg p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors">
                 <HowItWorksLink />
@@ -296,6 +313,18 @@ export function SiteHeader() {
                   </div>
                 </div>
               </div>
+
+              <GuardedLink
+                href={ABOUT_PATH}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center justify-between rounded-lg p-3 text-sm ${
+                  isAbout
+                    ? "font-semibold text-[#006644] bg-[#006644]/5"
+                    : "font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+                }`}
+              >
+                Về ESG Report Online
+              </GuardedLink>
 
               <div>
                 <button

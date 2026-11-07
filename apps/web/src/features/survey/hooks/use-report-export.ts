@@ -5,9 +5,10 @@ import type { CompanyFormValues } from "@/features/company";
 import { downloadBlob } from "@/lib/download-blob";
 
 import { buildReportFileName } from "../lib/report-file-name";
+import type { ReportFormat } from "../lib/report-file-name";
 import { validateReport } from "../lib/report-validation";
 import type { ReportValidation } from "../lib/report-validation";
-import { createReportBlob } from "../report/create-report";
+import { createReportBlob, createReportDocxBlob } from "../report/create-report";
 import type { AnswerMap, GroupEntry } from "../types";
 
 interface UseReportExportInput {
@@ -19,7 +20,11 @@ interface UseReportExportInput {
 
 interface ReportExport {
   exportReport: () => Promise<void>;
+  downloadReport: (format: ReportFormat) => Promise<void>;
   isExporting: boolean;
+  exportingFormat: ReportFormat | null;
+  isDownloadOpen: boolean;
+  closeDownload: () => void;
   error: string | null;
   validation: ReportValidation | null;
   closeValidation: () => void;
@@ -32,6 +37,8 @@ export function useReportExport({
   logo,
 }: UseReportExportInput): ReportExport {
   const [isExporting, setIsExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<ReportFormat | null>(null);
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ReportValidation | null>(null);
 
@@ -66,22 +73,49 @@ export function useReportExport({
         return;
       }
 
-      const blob = await createReportBlob({ company, entries, answers, logo });
-      downloadBlob(blob, buildReportFileName(company));
+      setIsDownloadOpen(true);
       if (saveFailed) {
         setError(
-          "Đã tạo báo cáo nhưng chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại.",
+          "Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại sau khi tải.",
         );
       }
     } catch {
-      setError("Không tạo được file PDF. Vui lòng thử lại.");
+      setError("Không kiểm tra được báo cáo. Vui lòng thử lại.");
     } finally {
       setIsExporting(false);
     }
   }
 
+  async function downloadReport(format: ReportFormat) {
+    if (exportingFormat !== null) {
+      return;
+    }
+    setExportingFormat(format);
+    setError(null);
+    try {
+      const input = { company, entries, answers, logo };
+      const blob =
+        format === "docx"
+          ? await createReportDocxBlob(input)
+          : await createReportBlob(input);
+      downloadBlob(blob, buildReportFileName(company, format));
+    } catch {
+      setError(
+        format === "docx"
+          ? "Không tạo được file Word. Vui lòng thử lại."
+          : "Không tạo được file PDF. Vui lòng thử lại.",
+      );
+    } finally {
+      setExportingFormat(null);
+    }
+  }
+
   return {
     exportReport,
+    downloadReport,
+    exportingFormat,
+    isDownloadOpen,
+    closeDownload: () => setIsDownloadOpen(false),
     isExporting,
     error,
     validation,

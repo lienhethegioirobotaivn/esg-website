@@ -62,9 +62,7 @@ export function toReportAnswers(
   return result;
 }
 
-export async function createReportBlob(
-  input: CreateReportInput,
-): Promise<Blob> {
+async function prepareReport(input: CreateReportInput) {
   const { company, entries, answers } = input;
   const { isDraft } = getReportDraftState({ company, entries, answers });
 
@@ -82,11 +80,21 @@ export async function createReportBlob(
     ? await prepareReportLogo(input.logo).catch(() => null)
     : null;
   const images = await collectEvidenceImages(entries, answers);
+  return { model, logo, images, draftNotice: input.draftNotice ?? null };
+}
+
+export async function createReportBlob(
+  input: CreateReportInput,
+): Promise<Blob> {
+  const prepared = await prepareReport(input);
   const { generateReportBlob } = await import("./generate-report");
-  return generateReportBlob({
-    model,
-    logo,
-    images,
-    draftNotice: input.draftNotice ?? null,
-  });
+  return generateReportBlob(prepared);
+}
+
+export async function createReportDocxBlob(
+  input: CreateReportInput,
+): Promise<Blob> {
+  const prepared = await prepareReport(input);
+  const { generateReportDocx } = await import("./generate-docx");
+  return generateReportDocx(prepared);
 }

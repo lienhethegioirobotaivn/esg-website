@@ -12,7 +12,12 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function buildReportFileName(company: CompanyFormValues): string {
+export type ReportFormat = "pdf" | "docx";
+
+export function buildReportFileName(
+  company: CompanyFormValues,
+  format: ReportFormat = "pdf",
+): string {
   const periodLabel =
     REPORT_PERIOD_OPTIONS.find((option) => option.value === company.reportPeriod)
       ?.label ?? company.reportPeriod;
@@ -22,5 +27,5 @@ export function buildReportFileName(company: CompanyFormValues): string {
     slugify(periodLabel),
     slugify(company.reportYear),
   ].filter((part) => part.length > 0);
-  return `${parts.join("-")}.pdf`;
+  return `${parts.join("-")}.${format}`;
 }

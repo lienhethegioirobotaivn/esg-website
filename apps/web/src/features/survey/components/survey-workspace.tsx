@@ -45,6 +45,7 @@ import { ProgressSummary } from "./progress-summary";
 import { getReportDraftState } from "../lib/report-draft-state";
 import type { DraftJumpTarget } from "../lib/report-draft-state";
 import { ReportActions } from "./report-actions";
+import { ReportDownloadDialog } from "./report-download-dialog";
 import { ReportPreviewDialog } from "./report-preview-dialog";
 import { ResetReportDialog } from "./reset-report-dialog";
 
@@ -405,6 +406,21 @@ function LoadedSurveyWorkspace({
             onJumpToCompany={jumpToCompany}
             onJumpToQuestion={jumpToQuestion}
             onClose={reportExport.closeValidation}
+          />
+        ) : null}
+
+        {reportExport.isDownloadOpen ? (
+          <ReportDownloadDialog
+            isDraft={draftState.isDraft}
+            reasons={draftState.reasons}
+            onJump={(target) => {
+              reportExport.closeDownload();
+              jumpToDraftTarget(target);
+            }}
+            exportingFormat={reportExport.exportingFormat}
+            error={reportExport.error}
+            onDownload={(format) => void reportExport.downloadReport(format)}
+            onClose={reportExport.closeDownload}
           />
         ) : null}
 

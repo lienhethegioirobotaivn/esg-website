@@ -6,6 +6,7 @@ import {
   getPost,
   getPosts,
   isPostSection,
+  pickRelatedPosts,
 } from "@/features/about";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +35,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   if (!post) {
     notFound();
   }
-  const related = (await getPosts(section))
-    .filter((item) => item.id !== post.id)
-    .slice(0, 2);
+  const related = pickRelatedPosts(post, await getPosts(section));
 
   return <ArticleView post={post} related={related} />;
 }

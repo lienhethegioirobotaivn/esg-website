@@ -62,7 +62,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
                 </Link>
                 <Link
                   href={postPath(item.section, item.slug)}
-                  className="block font-bold leading-snug text-primary-700 underline underline-offset-2 hover:text-primary-900"
+                  className="line-clamp-3 font-bold leading-snug text-primary-700 underline underline-offset-2 hover:text-primary-900"
                 >
                   {item.title}
                 </Link>

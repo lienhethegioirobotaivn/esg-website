@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+import {
+  RICH_DOC_MAX_BLOCKS,
+  RICH_DOC_MAX_BYTES,
+  richDocSize,
+  sanitizeRichDoc,
+} from "./rich-text";
+
 export const POST_SECTIONS = ["thanh-tuu", "tin-tuc"] as const;
 
 export type PostSection = (typeof POST_SECTIONS)[number];
@@ -54,7 +61,17 @@ export const postInputSchema = z.object({
   popular: z.boolean(),
   spotlight: z.boolean(),
   status: z.enum(POST_STATUSES),
-  body: z.array(postBlockSchema).max(100, "Tối đa 100 khối nội dung"),
+  body: z
+    .unknown()
+    .transform((value) => sanitizeRichDoc(value))
+    .refine(
+      (doc) => doc.content.length <= RICH_DOC_MAX_BLOCKS,
+      `Nội dung tối đa ${RICH_DOC_MAX_BLOCKS} khối`,
+    )
+    .refine(
+      (doc) => richDocSize(doc) <= RICH_DOC_MAX_BYTES,
+      "Nội dung quá dài, vui lòng rút gọn hoặc chia thành nhiều bài",
+    ),
 });
 
 export type PostInput = z.infer<typeof postInputSchema>;

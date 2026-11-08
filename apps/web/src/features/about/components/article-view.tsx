@@ -4,6 +4,7 @@ import { postPath } from "../constants";
 import type { Post } from "../types";
 import { Cover } from "./cover";
 import { LikeButton } from "./like-button";
+import { RichContent } from "./rich-content";
 import { ShareBar } from "./share-bar";
 import { Tag } from "./tag";
 
@@ -36,38 +37,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
 
         <Cover post={post} className="mt-6 aspect-[2.7/1]" />
 
-        <div className="mt-6 space-y-4 leading-relaxed">
-          {post.body.map((block, index) => {
-            if (block.type === "heading") {
-              return (
-                <h2
-                  key={index}
-                  className="pt-2 text-2xl font-bold text-primary-700"
-                >
-                  {block.text}
-                </h2>
-              );
-            }
-            if (block.type === "callout") {
-              return (
-                <aside
-                  key={index}
-                  className="rounded-card border border-primary-200 bg-primary-100 p-5"
-                >
-                  <h3 className="text-xl font-bold text-primary-800">
-                    {block.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-primary-900">{block.text}</p>
-                </aside>
-              );
-            }
-            return (
-              <p key={index} className="text-[0.9375rem] text-foreground">
-                {block.text}
-              </p>
-            );
-          })}
-        </div>
+        <RichContent doc={post.body} className="mt-6" />
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
           <LikeButton section={post.section} slug={post.slug} likes={post.likes} />

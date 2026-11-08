@@ -9,6 +9,7 @@ export * from "./form-errors";
 export * from "./inquiry";
 export * from "./pillars";
 export * from "./profile";
+export * from "./rich-text";
 export * from "./report-format";
 export * from "./report-labels";
 export * from "./report-model";

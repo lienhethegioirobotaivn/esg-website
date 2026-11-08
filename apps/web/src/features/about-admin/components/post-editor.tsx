@@ -1,21 +1,13 @@
 "use client";
 
 import { postInputSchema } from "@esg/shared";
-import type { PostBlock, PostSection } from "@esg/shared";
+import { sanitizeRichDoc, type PostSection, type RichDoc } from "@esg/shared";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import {
-  Button,
-  Card,
-  Field,
-  Input,
-  Select,
-  Switch,
-  Textarea,
-} from "@/components/ui";
+import { Button, Card, Field, Input, Select, Switch, Textarea } from "@/components/ui";
 import { ArticleView } from "@/features/about/components/article-view";
 import {
   SECTION_CATEGORIES,
@@ -26,7 +18,7 @@ import type { Post } from "@/features/about/types";
 
 import { AdminApiError, savePost } from "../lib/admin-api";
 import { slugify } from "../lib/slugify";
-import { BlockEditor } from "./block-editor";
+import { RichEditor } from "./rich-editor";
 import { ImageField } from "./image-field";
 
 interface PostEditorProps {
@@ -46,34 +38,24 @@ function today(): string {
 export function PostEditor({ initial }: PostEditorProps) {
   const router = useRouter();
   const isNew = initial === null;
-  const [section, setSection] = useState<PostSection>(
-    initial?.section ?? "tin-tuc",
-  );
+  const [section, setSection] = useState<PostSection>(initial?.section ?? "tin-tuc");
   const [category, setCategory] = useState(initial?.category ?? "");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(!isNew);
   const [summary, setSummary] = useState(initial?.summary ?? "");
   const [coverUrl, setCoverUrl] = useState(initial?.coverUrl ?? "");
-  const [author, setAuthor] = useState(
-    initial?.author ?? "Ban biên tập ESG Report Online",
-  );
-  const [readMinutes, setReadMinutes] = useState(
-    String(initial?.readMinutes ?? 4),
-  );
-  const [publishedAt, setPublishedAt] = useState(
-    initial?.publishedAt.slice(0, 10) ?? today(),
-  );
+  const [author, setAuthor] = useState(initial?.author ?? "Ban biên tập ESG Report Online");
+  const [readMinutes, setReadMinutes] = useState(String(initial?.readMinutes ?? 4));
+  const [publishedAt, setPublishedAt] = useState(initial?.publishedAt.slice(0, 10) ?? today());
   const [featured, setFeatured] = useState(initial?.featured ?? false);
   const [popular, setPopular] = useState(initial?.popular ?? false);
   const [spotlight, setSpotlight] = useState(initial?.spotlight ?? false);
-  const [body, setBody] = useState<PostBlock[]>(initial?.body ?? []);
+  const [body, setBody] = useState<RichDoc>(() => sanitizeRichDoc(initial?.body));
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [savingStatus, setSavingStatus] = useState<
-    "published" | "draft" | null
-  >(null);
+  const [savingStatus, setSavingStatus] = useState<"published" | "draft" | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
   const categories = SECTION_CATEGORIES[section];
@@ -116,9 +98,7 @@ export function PostEditor({ initial }: PostEditorProps) {
     };
   }
 
-  function collectErrors(
-    issues: readonly { path: PropertyKey[]; message: string }[],
-  ): Errors {
+  function collectErrors(issues: readonly { path: PropertyKey[]; message: string }[]): Errors {
     const next: Errors = {};
     for (const issue of issues) {
       const key = String(issue.path[0] ?? "form");
@@ -183,11 +163,7 @@ export function PostEditor({ initial }: PostEditorProps) {
     spotlight,
     status: initial?.status ?? "draft",
     isSample: false,
-    body: body.filter((block) =>
-      block.type === "callout"
-        ? block.title.trim() !== "" || block.text.trim() !== ""
-        : block.text.trim() !== "",
-    ),
+    body,
   };
 
   const busy = savingStatus !== null;
@@ -237,12 +213,7 @@ export function PostEditor({ initial }: PostEditorProps) {
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-5">
             <Card className="space-y-4 p-5">
-              <Field
-                label="Tiêu đề"
-                htmlFor="post-title"
-                required
-                error={errors["title"]}
-              >
+              <Field label="Tiêu đề" htmlFor="post-title" required error={errors["title"]}>
                 <Input
                   id="post-title"
                   value={title}
@@ -267,15 +238,10 @@ export function PostEditor({ initial }: PostEditorProps) {
                   aria-invalid={Boolean(errors["slug"])}
                 />
               </Field>
-              <Field
-                label="Tóm tắt"
-                htmlFor="post-summary"
-                required
-                error={errors["summary"]}
-              >
+              <Field label="Tóm tắt" htmlFor="post-summary" required error={errors["summary"]}>
                 <Textarea
                   id="post-summary"
-                  rows={5}
+                  rows={3}
                   value={summary}
                   onChange={(event) => setSummary(event.target.value)}
                   aria-invalid={Boolean(errors["summary"])}
@@ -290,34 +256,22 @@ export function PostEditor({ initial }: PostEditorProps) {
                   {errors["body"]}
                 </p>
               ) : null}
-              <BlockEditor blocks={body} onChange={setBody} />
+              <RichEditor value={body} onChange={setBody} />
             </Card>
           </div>
 
           <div className="space-y-5">
             <Card className="space-y-4 p-5">
-              <Field
-                label="Mục"
-                htmlFor="post-section"
-                required
-                error={errors["section"]}
-              >
+              <Field label="Mục" htmlFor="post-section" required error={errors["section"]}>
                 <Select
                   id="post-section"
                   options={SECTION_OPTIONS}
                   placeholder="Chọn mục"
                   value={section}
-                  onChange={(event) =>
-                    changeSection(event.target.value as PostSection)
-                  }
+                  onChange={(event) => changeSection(event.target.value as PostSection)}
                 />
               </Field>
-              <Field
-                label="Chuyên mục"
-                htmlFor="post-category"
-                required
-                error={errors["category"]}
-              >
+              <Field label="Chuyên mục" htmlFor="post-category" required error={errors["category"]}>
                 <Select
                   id="post-category"
                   options={categoryOptions}
@@ -327,12 +281,7 @@ export function PostEditor({ initial }: PostEditorProps) {
                   aria-invalid={Boolean(errors["category"])}
                 />
               </Field>
-              <Field
-                label="Tác giả"
-                htmlFor="post-author"
-                required
-                error={errors["author"]}
-              >
+              <Field label="Tác giả" htmlFor="post-author" required error={errors["author"]}>
                 <Input
                   id="post-author"
                   value={author}
@@ -340,12 +289,7 @@ export function PostEditor({ initial }: PostEditorProps) {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="Phút đọc"
-                  htmlFor="post-read"
-                  required
-                  error={errors["readMinutes"]}
-                >
+                <Field label="Phút đọc" htmlFor="post-read" required error={errors["readMinutes"]}>
                   <Input
                     id="post-read"
                     type="number"
@@ -355,12 +299,7 @@ export function PostEditor({ initial }: PostEditorProps) {
                     onChange={(event) => setReadMinutes(event.target.value)}
                   />
                 </Field>
-                <Field
-                  label="Ngày đăng"
-                  htmlFor="post-date"
-                  required
-                  error={errors["publishedAt"]}
-                >
+                <Field label="Ngày đăng" htmlFor="post-date" required error={errors["publishedAt"]}>
                   <Input
                     id="post-date"
                     type="date"
@@ -419,8 +358,7 @@ export function PostEditor({ initial }: PostEditorProps) {
             <span className="text-primary-700">{message}</span>
           ) : initial ? (
             <span className="text-muted">
-              Trạng thái hiện tại:{" "}
-              {initial.status === "published" ? "Đã đăng" : "Nháp"}
+              Trạng thái hiện tại: {initial.status === "published" ? "Đã đăng" : "Nháp"}
             </span>
           ) : null}
         </div>

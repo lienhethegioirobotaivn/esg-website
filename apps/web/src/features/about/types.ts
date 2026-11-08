@@ -1,6 +1,6 @@
-import type { PostBlock, PostSection, PostStatus } from "@esg/shared";
+import type { PostBlock, PostSection, PostStatus, RichDoc } from "@esg/shared";
 
-export type { PostBlock, PostSection, PostStatus };
+export type { PostBlock, PostSection, PostStatus, RichDoc };
 
 export interface Post {
   id: string;
@@ -19,7 +19,7 @@ export interface Post {
   spotlight: boolean;
   status: PostStatus;
   isSample: boolean;
-  body: PostBlock[];
+  body: RichDoc;
 }
 
 export interface Stat {

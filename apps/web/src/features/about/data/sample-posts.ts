@@ -1,3 +1,5 @@
+import { richDocFromBlocks } from "@esg/shared";
+
 import type { Post, PostBlock, PostSection } from "../types";
 
 const AUTHOR = "Ban biên tập ESG Report Online";
@@ -47,7 +49,7 @@ function sample(input: SampleInput): Post {
     spotlight: input.spotlight ?? false,
     status: "published",
     isSample: true,
-    body: input.body ?? defaultBody(input.summary),
+    body: richDocFromBlocks(input.body ?? defaultBody(input.summary)),
   };
 }
 

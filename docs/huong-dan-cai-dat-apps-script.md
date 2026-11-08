@@ -110,3 +110,13 @@ Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quả
 - Trang công khai lưu đệm 60 giây, bài mới có thể hiện sau tối đa 1 phút.
 - Lượt tim không chống trùng theo người, mỗi trình duyệt thả được một lần cho mỗi bài.
 - Đăng nhập sai quá 5 lần trong 15 phút sẽ bị khóa tạm theo IP.
+
+### Trình soạn bài (giống Google Docs)
+
+Ô "Nội dung bài viết" là trình soạn giàu định dạng: tiêu đề lớn/nhỏ, in đậm, nghiêng, gạch chân, liên kết, căn trái/giữa/phải/đều hai bên, danh sách, khung trích dẫn, đường kẻ ngang.
+
+- **Ảnh:** dán trực tiếp (Ctrl+V), kéo thả từ máy tính, hoặc bấm nút chèn ảnh. Ảnh tự thu nhỏ rồi tải lên Drive. Bấm vào ảnh để căn trái/giữa/phải, chọn cỡ 25/50/75/100% và nhập mô tả ảnh.
+- **Bài cũ** (soạn bằng trình cũ gồm đoạn văn, tiêu đề mục, khung nổi bật) tự chuyển sang định dạng mới khi mở, khung nổi bật trở thành khung trích dẫn. Không cần sửa dữ liệu trong Sheet.
+- Cột `Nội dung (JSON)` trong tab `Bài viết` giờ chứa nội dung dạng JSON của trình soạn. Giới hạn của một ô Sheet là 50.000 ký tự, nên web chặn lưu khi nội dung vượt khoảng 45.000 ký tự. Ảnh chỉ lưu đường dẫn nên không tốn nhiều chỗ.
+- Chỉ các định dạng trên được giữ lại. Nội dung dán từ nguồn khác bị loại bỏ phần không hỗ trợ (màu chữ, cỡ chữ, bảng…). Ảnh dán từ trang web khác phải là đường dẫn https.
+- Không cần cập nhật Apps Script cho phần này.

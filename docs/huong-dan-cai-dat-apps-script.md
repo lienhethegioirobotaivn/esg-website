@@ -117,6 +117,8 @@ Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quả
 
 - **Ảnh:** dán trực tiếp (Ctrl+V), kéo thả từ máy tính, hoặc bấm nút chèn ảnh. Ảnh tự thu nhỏ rồi tải lên Drive. Bấm vào ảnh để căn trái/giữa/phải, chọn cỡ 25/50/75/100% và nhập mô tả ảnh.
 - **Bài cũ** (soạn bằng trình cũ gồm đoạn văn, tiêu đề mục, khung nổi bật) tự chuyển sang định dạng mới khi mở, khung nổi bật trở thành khung trích dẫn. Không cần sửa dữ liệu trong Sheet.
-- Cột `Nội dung (JSON)` trong tab `Bài viết` giờ chứa nội dung dạng JSON của trình soạn. Giới hạn của một ô Sheet là 50.000 ký tự, nên web chặn lưu khi nội dung vượt khoảng 45.000 ký tự. Ảnh chỉ lưu đường dẫn nên không tốn nhiều chỗ.
+- **Nội dung dài:** nội dung bài được lưu dạng JSON. Bài ngắn nằm trong cột `Nội dung (JSON)` của tab `Bài viết`. Bài dài hơn 40.000 ký tự được chia mảnh và lưu ở tab `Nội dung bài viết` (tự tạo, gồm `Mã bài`, `Phần`, `Nội dung`), cột `Nội dung (JSON)` chỉ ghi `@chunks:N`. Đừng sửa hoặc xóa tab này bằng tay. Giới hạn hiện tại khoảng 400.000 ký tự dữ liệu lưu (cỡ vài chục nghìn từ) và 1.000 khối.
+- **Bảng:** nút chèn bảng tạo bảng 3x3 có hàng tiêu đề. Khi con trỏ nằm trong bảng, thanh công cụ hiện nút thêm/xóa hàng, cột, bật tắt hàng tiêu đề và xóa bảng. Phím Tab chuyển ô.
+- **Chú thích ảnh:** bấm vào ảnh, nhập "Chú thích ảnh", chú thích hiện dưới ảnh trên trang công khai (chưa hiện trong ô soạn).
 - Chỉ các định dạng trên được giữ lại. Nội dung dán từ nguồn khác bị loại bỏ phần không hỗ trợ (màu chữ, cỡ chữ, bảng…). Ảnh dán từ trang web khác phải là đường dẫn https.
-- Không cần cập nhật Apps Script cho phần này.
+- **Cần cập nhật Apps Script** (dán lại `Code.gs` và triển khai Phiên bản mới) để lưu được bài dài. Bài ngắn vẫn lưu được với bản cũ.

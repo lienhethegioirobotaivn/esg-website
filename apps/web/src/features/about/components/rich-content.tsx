@@ -71,6 +71,19 @@ function renderBlocks(blocks: RichBlock[]): ReactNode {
         );
       }
       case "image":
+        if (block.attrs.caption !== "") {
+          return (
+            <figure
+              key={index}
+              data-align={block.attrs.align}
+              style={{ width: `${block.attrs.width}%` }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={block.attrs.src} alt={block.attrs.alt} loading="lazy" />
+              <figcaption>{block.attrs.caption}</figcaption>
+            </figure>
+          );
+        }
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -101,6 +114,31 @@ function renderBlocks(blocks: RichBlock[]): ReactNode {
               <li key={position}>{renderBlocks(item.content)}</li>
             ))}
           </ol>
+        );
+      case "table":
+        return (
+          <div key={index} className="rich-table">
+            <table>
+              <tbody>
+                {block.content.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.content.map((cell, cellIndex) => {
+                      const Cell = cell.type === "tableHeader" ? "th" : "td";
+                      return (
+                        <Cell
+                          key={cellIndex}
+                          colSpan={cell.attrs?.colspan}
+                          rowSpan={cell.attrs?.rowspan}
+                        >
+                          {renderBlocks(cell.content)}
+                        </Cell>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         );
       case "horizontalRule":
         return <hr key={index} />;

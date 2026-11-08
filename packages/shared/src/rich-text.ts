@@ -26,7 +26,13 @@ export interface RichHeading {
 
 export interface RichImage {
   type: "image";
-  attrs: { src: string; alt: string; align: ImageAlign; width: number };
+  attrs: {
+    src: string;
+    alt: string;
+    caption: string;
+    align: ImageAlign;
+    width: number;
+  };
 }
 
 export interface RichBlockquote {
@@ -44,6 +50,22 @@ export interface RichList {
   content: RichListItem[];
 }
 
+export interface RichTableCell {
+  type: "tableCell" | "tableHeader";
+  attrs?: { colspan?: number; rowspan?: number };
+  content: RichBlock[];
+}
+
+export interface RichTableRow {
+  type: "tableRow";
+  content: RichTableCell[];
+}
+
+export interface RichTable {
+  type: "table";
+  content: RichTableRow[];
+}
+
 export interface RichRule {
   type: "horizontalRule";
 }
@@ -54,6 +76,7 @@ export type RichBlock =
   | RichImage
   | RichBlockquote
   | RichList
+  | RichTable
   | RichRule;
 
 export interface RichDoc {
@@ -61,11 +84,14 @@ export interface RichDoc {
   content: RichBlock[];
 }
 
-export const RICH_DOC_MAX_BLOCKS = 300;
-export const RICH_DOC_MAX_BYTES = 45000;
+export const RICH_DOC_MAX_BLOCKS = 1000;
+export const RICH_DOC_MAX_BYTES = 400000;
 
 const MAX_DEPTH = 4;
-const MAX_TEXT = 5000;
+const MAX_CAPTION = 300;
+const MAX_TABLE_ROWS = 100;
+const MAX_TABLE_COLUMNS = 12;
+const MAX_SPAN = 12;
 const MAX_ALT = 200;
 const MAX_HREF = 500;
 const ALIGNS: readonly RichAlign[] = ["left", "center", "right", "justify"];
@@ -126,7 +152,7 @@ function cleanInline(raw: unknown): RichInline[] {
     if (item["type"] === "hardBreak") {
       result.push({ type: "hardBreak" });
     } else if (item["type"] === "text" && typeof item["text"] === "string") {
-      const text = item["text"].slice(0, MAX_TEXT);
+      const text = item["text"];
       if (text === "") {
         continue;
       }
@@ -149,6 +175,10 @@ function cleanImage(item: Record<string, unknown>): RichImage | null {
   }
   const alt =
     typeof attrs["alt"] === "string" ? attrs["alt"].slice(0, MAX_ALT) : "";
+  const caption =
+    typeof attrs["caption"] === "string"
+      ? attrs["caption"].slice(0, MAX_CAPTION)
+      : "";
   const align =
     IMAGE_ALIGNS.find((value) => value === attrs["align"]) ?? "center";
   const rawWidth = Number(attrs["width"]);
@@ -156,7 +186,55 @@ function cleanImage(item: Record<string, unknown>): RichImage | null {
     Number.isFinite(rawWidth) && rawWidth >= 10 && rawWidth <= 100
       ? Math.round(rawWidth)
       : 100;
-  return { type: "image", attrs: { src, alt, align, width } };
+  return { type: "image", attrs: { src, alt, caption, align, width } };
+}
+
+function cleanSpan(value: unknown): number | undefined {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 1 && number <= MAX_SPAN
+    ? number
+    : undefined;
+}
+
+function cleanTable(item: Record<string, unknown>): RichTable | null {
+  const rows: RichTableRow[] = [];
+  for (const rowRaw of asArray(item["content"]).slice(0, MAX_TABLE_ROWS)) {
+    if (!isRecord(rowRaw) || rowRaw["type"] !== "tableRow") {
+      continue;
+    }
+    const cells: RichTableCell[] = [];
+    for (const cellRaw of asArray(rowRaw["content"]).slice(
+      0,
+      MAX_TABLE_COLUMNS,
+    )) {
+      if (
+        !isRecord(cellRaw) ||
+        (cellRaw["type"] !== "tableCell" && cellRaw["type"] !== "tableHeader")
+      ) {
+        continue;
+      }
+      const attrs = isRecord(cellRaw["attrs"]) ? cellRaw["attrs"] : {};
+      const colspan = cleanSpan(attrs["colspan"]);
+      const rowspan = cleanSpan(attrs["rowspan"]);
+      const blocks = cleanBlocks(cellRaw["content"], 2);
+      cells.push({
+        type: cellRaw["type"],
+        ...(colspan || rowspan
+          ? {
+              attrs: {
+                ...(colspan ? { colspan } : {}),
+                ...(rowspan ? { rowspan } : {}),
+              },
+            }
+          : {}),
+        content: blocks.length > 0 ? blocks : [{ type: "paragraph" }],
+      });
+    }
+    if (cells.length > 0) {
+      rows.push({ type: "tableRow", content: cells });
+    }
+  }
+  return rows.length > 0 ? { type: "table", content: rows } : null;
 }
 
 function cleanBlocks(raw: unknown, depth: number): RichBlock[] {
@@ -194,6 +272,11 @@ function cleanBlocks(raw: unknown, depth: number): RichBlock[] {
       }
     } else if (type === "horizontalRule") {
       result.push({ type: "horizontalRule" });
+    } else if (depth === 0 && type === "table") {
+      const table = cleanTable(item);
+      if (table) {
+        result.push(table);
+      }
     } else if (depth < MAX_DEPTH && type === "blockquote") {
       const content = cleanBlocks(item["content"], depth + 1);
       if (content.length > 0) {
@@ -306,6 +389,10 @@ function blockHasContent(block: RichBlock): boolean {
     case "bulletList":
     case "orderedList":
       return block.content.some((item) => item.content.some(blockHasContent));
+    case "table":
+      return block.content.some((row) =>
+        row.content.some((cell) => cell.content.some(blockHasContent)),
+      );
   }
 }
 

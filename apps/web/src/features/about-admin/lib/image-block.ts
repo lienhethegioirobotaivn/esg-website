@@ -9,6 +9,12 @@ export const ImageBlock = Image.extend({
         parseHTML: (element) => element.getAttribute("data-align") ?? "center",
         renderHTML: (attributes) => ({ "data-align": attributes["align"] }),
       },
+      caption: {
+        default: "",
+        parseHTML: (element) => element.getAttribute("data-caption") ?? "",
+        renderHTML: (attributes) =>
+          attributes["caption"] ? { "data-caption": attributes["caption"] } : {},
+      },
       width: {
         default: 100,
         parseHTML: (element) => Number(element.getAttribute("data-width")) || 100,

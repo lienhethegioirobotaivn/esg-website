@@ -30,6 +30,10 @@ var CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var POSTS_SHEET_NAME = 'Bài viết';
 var POSTS_HEADERS = ['Mã bài', 'Mục', 'Slug', 'Chuyên mục', 'Tiêu đề', 'Tóm tắt', 'Ảnh bìa', 'Tác giả', 'Phút đọc', 'Ngày đăng', 'Nổi bật', 'Đọc nhiều', 'Chuyên đề', 'Trạng thái', 'Nội dung (JSON)', 'Lượt tim', 'Cập nhật lúc'];
 var POSTS_KEY = 'Mã bài';
+var BODY_SHEET_NAME = 'Nội dung bài viết';
+var BODY_HEADERS = ['Mã bài', 'Phần', 'Nội dung'];
+var BODY_CHUNK_SIZE = 40000;
+var BODY_CHUNK_PREFIX = '@chunks:';
 var STATS_SHEET_NAME = 'Số liệu thành tựu';
 var STATS_HEADERS = ['Thứ tự', 'Giá trị', 'Nhãn'];
 var ABOUT_IMAGES_FOLDER_NAME = 'Ảnh trang Về ESG Report Online';
@@ -495,10 +499,79 @@ function cellText_(value) {
   return value === null || value === undefined ? '' : String(value);
 }
 
-function postFromRecord_(record) {
+function readBodyChunks_() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BODY_SHEET_NAME);
+  var chunks = {};
+  if (!sheet) {
+    return chunks;
+  }
+  readTable_(sheet).rows.forEach(function (record) {
+    var id = cellText_(record['Mã bài']);
+    if (id === '') {
+      return;
+    }
+    if (!chunks[id]) {
+      chunks[id] = [];
+    }
+    chunks[id].push({ part: Number(record['Phần']) || 0, text: cellText_(record['Nội dung']) });
+  });
+  Object.keys(chunks).forEach(function (id) {
+    chunks[id].sort(function (a, b) {
+      return a.part - b.part;
+    });
+  });
+  return chunks;
+}
+
+function bodyText_(record, chunks) {
+  var raw = cellText_(record['Nội dung (JSON)']);
+  if (raw.indexOf(BODY_CHUNK_PREFIX) !== 0) {
+    return raw;
+  }
+  var parts = chunks[cellText_(record['Mã bài'])] || [];
+  return parts
+    .map(function (item) {
+      return item.text;
+    })
+    .join('');
+}
+
+function removeBodyChunks_(id) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BODY_SHEET_NAME);
+  if (!sheet) {
+    return;
+  }
+  var rows = readTable_(sheet).rows;
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (cellText_(rows[i]['Mã bài']) === id) {
+      sheet.deleteRow(rows[i]._row);
+    }
+  }
+}
+
+function storeBody_(id, json) {
+  removeBodyChunks_(id);
+  if (json.length <= BODY_CHUNK_SIZE) {
+    return json;
+  }
+  var sheet = ensureTable_(BODY_SHEET_NAME, BODY_HEADERS);
+  var table = readTable_(sheet);
+  var row = Math.max(sheet.getLastRow(), 1) + 1;
+  var count = 0;
+  for (var start = 0; start < json.length; start += BODY_CHUNK_SIZE) {
+    count++;
+    sheet.getRange(row, table.columns['Mã bài']).setNumberFormat('@').setValue(id);
+    sheet.getRange(row, table.columns['Phần']).setNumberFormat('@').setValue(count);
+    sheet.getRange(row, table.columns['Nội dung']).setNumberFormat('@').setValue(json.substring(start, start + BODY_CHUNK_SIZE));
+    row++;
+  }
+  return BODY_CHUNK_PREFIX + count;
+}
+
+function postFromRecord_(record, chunks) {
   var body = [];
   try {
-    body = JSON.parse(cellText_(record['Nội dung (JSON)']) || '[]');
+    body = JSON.parse(bodyText_(record, chunks) || '[]');
   } catch (err) {
     body = [];
   }
@@ -525,11 +598,12 @@ function postFromRecord_(record) {
 function listPosts_(includeDrafts) {
   var table = readTable_(ensureTable_(POSTS_SHEET_NAME, POSTS_HEADERS));
   var posts = [];
+  var chunks = readBodyChunks_();
   table.rows.forEach(function (record) {
     if (cellText_(record[POSTS_KEY]) === '') {
       return;
     }
-    var post = postFromRecord_(record);
+    var post = postFromRecord_(record, chunks);
     if (includeDrafts || post.status === 'published') {
       posts.push(post);
     }
@@ -583,7 +657,7 @@ function savePost_(post) {
     'Đọc nhiều': post.popular ? 'Có' : '',
     'Chuyên đề': post.spotlight ? 'Có' : '',
     'Trạng thái': post.status === 'draft' ? 'Nháp' : 'Đã đăng',
-    'Nội dung (JSON)': JSON.stringify(post.body || []),
+    'Nội dung (JSON)': storeBody_(id, JSON.stringify(post.body || [])),
     'Lượt tim': existingLikes,
     'Cập nhật lúc': Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm:ss')
   };
@@ -628,6 +702,7 @@ function deletePost_(id) {
   for (var i = 0; i < table.rows.length; i++) {
     if (cellText_(table.rows[i][POSTS_KEY]) === id) {
       sheet.deleteRow(table.rows[i]._row);
+      removeBodyChunks_(id);
       SpreadsheetApp.flush();
       return { ok: true };
     }

@@ -7,6 +7,7 @@ import {
   useEditorState,
   type Editor,
 } from "@tiptap/react";
+import { TableKit } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import {
@@ -22,6 +23,7 @@ import {
   ListOrdered,
   Loader2,
   Minus,
+  Table2,
   Quote,
   Redo2,
   Trash2,
@@ -43,6 +45,41 @@ interface RichEditorProps {
 }
 
 const IMAGE_SIZES = [25, 50, 75, 100] as const;
+
+const TABLE_ACTIONS: { label: string; run: (editor: Editor) => void }[] = [
+  {
+    label: "+ Hàng trên",
+    run: (editor) => editor.chain().focus().addRowBefore().run(),
+  },
+  {
+    label: "+ Hàng dưới",
+    run: (editor) => editor.chain().focus().addRowAfter().run(),
+  },
+  {
+    label: "+ Cột trái",
+    run: (editor) => editor.chain().focus().addColumnBefore().run(),
+  },
+  {
+    label: "+ Cột phải",
+    run: (editor) => editor.chain().focus().addColumnAfter().run(),
+  },
+  {
+    label: "Xóa hàng",
+    run: (editor) => editor.chain().focus().deleteRow().run(),
+  },
+  {
+    label: "Xóa cột",
+    run: (editor) => editor.chain().focus().deleteColumn().run(),
+  },
+  {
+    label: "Hàng tiêu đề",
+    run: (editor) => editor.chain().focus().toggleHeaderRow().run(),
+  },
+  {
+    label: "Xóa bảng",
+    run: (editor) => editor.chain().focus().deleteTable().run(),
+  },
+];
 
 function ToolButton({
   label,
@@ -99,6 +136,7 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
             align: string;
             width: number;
             alt: string | null;
+            caption: string | null;
           })
         : null;
       const align =
@@ -113,6 +151,7 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
         bulletList: current.isActive("bulletList"),
         orderedList: current.isActive("orderedList"),
         blockquote: current.isActive("blockquote"),
+        inTable: current.isActive("table"),
         block: current.isActive("heading", { level: 2 })
           ? "2"
           : current.isActive("heading", { level: 3 })
@@ -288,6 +327,18 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
         >
           <Minus aria-hidden className="size-4" />
         </ToolButton>
+        <ToolButton
+          label="Chèn bảng"
+          active={state.inTable}
+          disabled={state.inTable}
+          onClick={() =>
+            chain(editor)
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <Table2 aria-hidden className="size-4" />
+        </ToolButton>
         <Divider />
         <ToolButton label="Chèn ảnh" onClick={onPickImage}>
           <ImagePlus aria-hidden className="size-4" />
@@ -331,6 +382,22 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
         </div>
       ) : null}
 
+      {state.inTable ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t border-border pt-1.5">
+          <span className="text-xs font-semibold text-muted">Bảng:</span>
+          {TABLE_ACTIONS.map((action) => (
+            <Button
+              key={action.label}
+              size="sm"
+              variant="secondary"
+              onClick={() => action.run(editor)}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
       {state.image ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-2 border-t border-border pt-1.5">
           <span className="text-xs font-semibold text-muted">
@@ -360,6 +427,18 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
                 .run()
             }
             placeholder="Mô tả ảnh (cho người khiếm thị)"
+            className="max-w-xs"
+          />
+          <Input
+            aria-label="Chú thích ảnh"
+            value={state.image.caption ?? ""}
+            onChange={(event) =>
+              editor
+                .chain()
+                .updateAttributes("image", { caption: event.target.value })
+                .run()
+            }
+            placeholder="Chú thích hiển thị dưới ảnh"
             className="max-w-xs"
           />
           <IconButton
@@ -405,6 +484,7 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
         link: { openOnClick: false, autolink: true },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TableKit.configure({ table: { resizable: false } }),
       ImageBlock,
     ],
     content: value,

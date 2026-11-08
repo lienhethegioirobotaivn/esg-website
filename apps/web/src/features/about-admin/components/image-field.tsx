@@ -1,12 +1,12 @@
 "use client";
 
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { Crop, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui";
 
 import { AdminApiError, uploadImage } from "../lib/admin-api";
-import { resizeImage } from "../lib/resize-image";
+import { CoverEditor } from "./cover-editor";
 
 interface ImageFieldProps {
   value: string;
@@ -15,26 +15,29 @@ interface ImageFieldProps {
 
 export function ImageField({ value, onChange }: ImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [lastFile, setLastFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleFile(file: File) {
-    setError(null);
-    setIsUploading(true);
+  async function handleConfirm(blob: Blob) {
     try {
-      const blob = await resizeImage(file);
       onChange(await uploadImage(blob));
     } catch (caught) {
-      setError(
+      throw new Error(
         caught instanceof AdminApiError
           ? caught.message
-          : "Không tải được ảnh. Vui lòng chọn ảnh JPG, PNG hoặc WEBP khác.",
+          : "Không tải được ảnh. Vui lòng thử lại.",
       );
-    } finally {
-      setIsUploading(false);
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+    }
+    setLastFile(pendingFile);
+    setPendingFile(null);
+  }
+
+  function handleFile(file: File) {
+    setError(null);
+    setPendingFile(file);
+    if (inputRef.current) {
+      inputRef.current.value = "";
     }
   }
 
@@ -56,24 +59,29 @@ export function ImageField({ value, onChange }: ImageFieldProps) {
         <Button
           variant="secondary"
           size="sm"
-          disabled={isUploading}
           onClick={() => inputRef.current?.click()}
-          leadingIcon={
-            isUploading ? (
-              <Loader2 aria-hidden className="size-4 animate-spin" />
-            ) : (
-              <ImagePlus aria-hidden className="size-4" />
-            )
-          }
+          leadingIcon={<ImagePlus aria-hidden className="size-4" />}
         >
-          {isUploading ? "Đang tải ảnh..." : value ? "Đổi ảnh" : "Tải ảnh lên"}
+          {value ? "Đổi ảnh" : "Tải ảnh lên"}
         </Button>
+        {value && lastFile ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setPendingFile(lastFile)}
+            leadingIcon={<Crop aria-hidden className="size-4" />}
+          >
+            Chỉnh lại ảnh
+          </Button>
+        ) : null}
         {value ? (
           <Button
             variant="ghost"
             size="sm"
-            disabled={isUploading}
-            onClick={() => onChange("")}
+            onClick={() => {
+              onChange("");
+              setLastFile(null);
+            }}
             leadingIcon={<Trash2 aria-hidden className="size-4" />}
           >
             Bỏ ảnh
@@ -97,6 +105,13 @@ export function ImageField({ value, onChange }: ImageFieldProps) {
         <p role="alert" className="text-xs text-danger-600">
           {error}
         </p>
+      ) : null}
+      {pendingFile ? (
+        <CoverEditor
+          file={pendingFile}
+          onCancel={() => setPendingFile(null)}
+          onConfirm={handleConfirm}
+        />
       ) : null}
     </div>
   );

@@ -175,10 +175,7 @@ export function CoverEditor({ file, onCancel, onConfirm }: CoverEditorProps) {
   }
 
   return (
-    <Modal
-      title="Chỉnh ảnh bìa"
-      onClose={isSaving ? () => undefined : onCancel}
-    >
+    <Modal title="Chỉnh ảnh bìa" onClose={onCancel} dismissible={!isSaving}>
       <div className="space-y-4">
         <p className="text-sm text-muted">
           Kéo ảnh để căn vị trí, dùng thanh trượt hoặc con lăn chuột để phóng

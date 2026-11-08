@@ -6,5 +6,6 @@ export { IconButton } from "./icon-button";
 export { Input } from "./input";
 export { Modal } from "./modal";
 export { Select } from "./select";
+export { LoadingRegion, Skeleton } from "./skeleton";
 export { Switch } from "./switch";
 export { Textarea } from "./textarea";

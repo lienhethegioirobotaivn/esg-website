@@ -1,15 +1,16 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { IconButton } from "@/components/ui";
 import { SECTION_LABELS, postPath } from "@/features/about/constants";
 import type { Post } from "@/features/about/types";
 
 import { AdminApiError, deletePost } from "../lib/admin-api";
+import { ConfirmDialog } from "./confirm-dialog";
 
 interface PostsTableProps {
   posts: Post[];
@@ -18,26 +19,26 @@ interface PostsTableProps {
 
 export function PostsTable({ posts, isConfigured }: PostsTableProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [target, setTarget] = useState<Post | null>(null);
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [isRefreshing, startRefresh] = useTransition();
 
   async function handleDelete(post: Post) {
-    if (!window.confirm(`Xóa bài "${post.title}"? Thao tác này không thể hoàn tác.`)) {
-      return;
-    }
-    setError(null);
-    setBusyId(post.id);
     try {
       await deletePost(post.id);
-      router.refresh();
     } catch (caught) {
-      setError(
-        caught instanceof AdminApiError ? caught.message : "Không xóa được bài viết.",
+      throw new Error(
+        caught instanceof AdminApiError
+          ? caught.message
+          : "Không xóa được bài viết.",
       );
-    } finally {
-      setBusyId(null);
     }
+    setRemovedIds((current) => [...current, post.id]);
+    setTarget(null);
+    startRefresh(() => router.refresh());
   }
+
+  const visiblePosts = posts.filter((post) => !removedIds.includes(post.id));
 
   return (
     <div>
@@ -63,14 +64,18 @@ export function PostsTable({ posts, isConfigured }: PostsTableProps) {
       {!isConfigured ? (
         <p className="mt-4 rounded-card border border-warning-200 bg-warning-50 p-4 text-sm">
           Chưa cấu hình <code>GOOGLE_APPS_SCRIPT_URL</code> và{" "}
-          <code>GOOGLE_APPS_SCRIPT_SECRET</code>, nên chưa thể lưu hay đọc bài viết.
-          Website đang hiển thị dữ liệu mẫu.
+          <code>GOOGLE_APPS_SCRIPT_SECRET</code>, nên chưa thể lưu hay đọc bài
+          viết. Website đang hiển thị dữ liệu mẫu.
         </p>
       ) : null}
 
-      {error ? (
-        <p role="alert" className="mt-4 text-sm text-danger-600">
-          {error}
+      {isRefreshing ? (
+        <p
+          role="status"
+          className="mt-4 inline-flex items-center gap-2 text-sm text-muted"
+        >
+          <Loader2 aria-hidden className="size-4 animate-spin" />
+          Đang cập nhật danh sách...
         </p>
       ) : null}
 
@@ -88,14 +93,14 @@ export function PostsTable({ posts, isConfigured }: PostsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {posts.length === 0 ? (
+            {visiblePosts.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-center text-muted">
                   Chưa có bài viết nào.
                 </td>
               </tr>
             ) : (
-              posts.map((post) => (
+              visiblePosts.map((post) => (
                 <tr key={post.id}>
                   <td className="max-w-80 px-4 py-3 font-medium">
                     <Link
@@ -141,8 +146,7 @@ export function PostsTable({ posts, isConfigured }: PostsTableProps) {
                       <IconButton
                         label={`Xóa bài ${post.title}`}
                         tone="danger"
-                        disabled={busyId === post.id}
-                        onClick={() => void handleDelete(post)}
+                        onClick={() => setTarget(post)}
                       >
                         <Trash2 aria-hidden className="size-4" />
                       </IconButton>
@@ -154,7 +158,25 @@ export function PostsTable({ posts, isConfigured }: PostsTableProps) {
           </tbody>
         </table>
       </div>
+
+      {target ? (
+        <ConfirmDialog
+          title="Xóa bài viết"
+          confirmLabel="Xóa bài viết"
+          busyLabel="Đang xóa..."
+          onConfirm={() => handleDelete(target)}
+          onCancel={() => setTarget(null)}
+        >
+          <p>
+            Bạn sắp xóa bài{" "}
+            <strong className="text-foreground">
+              &ldquo;{target.title}&rdquo;
+            </strong>
+            . Các ảnh chỉ bài này sử dụng sẽ được chuyển vào Thùng rác của
+            Drive. Thao tác này không thể hoàn tác trên website.
+          </p>
+        </ConfirmDialog>
+      ) : null}
     </div>
   );
 }
-

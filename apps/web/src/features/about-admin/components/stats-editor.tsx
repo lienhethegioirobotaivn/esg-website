@@ -4,7 +4,7 @@ import { statsInputSchema } from "@esg/shared";
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { Button, Card, IconButton, Input } from "@/components/ui";
 
@@ -22,8 +22,13 @@ export function StatsEditor({ initial }: StatsEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, startRefresh] = useTransition();
+  const busy = isSaving || isRefreshing;
 
-  function update(index: number, patch: Partial<{ value: string; label: string }>) {
+  function update(
+    index: number,
+    patch: Partial<{ value: string; label: string }>,
+  ) {
     setItems((current) =>
       current.map((item, position) =>
         position === index ? { ...item, ...patch } : item,
@@ -59,10 +64,12 @@ export function StatsEditor({ initial }: StatsEditorProps) {
     try {
       await saveStats(parsed.data.items);
       setMessage("Đã lưu số liệu.");
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (caught) {
       setError(
-        caught instanceof AdminApiError ? caught.message : "Không lưu được số liệu.",
+        caught instanceof AdminApiError
+          ? caught.message
+          : "Không lưu được số liệu.",
       );
     } finally {
       setIsSaving(false);
@@ -76,8 +83,8 @@ export function StatsEditor({ initial }: StatsEditorProps) {
       </Link>
       <h1 className="mt-1 text-2xl text-primary-800">Số liệu thành tựu</h1>
       <p className="mt-2 text-sm text-muted">
-        Hiển thị ở dải màu xanh đầu trang Thành tựu. Xóa hết số liệu và lưu thì dải
-        này sẽ ẩn.
+        Hiển thị ở dải màu xanh đầu trang Thành tựu. Xóa hết số liệu và lưu thì
+        dải này sẽ ẩn.
       </p>
 
       <Card className="mt-5 space-y-3 p-5">
@@ -85,7 +92,10 @@ export function StatsEditor({ initial }: StatsEditorProps) {
           <p className="text-sm text-muted">Chưa có số liệu nào.</p>
         ) : null}
         {items.map((item, index) => (
-          <div key={index} className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center">
+          <div
+            key={index}
+            className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)_auto] sm:items-center"
+          >
             <Input
               aria-label={`Giá trị ${index + 1}`}
               value={item.value}
@@ -117,7 +127,9 @@ export function StatsEditor({ initial }: StatsEditorProps) {
                 label="Xóa số liệu"
                 tone="danger"
                 onClick={() =>
-                  setItems((current) => current.filter((_, position) => position !== index))
+                  setItems((current) =>
+                    current.filter((_, position) => position !== index),
+                  )
                 }
               >
                 <Trash2 aria-hidden className="size-4" />
@@ -129,7 +141,9 @@ export function StatsEditor({ initial }: StatsEditorProps) {
           variant="secondary"
           size="sm"
           disabled={items.length >= MAX_ITEMS}
-          onClick={() => setItems((current) => [...current, { value: "", label: "" }])}
+          onClick={() =>
+            setItems((current) => [...current, { value: "", label: "" }])
+          }
           leadingIcon={<Plus aria-hidden className="size-4" />}
         >
           Thêm số liệu
@@ -147,13 +161,15 @@ export function StatsEditor({ initial }: StatsEditorProps) {
           ) : null}
         </div>
         <Button
-          disabled={isSaving}
+          disabled={busy}
           onClick={() => void handleSave()}
           leadingIcon={
-            isSaving ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null
+            busy ? (
+              <Loader2 aria-hidden className="size-4 animate-spin" />
+            ) : null
           }
         >
-          Lưu số liệu
+          {busy ? "Đang lưu..." : "Lưu số liệu"}
         </Button>
       </div>
     </div>

@@ -42,6 +42,7 @@ import { resizeImage } from "../lib/resize-image";
 interface RichEditorProps {
   value: RichDoc;
   onChange: (doc: RichDoc) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 const IMAGE_SIZES = [25, 50, 75, 100] as const;
@@ -119,12 +120,11 @@ function readImageFiles(list: FileList | null | undefined): File[] {
 
 interface ToolbarProps {
   editor: Editor;
-  pending: number;
   error: string | null;
   onPickImage: () => void;
 }
 
-function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
+function Toolbar({ editor, error, onPickImage }: ToolbarProps) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkValue, setLinkValue] = useState("");
 
@@ -343,15 +343,6 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
         <ToolButton label="Chèn ảnh" onClick={onPickImage}>
           <ImagePlus aria-hidden className="size-4" />
         </ToolButton>
-        {pending > 0 ? (
-          <span
-            role="status"
-            className="ml-2 inline-flex items-center gap-1.5 text-xs text-muted"
-          >
-            <Loader2 aria-hidden className="size-3.5 animate-spin" />
-            Đang tải ảnh…
-          </span>
-        ) : null}
       </div>
 
       {linkOpen ? (
@@ -460,7 +451,11 @@ function Toolbar({ editor, pending, error, onPickImage }: ToolbarProps) {
   );
 }
 
-export function RichEditor({ value, onChange }: RichEditorProps) {
+export function RichEditor({
+  value,
+  onChange,
+  onUploadingChange,
+}: RichEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const insertRef = useRef<(files: File[], position?: number) => void>(
     () => {},
@@ -472,6 +467,10 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onUploadingChange?.(pending > 0);
+  }, [pending, onUploadingChange]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -567,12 +566,22 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
     <div className="rounded-card border border-border bg-surface">
       <Toolbar
         editor={editor}
-        pending={pending}
         error={error}
         onPickImage={() => fileInputRef.current?.click()}
       />
 
-      <EditorContent editor={editor} />
+      <div className="relative">
+        <EditorContent editor={editor} />
+        {pending > 0 ? (
+          <div
+            role="status"
+            className="pointer-events-none absolute right-3 bottom-3 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-card"
+          >
+            <Loader2 aria-hidden className="size-3.5 animate-spin" />
+            Đang tải {pending > 1 ? `${pending} ảnh` : "ảnh"} lên...
+          </div>
+        ) : null}
+      </div>
 
       <input
         ref={fileInputRef}

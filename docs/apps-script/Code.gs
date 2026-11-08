@@ -427,9 +427,9 @@ function runAbout_(body, props) {
     case 'listPosts':
       return { ok: true, posts: listPosts_(body.includeDrafts === true) };
     case 'savePost':
-      return savePost_(body.post);
+      return savePost_(body.post, props);
     case 'deletePost':
-      return deletePost_(String(body.id || ''));
+      return deletePost_(String(body.id || ''), props);
     case 'likePost':
       return likePost_(String(body.section || ''), String(body.slug || ''), Number(body.delta));
     case 'listStats':
@@ -568,6 +568,51 @@ function storeBody_(id, json) {
   return BODY_CHUNK_PREFIX + count;
 }
 
+function imageIdsOf_(post) {
+  var text = String(post.coverUrl || '') + ' ' + JSON.stringify(post.body || []);
+  var ids = {};
+  var pattern = /googleusercontent\.com\/d\/([A-Za-z0-9_-]+)/g;
+  var match;
+  while ((match = pattern.exec(text)) !== null) {
+    ids[match[1]] = true;
+  }
+  return Object.keys(ids);
+}
+
+function trashUnusedImages_(candidates, props) {
+  if (!candidates.length) {
+    return;
+  }
+  try {
+    var used = {};
+    listPosts_(true).forEach(function (post) {
+      imageIdsOf_(post).forEach(function (id) {
+        used[id] = true;
+      });
+    });
+    var folderId = aboutImagesFolder_(props).getId();
+    candidates.forEach(function (id) {
+      if (used[id]) {
+        return;
+      }
+      try {
+        var file = DriveApp.getFileById(id);
+        var parents = file.getParents();
+        while (parents.hasNext()) {
+          if (parents.next().getId() === folderId) {
+            file.setTrashed(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.log('Không xóa được ảnh ' + id + ': ' + err);
+      }
+    });
+  } catch (err) {
+    console.log('Không dọn được ảnh không còn dùng: ' + err);
+  }
+}
+
 function postFromRecord_(record, chunks) {
   var body = [];
   try {
@@ -611,7 +656,7 @@ function listPosts_(includeDrafts) {
   return posts;
 }
 
-function savePost_(post) {
+function savePost_(post, props) {
   if (!post || typeof post !== 'object') {
     throw new Error('Thiếu dữ liệu bài viết.');
   }
@@ -620,6 +665,8 @@ function savePost_(post) {
   var id = String(post.id || '');
   var targetRow = 0;
   var existingLikes = 0;
+  var previousImages = [];
+  var bodyChunks = readBodyChunks_();
   table.rows.forEach(function (record) {
     var recordId = cellText_(record[POSTS_KEY]);
     if (recordId === '') {
@@ -628,6 +675,7 @@ function savePost_(post) {
     if (id !== '' && recordId === id) {
       targetRow = record._row;
       existingLikes = Math.max(0, Number(record['Lượt tim']) || 0);
+      previousImages = imageIdsOf_(postFromRecord_(record, bodyChunks));
     } else if (cellText_(record['Mục']) === post.section && cellText_(record['Slug']) === post.slug) {
       throw new Error('Đường dẫn (slug) "' + post.slug + '" đã tồn tại trong mục này.');
     }
@@ -668,6 +716,7 @@ function savePost_(post) {
     }
   });
   SpreadsheetApp.flush();
+  trashUnusedImages_(previousImages, props);
   return { ok: true, id: id };
 }
 
@@ -693,7 +742,7 @@ function randomCode_(length) {
   return code;
 }
 
-function deletePost_(id) {
+function deletePost_(id, props) {
   if (!id) {
     throw new Error('Thiếu mã bài viết.');
   }
@@ -701,9 +750,11 @@ function deletePost_(id) {
   var table = readTable_(sheet);
   for (var i = 0; i < table.rows.length; i++) {
     if (cellText_(table.rows[i][POSTS_KEY]) === id) {
+      var images = imageIdsOf_(postFromRecord_(table.rows[i], readBodyChunks_()));
       sheet.deleteRow(table.rows[i]._row);
       removeBodyChunks_(id);
       SpreadsheetApp.flush();
+      trashUnusedImages_(images, props);
       return { ok: true };
     }
   }

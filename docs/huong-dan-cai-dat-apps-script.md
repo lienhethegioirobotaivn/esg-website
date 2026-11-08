@@ -122,3 +122,19 @@ Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quả
 - **Chú thích ảnh:** bấm vào ảnh, nhập "Chú thích ảnh", chú thích hiện dưới ảnh trên trang công khai (chưa hiện trong ô soạn).
 - Chỉ các định dạng trên được giữ lại. Nội dung dán từ nguồn khác bị loại bỏ phần không hỗ trợ (màu chữ, cỡ chữ, bảng…). Ảnh dán từ trang web khác phải là đường dẫn https.
 - **Cần cập nhật Apps Script** (dán lại `Code.gs` và triển khai Phiên bản mới) để lưu được bài dài. Bài ngắn vẫn lưu được với bản cũ.
+
+### Chỉnh ảnh bìa
+
+Khi chọn ảnh bìa, hộp "Chỉnh ảnh bìa" tự mở:
+
+- Kéo ảnh để căn vị trí, dùng thanh trượt (hoặc con lăn chuột, phím + và -) để phóng to từ 100% đến 400%, xoay trái/phải, đặt lại.
+- Ảnh được cắt theo tỉ lệ 16:9 (cỡ 1600x900) như thẻ tin trên web. Vùng tối ở trên và dưới khung cho biết phần ảnh sẽ bị cắt ở đầu trang bài viết (tỉ lệ 2,7:1). Tắt vùng này bằng ô tích bên dưới.
+- Bấm "Dùng ảnh này" để tải lên. Sau khi tải, nút "Chỉnh lại ảnh" mở lại ảnh gốc vừa chọn để căn lại. Nút này chỉ có trong lần soạn hiện tại. Mở lại bài đã lưu, muốn căn lại thì chọn lại file ảnh gốc bằng "Đổi ảnh".
+- Không cần cập nhật Apps Script cho phần này.
+
+### Nơi lưu ảnh và dọn ảnh không còn dùng
+
+- Ảnh (ảnh bìa và ảnh trong bài) nằm trong thư mục Drive `Ảnh trang Về ESG Report Online`, bên trong thư mục `FOLDER_ID`. Trong Sheet chỉ lưu đường dẫn ảnh.
+- Xóa bài, đổi ảnh bìa hoặc xóa ảnh khỏi bài rồi lưu: ảnh không còn bài nào dùng (kể cả bản nháp) sẽ được chuyển vào Thùng rác của Drive. Ảnh còn được bài khác dùng thì giữ lại. Chỉ ảnh nằm trong thư mục ảnh trên mới bị dọn.
+- Ảnh trong Thùng rác khôi phục được trong 30 ngày, sau đó Drive tự xóa vĩnh viễn. Cần dán lại `Code.gs` và triển khai Phiên bản mới.
+- Ảnh đã tải lên nhưng chưa bao giờ được lưu vào bài (ví dụ đóng trình soạn giữa chừng) không bị dọn tự động, cần xóa tay trong thư mục.

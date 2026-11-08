@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+import { ABOUT_PATH } from "@/features/about/constants";
+import { pageMetadata } from "@/lib/seo";
+
 import {
   AchievementsView,
   StatsBand,
@@ -7,9 +10,12 @@ import {
   getPosts,
 } from "@/features/about";
 
-export const metadata: Metadata = {
-  title: "Thành tựu",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Thành tựu và tác động",
+  description:
+    "Những dấu mốc, sự kiện và thành tựu của ESG Report Online trong hành trình đồng hành cùng doanh nghiệp Việt Nam xây dựng báo cáo ESG.",
+  path: ABOUT_PATH,
+});
 
 export const dynamic = "force-dynamic";
 

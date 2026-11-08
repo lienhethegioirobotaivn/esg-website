@@ -138,3 +138,23 @@ Khi chọn ảnh bìa, hộp "Chỉnh ảnh bìa" tự mở:
 - Xóa bài, đổi ảnh bìa hoặc xóa ảnh khỏi bài rồi lưu: ảnh không còn bài nào dùng (kể cả bản nháp) sẽ được chuyển vào Thùng rác của Drive. Ảnh còn được bài khác dùng thì giữ lại. Chỉ ảnh nằm trong thư mục ảnh trên mới bị dọn.
 - Ảnh trong Thùng rác khôi phục được trong 30 ngày, sau đó Drive tự xóa vĩnh viễn. Cần dán lại `Code.gs` và triển khai Phiên bản mới.
 - Ảnh đã tải lên nhưng chưa bao giờ được lưu vào bài (ví dụ đóng trình soạn giữa chừng) không bị dọn tự động, cần xóa tay trong thư mục.
+
+## 10. SEO (trang chủ, bài đăng, sitemap, robots)
+
+**Biến môi trường bắt buộc khi chạy thật:** `NEXT_PUBLIC_SITE_URL` là địa chỉ website công khai, ví dụ `https://esgreportonline.vn`, không có dấu `/` ở cuối. Đặt trong `apps/web/.env.local` và trong Vercel (Settings > Environment Variables, môi trường Production), rồi triển khai lại. Không đặt thì sitemap, robots, canonical và ảnh chia sẻ dùng địa chỉ tạm của Vercel (hoặc `http://localhost:3000` khi chạy máy cá nhân), không đúng cho Google.
+
+**Những gì đã có:**
+
+- Tiêu đề dạng `Tên trang | ESG Report Online`, mô tả, thẻ canonical và thẻ chia sẻ (Facebook, Zalo, X) cho trang chủ, Thành tựu, Tin tức và từng bài đăng. Bài đăng dùng tiêu đề, tóm tắt (cắt gọn 160 ký tự) và ảnh bìa của chính bài đó, không có ảnh bìa thì dùng ảnh mặc định `public/og-default.png` (1200x630).
+- Dữ liệu có cấu trúc (JSON-LD): Organization và WebSite cho trang chủ, Article và BreadcrumbList cho từng bài.
+- `/sitemap.xml` tự cập nhật theo bài đã đăng (không có bài nháp, không có bài mẫu), kèm ảnh bìa. `/robots.txt` cho phép tìm kiếm, chặn `/quan-tri`, `/api/` và `/cong-cu-ai`.
+- Trang Trồng rừng, Mua tín chỉ carbon (đang cập nhật) và các trang quản trị được đặt `noindex`. Bài mẫu hiện khi chưa kết nối Apps Script cũng `noindex`.
+
+**Sau khi đưa lên production:**
+
+1. Mở `https://<tên miền>/robots.txt` và `https://<tên miền>/sitemap.xml` để kiểm tra địa chỉ hiển thị đúng tên miền thật.
+2. Vào Google Search Console, thêm website, chọn Sitemaps, nhập `sitemap.xml`.
+3. Kiểm tra chia sẻ: dán địa chỉ một bài vào Facebook Sharing Debugger hoặc Zalo, xem tiêu đề, mô tả, ảnh. Facebook lưu đệm ảnh cũ, cần bấm "Scrape Again" nếu đã chia sẻ trước đó.
+4. Muốn bài lên Google nhanh hơn, vào Search Console, dùng "Kiểm tra URL" rồi "Yêu cầu lập chỉ mục" cho bài mới.
+
+**Mẹo viết bài để SEO tốt:** tiêu đề dưới khoảng 60 ký tự, tóm tắt 120–160 ký tự (phần tóm tắt là mô tả hiện trên Google), luôn có ảnh bìa rõ nét, đặt mô tả ảnh (alt) cho ảnh trong bài.

@@ -7,7 +7,10 @@ import {
   getPosts,
   isPostSection,
   pickRelatedPosts,
+  postJsonLd,
+  postMetadata,
 } from "@/features/about";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,7 @@ export async function generateMetadata({
     return {};
   }
   const post = await getPost(section, slug);
-  return post ? { title: post.title, description: post.summary } : {};
+  return post ? postMetadata(post) : {};
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
@@ -37,5 +40,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   }
   const related = pickRelatedPosts(post, await getPosts(section));
 
-  return <ArticleView post={post} related={related} />;
+  return (
+    <>
+      <JsonLd data={postJsonLd(post)} />
+      <ArticleView post={post} related={related} />
+    </>
+  );
 }

@@ -7,3 +7,4 @@ export { ABOUT_PATH, isPostSection, SECTION_LABELS } from "./constants";
 export { getAchievementStats, getPost, getPosts } from "./lib/content";
 export { pickRelatedPosts } from "./lib/related";
 export type { Post, PostSection } from "./types";
+export { postJsonLd, postMetadata } from "./lib/seo";

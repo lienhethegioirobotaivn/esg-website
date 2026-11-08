@@ -1,12 +1,42 @@
 import type { Metadata } from "next";
 
 import { Card, Container } from "@/components/ui";
+import { JsonLd } from "@/components/seo/json-ld";
 import { SurveyWorkspace } from "@/features/survey";
+import { pageMetadata } from "@/lib/seo";
+import {
+  SITE_DESCRIPTION,
+  SITE_LOGO,
+  SITE_NAME,
+  SITE_TAGLINE,
+  absoluteUrl,
+} from "@/lib/site";
 import { getSurveyBank } from "@/server/survey-bank/get-survey-bank";
 
-export const metadata: Metadata = {
-  title: "Khảo sát ESG",
-};
+export const metadata: Metadata = pageMetadata({
+  title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+  description: SITE_DESCRIPTION,
+  path: "/",
+  absoluteTitle: true,
+});
+
+const homeJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: absoluteUrl("/"),
+    logo: absoluteUrl(SITE_LOGO),
+    description: SITE_DESCRIPTION,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: absoluteUrl("/"),
+    inLanguage: "vi-VN",
+  },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +54,7 @@ export default async function HomePage() {
 
   return (
     <main>
+      <JsonLd data={homeJsonLd} />
       <Container className="py-6">
         <div className="mt-4">
           {survey ? (

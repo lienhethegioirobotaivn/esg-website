@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { NO_INDEX } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/ui";

@@ -3,6 +3,15 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans, Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
 
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_TAGLINE,
+  getSiteUrl,
+} from "@/lib/site";
+
 import "./globals.css";
 
 // const beVietnamPro = Be_Vietnam_Pro({
@@ -25,11 +34,27 @@ const notoSansSC = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
+  applicationName: SITE_NAME,
   title: {
-    default: "ESG Report Online - Tạo báo cáo ESG miễn phí",
-    template: "Tạo báo cáo ESG miễn phí",
+    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "Nền tảng tạo báo cáo ESG miễn phí dành cho doanh nghiệp.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: SITE_LOCALE,
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
   icons: {
     icon: "/favicon.ico",
   },

@@ -1,24 +1,26 @@
 import type { PostSection } from "@esg/shared";
 
+import { msg } from "@/features/locale";
+
 export const ABOUT_PATH = "/ve-esg-report-online";
 
 export const SECTION_LABELS: Record<PostSection, string> = {
-  "thanh-tuu": "Thành tựu",
-  "tin-tuc": "Tin tức",
+  "thanh-tuu": msg("Thành tựu"),
+  "tin-tuc": msg("Tin tức"),
 };
 
 export const ACHIEVEMENT_CATEGORIES = [
-  "Sự kiện",
-  "Dấu mốc",
-  "Giải thưởng & ghi nhận",
+  msg("Sự kiện"),
+  msg("Dấu mốc"),
+  msg("Giải thưởng & ghi nhận"),
 ] as const;
 
 export const NEWS_CATEGORIES = [
-  "Kiến thức ESG",
-  "Môi trường",
-  "Xã hội",
-  "Quản trị",
-  "Thị trường & chính sách",
+  msg("Kiến thức ESG"),
+  msg("Môi trường"),
+  msg("Xã hội"),
+  msg("Quản trị"),
+  msg("Thị trường & chính sách"),
 ] as const;
 
 export const ACHIEVEMENTS_PAGE_SIZE = 6;

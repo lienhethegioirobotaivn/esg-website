@@ -2,6 +2,7 @@
 
 import { Heart } from "lucide-react";
 
+import { useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { useLikes } from "../hooks/use-likes";
@@ -14,6 +15,7 @@ interface LikeButtonProps {
 }
 
 export function LikeButton({ section, slug, likes }: LikeButtonProps) {
+  const t = useT();
   const { liked, count, toggle } = useLikes(section, slug, likes);
   return (
     <button
@@ -29,7 +31,7 @@ export function LikeButton({ section, slug, likes }: LikeButtonProps) {
           liked ? "fill-danger-600 text-danger-600" : "text-foreground",
         )}
       />
-      Thả tim
+      {t("Thả tim")}
       <span className="tabular-nums">{count}</span>
     </button>
   );

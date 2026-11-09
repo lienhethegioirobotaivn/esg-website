@@ -4,6 +4,8 @@ import { Check, Link2 } from "lucide-react";
 import { useState } from "react";
 import type { ComponentType } from "react";
 
+import { msg, useT } from "@/features/locale";
+
 import {
   FacebookIcon,
   LinkedInIcon,
@@ -21,28 +23,28 @@ interface Target {
 const TARGETS: readonly Target[] = [
   {
     id: "facebook",
-    label: "Chia sẻ lên Facebook",
+    label: msg("Chia sẻ lên Facebook"),
     Icon: FacebookIcon,
     buildUrl: (url) =>
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
   },
   {
     id: "zalo",
-    label: "Chia sẻ qua Zalo",
+    label: msg("Chia sẻ qua Zalo"),
     Icon: ZaloIcon,
     buildUrl: (url) =>
       `https://sp.zalo.me/plugins/share?dev=1&url=${encodeURIComponent(url)}`,
   },
   {
     id: "linkedin",
-    label: "Chia sẻ lên LinkedIn",
+    label: msg("Chia sẻ lên LinkedIn"),
     Icon: LinkedInIcon,
     buildUrl: (url) =>
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
   },
   {
     id: "x",
-    label: "Chia sẻ lên X",
+    label: msg("Chia sẻ lên X"),
     Icon: XIcon,
     buildUrl: (url, title) =>
       `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
@@ -54,6 +56,7 @@ interface ShareBarProps {
 }
 
 export function ShareBar({ title }: ShareBarProps) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   function share(target: Target) {
@@ -76,15 +79,15 @@ export function ShareBar({ title }: ShareBarProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm font-semibold">Chia sẻ</span>
+      <span className="text-sm font-semibold">{t("Chia sẻ")}</span>
       <ul className="flex items-center gap-2">
         {TARGETS.map((target) => (
           <li key={target.id}>
             <button
               type="button"
               onClick={() => share(target)}
-              aria-label={target.label}
-              title={target.label}
+              aria-label={t(target.label)}
+              title={t(target.label)}
               className="block rounded-control transition-opacity hover:opacity-80"
             >
               <target.Icon className="size-8" />
@@ -103,7 +106,7 @@ export function ShareBar({ title }: ShareBarProps) {
         ) : (
           <Link2 aria-hidden className="size-4" />
         )}
-        {copied ? "Đã sao chép" : "Sao chép liên kết"}
+        {copied ? t("Đã sao chép") : t("Sao chép liên kết")}
       </button>
     </div>
   );

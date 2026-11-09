@@ -8,6 +8,7 @@ import type { FormEvent } from "react";
 
 import { Button, Field, Input, Modal, Select, Textarea } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
+import { useT } from "@/features/locale";
 
 import {
   HOTLINE_DISPLAY,
@@ -42,6 +43,7 @@ function describedBy(field: FieldName, errors: FormErrors): string | undefined {
 }
 
 export function ContactDialog({ kind, onClose }: ContactDialogProps) {
+  const t = useT();
   const copy = INQUIRY_COPY[kind];
   const [values, setValues] = useState<InquiryFormValues>(INQUIRY_INITIAL_VALUES);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -54,6 +56,11 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
     if (errors[field]) {
       setErrors((current) => ({ ...current, [field]: undefined }));
     }
+  }
+
+  function errorOf(field: FieldName): string | undefined {
+    const message = errors[field];
+    return message ? t(message) : undefined;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -83,9 +90,9 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
     } catch (error) {
       if (error instanceof SubmitContactError) {
         setErrors(pickErrors(error.fields));
-        setSubmitError(error.message);
+        setSubmitError(t(error.message));
       } else {
-        setSubmitError("Không gửi được yêu cầu. Vui lòng thử lại sau.");
+        setSubmitError(t("Không gửi được yêu cầu. Vui lòng thử lại sau."));
       }
     } finally {
       setIsSubmitting(false);
@@ -93,34 +100,35 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
   }
 
   return (
-    <Modal title={copy.title} onClose={onClose}>
+    <Modal title={t(copy.title)} onClose={onClose}>
       {isDone ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <CheckCircle2 aria-hidden className="size-12 text-primary-600" />
-          <h3 className="text-lg font-semibold">Đã gửi yêu cầu</h3>
+          <h3 className="text-lg font-semibold">{t("Đã gửi yêu cầu")}</h3>
           <p className="max-w-md text-sm text-muted">
-            Cảm ơn bạn. Đội ngũ ESG Report Online sẽ liên hệ với bạn qua số điện
-            thoại hoặc email đã cung cấp.
+            {t(
+              "Cảm ơn bạn. Đội ngũ ESG Report Online sẽ liên hệ với bạn qua số điện thoại hoặc email đã cung cấp.",
+            )}
           </p>
           <Button className="mt-2" onClick={onClose}>
-            Đóng
+            {t("Đóng")}
           </Button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <h3 className="text-xl font-bold leading-snug text-primary-800">
-              {copy.heading}
+              {t(copy.heading)}
             </h3>
             {copy.subheading ? (
-              <p className="mt-1 text-sm text-muted">{copy.subheading}</p>
+              <p className="mt-1 text-sm text-muted">{t(copy.subheading)}</p>
             ) : null}
           </div>
 
           {copy.chip ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300 bg-primary-100 px-3 py-1 text-[0.8125rem] font-medium text-primary-800">
               <Users aria-hidden className="size-4" />
-              {copy.chip}
+              {t(copy.chip)}
             </span>
           ) : null}
 
@@ -130,21 +138,21 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               className="flex items-start gap-2.5 rounded-card bg-primary-100 px-3.5 py-2.5 text-[0.8125rem] text-primary-900"
             >
               <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
-              <p>{copy.notice}</p>
+              <p>{t(copy.notice)}</p>
             </div>
           ) : null}
 
           <Field
-            label="Tên doanh nghiệp"
+            label={t("Tên doanh nghiệp")}
             htmlFor="inquiry-name"
             required
-            error={errors.name}
+            error={errorOf("name")}
           >
             <Input
               id="inquiry-name"
               value={values.name}
               onChange={(event) => update("name", event.target.value)}
-              placeholder="Nhập tên doanh nghiệp"
+              placeholder={t("Nhập tên doanh nghiệp")}
               autoComplete="organization"
               aria-invalid={Boolean(errors.name)}
               aria-describedby={describedBy("name", errors)}
@@ -152,9 +160,9 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
           </Field>
 
           <Field
-            label="Thông tin doanh nghiệp"
+            label={t("Thông tin doanh nghiệp")}
             htmlFor="inquiry-description"
-            error={errors.description}
+            error={errorOf("description")}
           >
             {copy.descriptionMultiline ? (
               <Textarea
@@ -163,7 +171,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
                 className="min-h-16"
                 value={values.description}
                 onChange={(event) => update("description", event.target.value)}
-                placeholder={copy.descriptionPlaceholder}
+                placeholder={t(copy.descriptionPlaceholder)}
                 aria-invalid={Boolean(errors.description)}
                 aria-describedby={describedBy("description", errors)}
               />
@@ -172,7 +180,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
                 id="inquiry-description"
                 value={values.description}
                 onChange={(event) => update("description", event.target.value)}
-                placeholder={copy.descriptionPlaceholder}
+                placeholder={t(copy.descriptionPlaceholder)}
                 aria-invalid={Boolean(errors.description)}
                 aria-describedby={describedBy("description", errors)}
               />
@@ -181,15 +189,15 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Quy mô nhân sự"
+              label={t("Quy mô nhân sự")}
               htmlFor="inquiry-headcount"
               required
-              error={errors.headcount}
+              error={errorOf("headcount")}
             >
               <Select
                 id="inquiry-headcount"
                 options={headcountOptions}
-                placeholder="Chọn quy mô"
+                placeholder={t("Chọn quy mô")}
                 value={values.headcount}
                 onChange={(event) => update("headcount", event.target.value)}
                 aria-invalid={Boolean(errors.headcount)}
@@ -197,15 +205,15 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               />
             </Field>
             <Field
-              label="Ngành nghề"
+              label={t("Ngành nghề")}
               htmlFor="inquiry-industry"
               required
-              error={errors.industry}
+              error={errorOf("industry")}
             >
               <Select
                 id="inquiry-industry"
                 options={industryOptions}
-                placeholder="Chọn ngành nghề"
+                placeholder={t("Chọn ngành nghề")}
                 value={values.industry}
                 onChange={(event) => update("industry", event.target.value)}
                 aria-invalid={Boolean(errors.industry)}
@@ -213,10 +221,10 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               />
             </Field>
             <Field
-              label="Số điện thoại"
+              label={t("Số điện thoại")}
               htmlFor="inquiry-phone"
               required
-              error={errors.phone}
+              error={errorOf("phone")}
             >
               <Input
                 id="inquiry-phone"
@@ -224,7 +232,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
                 inputMode="tel"
                 value={values.phone}
                 onChange={(event) => update("phone", event.target.value)}
-                placeholder="Nhập số điện thoại"
+                placeholder={t("Nhập số điện thoại")}
                 autoComplete="tel"
                 aria-invalid={Boolean(errors.phone)}
                 aria-describedby={describedBy("phone", errors)}
@@ -234,14 +242,14 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               label="Email"
               htmlFor="inquiry-email"
               required
-              error={errors.email}
+              error={errorOf("email")}
             >
               <Input
                 id="inquiry-email"
                 type="email"
                 value={values.email}
                 onChange={(event) => update("email", event.target.value)}
-                placeholder="Nhập email liên hệ"
+                placeholder={t("Nhập email liên hệ")}
                 autoComplete="email"
                 aria-invalid={Boolean(errors.email)}
                 aria-describedby={describedBy("email", errors)}
@@ -265,11 +273,11 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               ) : null
             }
           >
-            {isSubmitting ? "Đang gửi..." : copy.submitLabel}
+            {isSubmitting ? t("Đang gửi...") : t(copy.submitLabel)}
           </Button>
 
           <p className="text-center text-sm text-muted">
-            Hoặc liên hệ trực tiếp:{" "}
+            {t("Hoặc liên hệ trực tiếp:")}{" "}
             <a
               href={HOTLINE_HREF}
               className="font-bold text-primary-800 hover:underline"
@@ -277,7 +285,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
               {HOTLINE_DISPLAY}
             </a>
           </p>
-          <p className="text-center text-xs text-subtle">{copy.footnote}</p>
+          <p className="text-center text-xs text-subtle">{t(copy.footnote)}</p>
         </form>
       )}
     </Modal>

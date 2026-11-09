@@ -1,4 +1,4 @@
-import { LocaleLink as Link } from "@/features/locale";
+import { LocaleLink as Link, useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { postPath } from "../constants";
@@ -15,10 +15,11 @@ interface PostCardProps {
 
 export function PostCard({
   post,
-  linkLabel = "Xem bài viết",
+  linkLabel,
   size = "md",
   showTag = true,
 }: PostCardProps) {
+  const t = useT();
   const href = postPath(post.section, post.slug);
   return (
     <article className="flex min-w-0 flex-col gap-2.5">
@@ -27,7 +28,7 @@ export function PostCard({
       </Link>
       {showTag ? (
         <div>
-          <Tag>{post.category}</Tag>
+          <Tag>{t(post.category)}</Tag>
         </div>
       ) : null}
       <h3
@@ -45,7 +46,7 @@ export function PostCard({
         href={href}
         className="text-sm font-semibold text-primary-700 underline-offset-2 hover:underline"
       >
-        {linkLabel}
+        {linkLabel ?? t("Xem bài viết")}
       </Link>
     </article>
   );

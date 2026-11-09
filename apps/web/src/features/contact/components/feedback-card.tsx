@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { Button, Card, Field, Input, Textarea } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 import { SubmitContactError, submitFeedback } from "../services/submit-contact";
 
@@ -15,6 +16,7 @@ interface FeedbackErrors {
 }
 
 export function FeedbackCard() {
+  const t = useT();
   const [comment, setComment] = useState("");
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<FeedbackErrors>({});
@@ -50,8 +52,8 @@ export function FeedbackCard() {
     } catch (error) {
       setSubmitError(
         error instanceof SubmitContactError
-          ? error.message
-          : "Không gửi được ý kiến. Vui lòng thử lại sau.",
+          ? t(error.message)
+          : t("Không gửi được ý kiến. Vui lòng thử lại sau."),
       );
     } finally {
       setIsSubmitting(false);
@@ -60,21 +62,21 @@ export function FeedbackCard() {
 
   return (
     <Card className="mt-6 p-5">
-      <h2 className="text-base">Góp ý để chúng tôi cải thiện</h2>
+      <h2 className="text-base">{t("Góp ý để chúng tôi cải thiện")}</h2>
       {isDone ? (
         <div role="status" className="mt-3 flex items-start gap-2.5 text-sm">
           <CheckCircle2
             aria-hidden
             className="mt-0.5 size-5 shrink-0 text-primary-600"
           />
-          <p className="text-muted">Xin cảm ơn ý kiến đóng góp của bạn.</p>
+          <p className="text-muted">{t("Xin cảm ơn ý kiến đóng góp của bạn.")}</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate className="mt-3 space-y-4">
           <Field
-            label="Ý kiến của bạn"
+            label={t("Ý kiến của bạn")}
             htmlFor="feedback-comment"
-            error={errors.comment}
+            error={errors.comment ? t(errors.comment) : undefined}
           >
             <Textarea
               id="feedback-comment"
@@ -84,7 +86,7 @@ export function FeedbackCard() {
                 setComment(event.target.value);
                 setErrors((current) => ({ ...current, comment: undefined }));
               }}
-              placeholder="Bạn thấy công cụ cần cải thiện điều gì?"
+              placeholder={t("Bạn thấy công cụ cần cải thiện điều gì?")}
               aria-invalid={Boolean(errors.comment)}
               aria-describedby={
                 errors.comment ? "feedback-comment-error" : undefined
@@ -92,10 +94,13 @@ export function FeedbackCard() {
             />
           </Field>
           <Field
-            label="Email (không bắt buộc)"
+            label={t("Email (không bắt buộc)")}
             htmlFor="feedback-email"
-            hint={`Nếu để lại email, khoảng ${FEEDBACK_INVITE_DELAY_DAYS} ngày sau chúng tôi sẽ gửi email xin bạn góp ý về trải nghiệm sử dụng.`}
-            error={errors.email}
+            hint={t(
+              "Nếu để lại email, khoảng {days} ngày sau chúng tôi sẽ gửi email xin bạn góp ý về trải nghiệm sử dụng.",
+              { days: FEEDBACK_INVITE_DELAY_DAYS },
+            )}
+            error={errors.email ? t(errors.email) : undefined}
           >
             <Input
               id="feedback-email"
@@ -105,7 +110,7 @@ export function FeedbackCard() {
                 setEmail(event.target.value);
                 setErrors((current) => ({ ...current, email: undefined }));
               }}
-              placeholder="Nhập email của bạn"
+              placeholder={t("Nhập email của bạn")}
               autoComplete="email"
               aria-invalid={Boolean(errors.email)}
               aria-describedby={
@@ -130,7 +135,7 @@ export function FeedbackCard() {
                 )
               }
             >
-              {isSubmitting ? "Đang gửi..." : "Gửi góp ý"}
+              {isSubmitting ? t("Đang gửi...") : t("Gửi góp ý")}
             </Button>
           </div>
         </form>

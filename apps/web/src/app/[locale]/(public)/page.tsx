@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 import { Card, Container } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
+import { getT } from "@/features/locale/server";
 import { SurveyWorkspace } from "@/features/survey";
+import { msg } from "@/features/locale";
 import { pageMetadata } from "@/lib/seo";
 import {
   SITE_DESCRIPTION,
@@ -45,11 +47,12 @@ async function loadSurvey() {
     return { survey: await getSurveyBank(), error: null };
   } catch (error) {
     console.error(error);
-    return { survey: null, error: "Không tải được bộ câu hỏi." };
+    return { survey: null, error: msg("Không tải được bộ câu hỏi.") };
   }
 }
 
 export default async function HomePage() {
+  const t = await getT();
   const { survey, error } = await loadSurvey();
 
   return (
@@ -63,22 +66,23 @@ export default async function HomePage() {
               intro={
                 <>
                   <h1 className="text-2xl font-bold">
-                    TẠO BÁO CÁO ESG MIỄN PHÍ
+                    {t("TẠO BÁO CÁO ESG MIỄN PHÍ")}
                   </h1>
                   <p className="mt-2 max-w-xl text-muted">
-                    Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp
-                    chuẩn EU. Điền thông tin, thêm minh chứng và tải về báo cáo
-                    của bạn. Chứng nhận chuẩn ESG ngay hôm nay!
+                    {t(
+                      "Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp chuẩn EU. Điền thông tin, thêm minh chứng và tải về báo cáo của bạn. Chứng nhận chuẩn ESG ngay hôm nay!",
+                    )}
                   </p>
                 </>
               }
             />
           ) : (
             <Card className="p-6">
-              <h1 className="text-lg font-semibold">{error}</h1>
+              <h1 className="text-lg font-semibold">{error === null ? null : t(error)}</h1>
               <p className="mt-2 text-sm text-muted">
-                Vui lòng tải lại trang sau ít phút. Nếu lỗi vẫn còn, hãy liên hệ
-                quản trị viên để kiểm tra kết nối tới server của website.
+                {t(
+                  "Vui lòng tải lại trang sau ít phút. Nếu lỗi vẫn còn, hãy liên hệ quản trị viên để kiểm tra kết nối tới server của website.",
+                )}
               </p>
             </Card>
           )}

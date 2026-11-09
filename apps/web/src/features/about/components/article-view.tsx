@@ -1,4 +1,6 @@
-import { LocaleLink as Link } from "@/features/locale";
+"use client";
+
+import { LocaleLink as Link, useT } from "@/features/locale";
 
 import { postPath } from "../constants";
 import type { Post } from "../types";
@@ -14,18 +16,19 @@ interface ArticleViewProps {
 }
 
 export function ArticleView({ post, related }: ArticleViewProps) {
+  const t = useT();
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <article className="min-w-0">
-        <Tag>{post.category}</Tag>
+        <Tag>{t(post.category)}</Tag>
         <h1 className="mt-4 text-4xl font-bold leading-tight text-primary-800">
           {post.title}
         </h1>
         <p className="mt-3 text-sm text-muted">
-          {post.author} <span aria-hidden>•</span> {post.readMinutes} phút đọc
+          {post.author} <span aria-hidden>•</span> {t("{minutes} phút đọc", { minutes: post.readMinutes })}
         </p>
         {post.isSample ? (
-          <p className="mt-1 text-sm italic text-subtle">Bài viết minh họa</p>
+          <p className="mt-1 text-sm italic text-subtle">{t("Bài viết minh họa")}</p>
         ) : null}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
@@ -48,7 +51,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
       {related.length > 0 ? (
         <aside className="lg:border-l lg:border-border lg:pl-8">
           <h2 className="text-xl font-bold text-primary-800">
-            Bài viết liên quan
+            {t("Bài viết liên quan")}
           </h2>
           <ul className="mt-4 space-y-6">
             {related.map((item) => (
@@ -67,7 +70,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
                   {item.title}
                 </Link>
                 {item.isSample ? (
-                  <p className="text-xs text-subtle">Nội dung minh họa</p>
+                  <p className="text-xs text-subtle">{t("Nội dung minh họa")}</p>
                 ) : null}
               </li>
             ))}

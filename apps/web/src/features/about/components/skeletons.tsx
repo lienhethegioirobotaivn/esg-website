@@ -1,4 +1,7 @@
+"use client";
+
 import { LoadingRegion, Skeleton } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 function CardSkeleton({ large = false }: { large?: boolean }) {
   return (
@@ -27,8 +30,9 @@ function ChipsSkeleton() {
 }
 
 export function AchievementsSkeleton() {
+  const t = useT();
   return (
-    <LoadingRegion label="Đang tải trang Thành tựu...">
+    <LoadingRegion label={t("Đang tải trang Thành tựu...")}>
       <Skeleton className="h-10 w-80 max-w-full" />
       <div className="mt-6 grid gap-px overflow-hidden rounded-card sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((item) => (
@@ -56,8 +60,9 @@ export function AchievementsSkeleton() {
 }
 
 export function NewsSkeleton() {
+  const t = useT();
   return (
-    <LoadingRegion label="Đang tải trang Tin tức...">
+    <LoadingRegion label={t("Đang tải trang Tin tức...")}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Skeleton className="h-10 w-96 max-w-full" />
         <Skeleton className="h-10 w-full sm:w-72" />
@@ -86,8 +91,9 @@ export function NewsSkeleton() {
 }
 
 export function ArticleSkeleton() {
+  const t = useT();
   return (
-    <LoadingRegion label="Đang tải bài viết...">
+    <LoadingRegion label={t("Đang tải bài viết...")}>
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-4">
           <Skeleton className="h-6 w-28 rounded-full" />

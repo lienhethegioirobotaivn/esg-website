@@ -1,3 +1,4 @@
+import { useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 interface PaginationProps {
@@ -13,12 +14,13 @@ export function Pagination({
   onChange,
   moreLabel,
 }: PaginationProps) {
+  const t = useT();
   if (pageCount <= 1) {
     return null;
   }
   return (
     <nav
-      aria-label="Phân trang"
+      aria-label={t("Phân trang")}
       className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"
     >
       <ul className="flex items-center gap-2">

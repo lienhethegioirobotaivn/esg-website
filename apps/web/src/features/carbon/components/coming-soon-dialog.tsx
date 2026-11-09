@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/ui";
-import { useLocalePath } from "@/features/locale";
+import { useLocalePath, useT } from "@/features/locale";
 
 export function ComingSoonDialog() {
   const router = useRouter();
   const localePath = useLocalePath();
+  const t = useT();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -44,15 +45,15 @@ export function ComingSoonDialog() {
         id={titleId}
         className="mt-4 font-serif text-3xl font-bold text-primary-800"
       >
-        Tính năng đang cập nhật
+        {t("Tính năng đang cập nhật")}
       </h2>
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted">
-        Chúng tôi đang hoàn thiện tính năng này.
+        {t("Chúng tôi đang hoàn thiện tính năng này.")}
         <br />
-        Vui lòng quay lại sau. Cảm ơn bạn đã quan tâm!
+        {t("Vui lòng quay lại sau. Cảm ơn bạn đã quan tâm!")}
       </p>
       <Button className="mt-6 min-w-36" onClick={leave}>
-        Đã hiểu
+        {t("Đã hiểu")}
       </Button>
     </dialog>
   );

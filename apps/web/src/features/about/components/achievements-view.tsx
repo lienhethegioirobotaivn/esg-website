@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useT } from "@/features/locale";
+
 import { ACHIEVEMENT_CATEGORIES, ACHIEVEMENTS_PAGE_SIZE } from "../constants";
 import { matchesQuery, pageCount } from "../lib/search";
 import type { Post } from "../types";
@@ -11,6 +13,7 @@ import { PostCard } from "./post-card";
 import { SearchBox } from "./search-box";
 
 export function AchievementsView({ posts }: { posts: Post[] }) {
+  const t = useT();
   const [category, setCategory] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -48,15 +51,15 @@ export function AchievementsView({ posts }: { posts: Post[] }) {
           onChange={resetPage(setCategory)}
         />
         <SearchBox
-          label="Tìm hoạt động"
-          placeholder="Tìm hoạt động..."
+          label={t("Tìm hoạt động")}
+          placeholder={t("Tìm hoạt động...")}
           value={query}
           onChange={resetPage(setQuery)}
         />
       </div>
 
       <h2 className="mt-8 text-3xl font-bold text-primary-800">
-        Hoạt động &amp; dấu mốc
+        {t("Hoạt động & dấu mốc")}
       </h2>
 
       {main ? (
@@ -79,8 +82,8 @@ export function AchievementsView({ posts }: { posts: Post[] }) {
       ) : !main ? (
         <p className="mt-8 rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
           {isFiltering
-            ? "Không tìm thấy hoạt động phù hợp."
-            : "Chưa có hoạt động nào được đăng."}
+            ? t("Không tìm thấy hoạt động phù hợp.")
+            : t("Chưa có hoạt động nào được đăng.")}
         </p>
       ) : null}
 
@@ -88,7 +91,7 @@ export function AchievementsView({ posts }: { posts: Post[] }) {
         page={currentPage}
         pageCount={pages}
         onChange={setPage}
-        moreLabel="Xem thêm hoạt động"
+        moreLabel={t("Xem thêm hoạt động")}
       />
     </div>
   );

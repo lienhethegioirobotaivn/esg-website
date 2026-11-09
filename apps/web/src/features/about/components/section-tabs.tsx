@@ -1,6 +1,6 @@
 "use client";
 
-import { LocaleLink as Link, useBarePathname } from "@/features/locale";
+import { LocaleLink as Link, useBarePathname, useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { ABOUT_PATH, SECTION_LABELS, sectionPath } from "../constants";
@@ -9,13 +9,14 @@ import type { PostSection } from "../types";
 const SECTIONS: readonly PostSection[] = ["thanh-tuu", "tin-tuc"];
 
 export function SectionTabs() {
+  const t = useT();
   const pathname = useBarePathname();
   const activeSection: PostSection = pathname.startsWith(`${ABOUT_PATH}/tin-tuc`)
     ? "tin-tuc"
     : "thanh-tuu";
 
   return (
-    <nav aria-label="Về ESG Report Online" className="border-b border-border">
+    <nav aria-label={t("Về ESG Report Online")} className="border-b border-border">
       <ul className="grid grid-cols-2">
         {SECTIONS.map((section) => {
           const isActive = section === activeSection;
@@ -31,7 +32,7 @@ export function SectionTabs() {
                     : "border-transparent text-muted hover:text-primary-800",
                 )}
               >
-                {SECTION_LABELS[section]}
+                {t(SECTION_LABELS[section])}
               </Link>
             </li>
           );

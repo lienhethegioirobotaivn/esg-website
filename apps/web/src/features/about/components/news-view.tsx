@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { LocaleLink as Link } from "@/features/locale";
+import { LocaleLink as Link, useT } from "@/features/locale";
 
 import { NEWS_CATEGORIES, NEWS_PAGE_SIZE, postPath } from "../constants";
 import { matchesQuery, pageCount } from "../lib/search";
@@ -13,6 +13,7 @@ import { PostCard } from "./post-card";
 import { SearchBox } from "./search-box";
 
 export function NewsView({ posts }: { posts: Post[] }) {
+  const t = useT();
   const [category, setCategory] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -47,11 +48,11 @@ export function NewsView({ posts }: { posts: Post[] }) {
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-4xl font-bold text-primary-800">
-          Tin tức &amp; kiến thức ESG
+          {t("Tin tức & kiến thức ESG")}
         </h1>
         <SearchBox
-          label="Tìm bài viết"
-          placeholder="Tìm bài viết..."
+          label={t("Tìm bài viết")}
+          placeholder={t("Tìm bài viết...")}
           value={query}
           onChange={resetPage(setQuery)}
         />
@@ -74,7 +75,7 @@ export function NewsView({ posts }: { posts: Post[] }) {
             ))}
           </div>
           <aside className="lg:border-l lg:border-border lg:pl-8">
-            <h2 className="text-xl font-bold text-primary-800">Đọc nhiều</h2>
+            <h2 className="text-xl font-bold text-primary-800">{t("Đọc nhiều")}</h2>
             <ul className="mt-4 divide-y divide-border border-y border-border">
               {popular.map((post) => (
                 <li key={post.id}>
@@ -87,13 +88,13 @@ export function NewsView({ posts }: { posts: Post[] }) {
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-xs italic text-subtle">Nội dung minh họa</p>
+            <p className="mt-4 text-xs italic text-subtle">{t("Nội dung minh họa")}</p>
           </aside>
         </div>
       ) : null}
 
       <h2 className="mt-8 text-2xl font-bold text-primary-800">
-        {isFiltering ? "Kết quả" : "Mới cập nhật"}
+        {isFiltering ? t("Kết quả") : t("Mới cập nhật")}
       </h2>
 
       {visible.length > 0 ? (
@@ -105,15 +106,15 @@ export function NewsView({ posts }: { posts: Post[] }) {
       ) : (
         <p className="mt-5 rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
           {isFiltering
-            ? "Không tìm thấy bài viết phù hợp."
-            : "Chưa có bài viết nào được đăng."}
+            ? t("Không tìm thấy bài viết phù hợp.")
+            : t("Chưa có bài viết nào được đăng.")}
         </p>
       )}
 
       {spotlight.length > 0 ? (
         <section className="mt-10 border-t border-border pt-6">
           <h2 className="text-2xl font-bold text-primary-800">
-            Chuyên đề nổi bật
+            {t("Chuyên đề nổi bật")}
           </h2>
           <ul className="mt-4 grid gap-4 md:grid-cols-3 md:divide-x md:divide-border">
             {spotlight.map((post) => (
@@ -134,7 +135,7 @@ export function NewsView({ posts }: { posts: Post[] }) {
         page={currentPage}
         pageCount={pages}
         onChange={setPage}
-        moreLabel="Xem thêm bài viết"
+        moreLabel={t("Xem thêm bài viết")}
       />
     </div>
   );

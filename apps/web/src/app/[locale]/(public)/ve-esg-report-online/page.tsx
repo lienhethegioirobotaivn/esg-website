@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ABOUT_PATH } from "@/features/about/constants";
+import { getT } from "@/features/locale/server";
 import { pageMetadata } from "@/lib/seo";
 
 import {
@@ -20,6 +21,7 @@ export const metadata: Metadata = pageMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function AchievementsPage() {
+  const t = await getT();
   const [stats, posts] = await Promise.all([
     getAchievementStats(),
     getPosts("thanh-tuu"),
@@ -28,7 +30,7 @@ export default async function AchievementsPage() {
   return (
     <>
       <h1 className="text-4xl font-bold text-primary-800">
-        Thành tựu &amp; tác động
+        {t("Thành tựu & tác động")}
       </h1>
       {stats ? (
         <div className="mt-6">

@@ -1,20 +1,47 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { useLeaveGuardStore } from "@/features/leave-guard/store/leave-guard-store";
 import { cn } from "@/lib/cn";
 
 import { LOCALES, LOCALE_LABELS } from "../constants";
-import { useLocaleStore } from "../store/locale-store";
+import type { Locale } from "../constants";
+import { useBarePathname, useLocale } from "../hooks/use-locale";
+import { localizePath } from "../lib/path";
+import { persistLocale } from "../lib/persist-locale";
 import { FlagIcon } from "./flag-icon";
 
 export function LanguageSwitcher() {
-  const locale = useLocaleStore((state) => state.locale);
-  const setLocale = useLocaleStore((state) => state.setLocale);
+  const router = useRouter();
+  const locale = useLocale();
+  const barePathname = useBarePathname();
+  const isGuarded = useLeaveGuardStore((state) => state.guard !== null);
+  const pendingHref = useLeaveGuardStore((state) => state.pendingHref);
+  const requestLeave = useLeaveGuardStore((state) => state.requestLeave);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    if (pendingHref === null) {
+      persistLocale(locale);
+    }
+  }, [pendingHref, locale]);
+
+  function switchTo(next: Locale) {
+    if (next === locale) {
+      return;
+    }
+    persistLocale(next);
+    const target = localizePath(
+      `${barePathname}${window.location.search}${window.location.hash}`,
+      next,
+    );
+    if (isGuarded) {
+      requestLeave(target);
+      return;
+    }
+    router.push(target);
+  }
 
   return (
     <div role="group" aria-label="Ngôn ngữ" className="flex items-center gap-1">
@@ -24,7 +51,7 @@ export function LanguageSwitcher() {
           <button
             key={item}
             type="button"
-            onClick={() => setLocale(item)}
+            onClick={() => switchTo(item)}
             aria-pressed={isActive}
             aria-label={LOCALE_LABELS[item]}
             title={LOCALE_LABELS[item]}

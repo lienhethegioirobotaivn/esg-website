@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+
+import { LocaleLink as Link } from "@/features/locale";
 
 import { NEWS_CATEGORIES, NEWS_PAGE_SIZE, postPath } from "../constants";
 import { matchesQuery, pageCount } from "../lib/search";

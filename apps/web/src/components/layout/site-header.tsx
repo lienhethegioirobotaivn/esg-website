@@ -1,9 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Container } from "@/components/ui";
-import { LanguageSwitcher } from "@/features/locale";
+import { LanguageSwitcher, useBarePathname } from "@/features/locale";
 import { GuardedLink } from "@/features/leave-guard";
 import { HowItWorksLink } from "@/features/how-it-works";
 import { ABOUT_PATH } from "@/features/about/constants";
@@ -38,7 +37,7 @@ const CONSULT_ITEMS: readonly {
 ];
 
 export function SiteHeader() {
-  const pathname = usePathname();
+  const pathname = useBarePathname();
   const isHome = pathname === "/";
   const isAbout = pathname.startsWith(ABOUT_PATH);
   const [isOpen, setIsOpen] = useState(false);

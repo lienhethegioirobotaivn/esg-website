@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
+import { useLocalePath } from "@/features/locale";
 import { saveDraft } from "@/features/survey/lib/draft-storage";
 
 import { CATALOG } from "../catalog";
@@ -44,6 +45,7 @@ function googleSearchUrl(name: string, year: string): string {
 
 export function AiDataTool() {
   const router = useRouter();
+  const localePath = useLocalePath();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [fileName, setFileName] = useState("");
@@ -112,7 +114,7 @@ export function AiDataTool() {
       setError("Không lưu được bản nháp vào trình duyệt.");
       return;
     }
-    router.push("/");
+    router.push(localePath("/"));
   }
 
   function reset() {

@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
+import { LocaleLink as Link, useBarePathname } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { ABOUT_PATH, SECTION_LABELS, sectionPath } from "../constants";
@@ -11,7 +9,7 @@ import type { PostSection } from "../types";
 const SECTIONS: readonly PostSection[] = ["thanh-tuu", "tin-tuc"];
 
 export function SectionTabs() {
-  const pathname = usePathname();
+  const pathname = useBarePathname();
   const activeSection: PostSection = pathname.startsWith(`${ABOUT_PATH}/tin-tuc`)
     ? "tin-tuc"
     : "thanh-tuu";

@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { LocaleLink as Link } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { postPath } from "../constants";

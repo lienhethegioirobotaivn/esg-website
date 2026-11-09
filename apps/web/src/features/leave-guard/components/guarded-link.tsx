@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps, MouseEvent } from "react";
 
+import { localizePath, useLocale } from "@/features/locale";
+
 import { useLeaveGuardStore } from "../store/leave-guard-store";
 
 type GuardedLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
@@ -22,6 +24,8 @@ function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>): boolean {
 
 export function GuardedLink({ href, onClick, ...props }: GuardedLinkProps) {
   const pathname = usePathname();
+  const locale = useLocale();
+  const localizedHref = localizePath(href, locale);
   const isGuarded = useLeaveGuardStore((state) => state.guard !== null);
   const requestLeave = useLeaveGuardStore((state) => state.requestLeave);
 
@@ -30,12 +34,12 @@ export function GuardedLink({ href, onClick, ...props }: GuardedLinkProps) {
     if (event.defaultPrevented || !isGuarded || !isPlainLeftClick(event)) {
       return;
     }
-    if (href === pathname) {
+    if (localizedHref === pathname) {
       return;
     }
     event.preventDefault();
-    requestLeave(href);
+    requestLeave(localizedHref);
   }
 
-  return <Link href={href} onClick={handleClick} {...props} />;
+  return <Link href={localizedHref} onClick={handleClick} {...props} />;
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocaleLink as Link } from "@/features/locale";
 
 import { postPath } from "../constants";
 import type { Post } from "../types";

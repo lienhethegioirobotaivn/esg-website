@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/ui";
+import { useLocalePath } from "@/features/locale";
 
 export function ComingSoonDialog() {
   const router = useRouter();
+  const localePath = useLocalePath();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -24,7 +26,7 @@ export function ComingSoonDialog() {
   }, []);
 
   function leave() {
-    router.push("/");
+    router.push(localePath("/"));
   }
 
   return (

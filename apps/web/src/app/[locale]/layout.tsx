@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 // import { Be_Vietnam_Pro } from "next/font/google";
 import { Noto_Sans, Noto_Sans_SC } from "next/font/google";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { HTML_LANG, INDEXABLE_LOCALES, isLocale } from "@/features/locale";
+import { NO_INDEX } from "@/lib/seo";
 import {
   DEFAULT_OG_IMAGE,
   SITE_DESCRIPTION,
@@ -12,7 +15,7 @@ import {
   getSiteUrl,
 } from "@/lib/site";
 
-import "./globals.css";
+import "../globals.css";
 
 // const beVietnamPro = Be_Vietnam_Pro({
 //   subsets: ["vietnamese", "latin"],
@@ -33,7 +36,7 @@ const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   applicationName: SITE_NAME,
   title: {
@@ -60,16 +63,36 @@ export const metadata: Metadata = {
   },
 };
 
+interface LocaleLayoutProps {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: Pick<LocaleLayoutProps, "params">): Promise<Metadata> {
+  const { locale } = await params;
+  if (isLocale(locale) && !INDEXABLE_LOCALES.includes(locale)) {
+    return { ...baseMetadata, robots: NO_INDEX };
+  }
+  return baseMetadata;
+}
+
 export const viewport: Viewport = {
   themeColor: "#f5f6f1",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{ children: ReactNode }>) {
+  params,
+}: Readonly<LocaleLayoutProps>) {
+  const { locale } = await params;
+  if (!isLocale(locale)) {
+    notFound();
+  }
   return (
     <html
-      lang="vi"
+      lang={HTML_LANG[locale]}
       // className={beVietnamPro.variable}
       className={`${notoSans.variable} ${notoSansSC.variable}`}
     >

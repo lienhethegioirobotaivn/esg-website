@@ -41,6 +41,9 @@ var ABOUT_IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp':
 var MAX_ABOUT_IMAGE_BYTES = 3 * 1024 * 1024;
 var ABOUT_WRITE_ACTIONS = { savePost: true, deletePost: true, saveStats: true, likePost: true };
 var ABOUT_READ_ACTIONS = { listPosts: true, listStats: true, uploadImage: true };
+var TRANSLATE_LANGUAGES = { 'vi': true, 'en': true, 'fr': true, 'zh-CN': true };
+var TRANSLATE_MAX_TEXTS = 50;
+var TRANSLATE_MAX_CHARS = 5000;
 
 function doPost(e) {
   try {
@@ -49,6 +52,9 @@ function doPost(e) {
     var expected = props.getProperty('SECRET');
     if (!expected || body.secret !== expected) {
       return json_({ ok: false, error: 'Sai khóa xác thực.' });
+    }
+    if (body.action === 'translate') {
+      return json_(translateTexts_(body));
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -883,6 +889,29 @@ function saveLogo_(reportCode, logo, props) {
   return folder.getUrl();
 }
 
+function translateTexts_(body) {
+  var source = String(body.source || 'vi');
+  var target = String(body.target || '');
+  if (!TRANSLATE_LANGUAGES[source] || !TRANSLATE_LANGUAGES[target] || source === target) {
+    throw new Error('Ngôn ngữ dịch không hợp lệ.');
+  }
+  var texts = body.texts;
+  if (!Array.isArray(texts) || texts.length === 0 || texts.length > TRANSLATE_MAX_TEXTS) {
+    throw new Error('Danh sách chuỗi cần dịch không hợp lệ.');
+  }
+  var translations = texts.map(function (text) {
+    var value = String(text);
+    if (value.length > TRANSLATE_MAX_CHARS) {
+      throw new Error('Chuỗi cần dịch quá dài.');
+    }
+    if (value.trim() === '') {
+      return value;
+    }
+    return LanguageApp.translate(value, source, target, { contentType: 'html' });
+  });
+  return { ok: true, translations: translations };
+}
+
 function parseBody_(e) {
   if (!e || !e.postData || !e.postData.contents) {
     throw new Error('Yêu cầu rỗng.');
@@ -911,4 +940,5 @@ function authorize() {
   Logger.log('Thư mục logo: ' + folder.getName());
   Logger.log('Dòng tiêu đề: ' + layout.headerRow);
   Logger.log('Các cột: ' + Object.keys(layout.columns).join(', '));
+  Logger.log('Thử dịch: ' + LanguageApp.translate('Xin chào', 'vi', 'en'));
 }

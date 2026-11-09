@@ -158,3 +158,23 @@ Khi chọn ảnh bìa, hộp "Chỉnh ảnh bìa" tự mở:
 4. Muốn bài lên Google nhanh hơn, vào Search Console, dùng "Kiểm tra URL" rồi "Yêu cầu lập chỉ mục" cho bài mới.
 
 **Mẹo viết bài để SEO tốt:** tiêu đề dưới khoảng 60 ký tự, tóm tắt 120–160 ký tự (phần tóm tắt là mô tả hiện trên Google), luôn có ảnh bìa rõ nét, đặt mô tả ảnh (alt) cho ảnh trong bài.
+
+## 11. Dịch tự động (đa ngôn ngữ)
+
+Apps Script có thêm hành động `translate` (dùng dịch vụ `LanguageApp` của Google, miễn phí, không cần khóa riêng). Lệnh `pnpm --filter web i18n:sync` gọi hành động này để dịch các chuỗi giao diện tiếng Việt mới sang tiếng Anh, Pháp, Trung.
+
+**Cài đặt:**
+
+1. Dán lại toàn bộ `docs/apps-script/Code.gs`.
+2. Chạy hàm `authorize` một lần trong trình soạn script và cấp quyền nếu Google hỏi (hàm này gọi thử `LanguageApp`).
+3. Triển khai > Quản lý bản triển khai > bút chì > **Phiên bản mới** (không tạo bản triển khai mới vì địa chỉ sẽ đổi).
+4. Không cần biến mới: dùng chung `GOOGLE_APPS_SCRIPT_URL` và `GOOGLE_APPS_SCRIPT_SECRET`.
+
+**Cách dùng hằng ngày:**
+
+- Viết chữ giao diện bằng tiếng Việt trong code dưới dạng `t("Câu tiếng Việt")` (hoặc `msg("...")` cho hằng số ngoài component). Câu tiếng Việt chính là khóa.
+- `pnpm dev` và `pnpm build` tự chạy `i18n:sync` trước. Lệnh quét code, bỏ bản dịch của chuỗi không còn dùng, và chỉ dịch chuỗi mới hoặc đã đổi chữ. Lỗi mạng hoặc chưa cấu hình thì chỉ cảnh báo, không chặn chạy; chuỗi chưa dịch hiện tiếng Việt.
+- Bản dịch lưu ở `apps/web/src/i18n/messages/{en,fr,zh}.json` (do công cụ tự sinh, không sửa tay). Muốn sửa riêng một bản dịch, ghi vào `apps/web/src/i18n/overrides/{en,fr,zh}.json` với khóa là câu tiếng Việt: bản ghi đè luôn thắng và không bị xóa.
+- `apps/web/src/i18n/glossary.json`: `keep` là từ giữ nguyên (ESG, Scope 1...), `exact` là chuỗi dịch cố định nguyên câu, `terms` là thuật ngữ được thay đúng bản dịch quy định khi gặp trong câu.
+- `pnpm --filter web i18n:check` báo lỗi (mã thoát 1) nếu còn chuỗi chưa có bản dịch, dùng khi muốn kiểm tra trước khi triển khai.
+- Hạn mức dịch theo ngày của Google Apps Script có giới hạn. Nếu gặp lỗi hết hạn mức, chạy lại `i18n:sync` vào ngày hôm sau, lệnh sẽ dịch tiếp phần còn thiếu.

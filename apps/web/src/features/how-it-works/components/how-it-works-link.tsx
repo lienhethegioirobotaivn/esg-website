@@ -3,10 +3,12 @@
 import { useState } from "react";
 
 import { Button, Modal } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 import { HOW_IT_WORKS_STEPS } from "../constants";
 
 export function HowItWorksLink() {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -17,11 +19,11 @@ export function HowItWorksLink() {
         aria-haspopup="dialog"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-[#006644] transition-colors"
       >
-        <span>Hướng dẫn</span>
+        <span>{t("Hướng dẫn")}</span>
       </button>
 
       {isOpen ? (
-        <Modal title="Hướng dẫn" onClose={() => setIsOpen(false)}>
+        <Modal title={t("Hướng dẫn")} onClose={() => setIsOpen(false)}>
           <ol className="space-y-4">
             {HOW_IT_WORKS_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-3">
@@ -30,17 +32,17 @@ export function HowItWorksLink() {
                 </span>
                 <div>
                   <h3 className="text-sm font-medium text-foreground">
-                    {step.title}
+                    {t(step.title)}
                   </h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted">
-                    {step.description}
+                    {t(step.description)}
                   </p>
                 </div>
               </li>
             ))}
           </ol>
           <div className="mt-6 flex justify-end">
-            <Button onClick={() => setIsOpen(false)}>Đã hiểu</Button>
+            <Button onClick={() => setIsOpen(false)}>{t("Đã hiểu")}</Button>
           </div>
         </Modal>
       ) : null}

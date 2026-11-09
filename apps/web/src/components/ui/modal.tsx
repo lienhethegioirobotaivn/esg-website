@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 
+import { useT } from "@/features/locale";
+
 type ModalSize = "sm" | "md" | "lg";
 
 interface ModalProps {
@@ -41,6 +43,7 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const t = useT();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -80,7 +83,7 @@ export function Modal({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Đóng"
+              aria-label={t("Đóng")}
               className="rounded-md p-1.5 text-subtle transition-colors hover:bg-surface-muted hover:text-foreground"
             >
               <X aria-hidden className="size-5" />

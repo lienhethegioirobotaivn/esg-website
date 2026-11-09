@@ -10,6 +10,9 @@ export {
 } from "./constants";
 export type { Locale } from "./constants";
 export { useBarePathname, useLocale, useLocalePath } from "./hooks/use-locale";
+export { I18nProvider, useT } from "./provider/i18n-provider";
+export { createT, interpolate, msg } from "./lib/translate";
+export type { Messages, TFunction, TranslateVars } from "./lib/translate";
 export {
   getLocaleFromPathname,
   localizePath,

@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Container } from "@/components/ui";
-import { LanguageSwitcher, useBarePathname } from "@/features/locale";
+import {
+  LanguageSwitcher,
+  msg,
+  useBarePathname,
+  useT,
+} from "@/features/locale";
 import { GuardedLink } from "@/features/leave-guard";
 import { HowItWorksLink } from "@/features/how-it-works";
 import { ABOUT_PATH } from "@/features/about/constants";
@@ -26,17 +31,18 @@ const CONSULT_ITEMS: readonly {
 }[] = [
   {
     kind: "advisory",
-    description: "Hoàn thiện hồ sơ ESG cho doanh nghiệp",
+    description: msg("Hoàn thiện hồ sơ ESG cho doanh nghiệp"),
     Icon: Headset,
   },
   {
     kind: "assessment",
-    description: "Lộ trình đánh giá và cấp chứng nhận",
+    description: msg("Lộ trình đánh giá và cấp chứng nhận"),
     Icon: ShieldCheck,
   },
 ];
 
 export function SiteHeader() {
+  const t = useT();
   const pathname = useBarePathname();
   const isHome = pathname === "/";
   const isAbout = pathname.startsWith(ABOUT_PATH);
@@ -80,7 +86,7 @@ export function SiteHeader() {
                 : "font-medium text-[#374151] hover:text-[#006644] transition-colors"
             }`}
           >
-            Tạo báo cáo
+            {t("Tạo báo cáo")}
             <span
               className={`absolute bottom-0 left-0 h-0.5 bg-[#006644] transition-all duration-300 ease-out ${
                 isHome ? "w-full" : "w-0 group-hover:w-full"
@@ -105,14 +111,14 @@ export function SiteHeader() {
 
           <div className="relative group pb-2">
             <button className="flex items-center gap-1.5 text-sm font-medium text-[#374151] hover:text-[#006644] transition-colors">
-              <span>Giải pháp cân bằng carbon</span>
+              <span>{t("Giải pháp cân bằng carbon")}</span>
               <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
             </button>
             <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-[#006644] transition-all duration-300 ease-out group-hover:w-full" />
 
             <div className="absolute left-0 top-full pt-2 hidden w-80 rounded-xl border border-[#e5e7eb] bg-white p-2 shadow-xl group-hover:block z-50">
               <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">
-                Giải pháp carbon
+                {t("Giải pháp carbon")}
               </div>
               <GuardedLink
                 href="/trong-rung"
@@ -124,10 +130,10 @@ export function SiteHeader() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-[#111827]">
-                      Trồng rừng
+                      {t("Trồng rừng")}
                     </div>
                     <div className="text-xs text-[#6b7280]">
-                      Tìm hiểu dự án trồng rừng
+                      {t("Tìm hiểu dự án trồng rừng")}
                     </div>
                   </div>
                 </div>
@@ -144,10 +150,10 @@ export function SiteHeader() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-[#111827]">
-                      Mua tín chỉ carbon
+                      {t("Mua tín chỉ carbon")}
                     </div>
                     <div className="text-xs text-[#6b7280]">
-                      Khám phá thị trường tín chỉ
+                      {t("Khám phá thị trường tín chỉ")}
                     </div>
                   </div>
                 </div>
@@ -164,7 +170,7 @@ export function SiteHeader() {
                 : "font-medium text-[#374151] hover:text-[#006644] transition-colors"
             }`}
           >
-            Về ESG Report Online
+            {t("Về ESG Report Online")}
             <span
               className={`absolute bottom-0 left-0 h-0.5 bg-[#006644] transition-all duration-300 ease-out ${
                 isAbout ? "w-full" : "w-0 group-hover:w-full"
@@ -178,7 +184,7 @@ export function SiteHeader() {
               aria-haspopup="menu"
               className="flex items-center gap-1.5 text-sm font-medium text-[#374151] hover:text-[#006644] transition-colors"
             >
-              <span>Tư vấn</span>
+              <span>{t("Tư vấn")}</span>
               <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" />
             </button>
             <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-[#006644] transition-all duration-300 ease-out group-hover:w-full" />
@@ -200,9 +206,11 @@ export function SiteHeader() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-[#111827]">
-                      {INQUIRY_COPY[kind].menuLabel}
+                      {t(INQUIRY_COPY[kind].menuLabel)}
                     </div>
-                    <div className="text-xs text-[#6b7280]">{description}</div>
+                    <div className="text-xs text-[#6b7280]">
+                      {t(description)}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -217,7 +225,7 @@ export function SiteHeader() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e5e7eb] p-2 text-[#374151] hover:bg-[#f3f4f6] md:hidden transition-colors shrink-0 z-50"
-          aria-label="Toggle menu"
+          aria-label={t("Mở hoặc đóng menu")}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -240,7 +248,7 @@ export function SiteHeader() {
                     : "font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
                 }`}
               >
-                Tạo báo cáo
+                {t("Tạo báo cáo")}
               </GuardedLink>
 
               {/* <GuardedLink
@@ -260,7 +268,7 @@ export function SiteHeader() {
                   onClick={() => setIsSubMenuOpen(!isSubMenuOpen)}
                   className="flex w-full items-center justify-between p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] rounded-lg transition-colors"
                 >
-                  <span>Giải pháp cân bằng carbon</span>
+                  <span>{t("Giải pháp cân bằng carbon")}</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
                       isSubMenuOpen ? "rotate-180" : ""
@@ -284,10 +292,10 @@ export function SiteHeader() {
                       </div>
                       <div>
                         <div className="text-xs font-semibold text-[#111827]">
-                          Trồng rừng
+                          {t("Trồng rừng")}
                         </div>
                         <div className="text-[11px] text-[#6b7280]">
-                          Tìm hiểu dự án trồng rừng
+                          {t("Tìm hiểu dự án trồng rừng")}
                         </div>
                       </div>
                     </GuardedLink>
@@ -302,10 +310,10 @@ export function SiteHeader() {
                       </div>
                       <div>
                         <div className="text-xs font-semibold text-[#111827]">
-                          Mua tín chỉ carbon
+                          {t("Mua tín chỉ carbon")}
                         </div>
                         <div className="text-[11px] text-[#6b7280]">
-                          Khám phá thị trường tín chỉ
+                          {t("Khám phá thị trường tín chỉ")}
                         </div>
                       </div>
                     </GuardedLink>
@@ -322,7 +330,7 @@ export function SiteHeader() {
                     : "font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
                 }`}
               >
-                Về ESG Report Online
+                {t("Về ESG Report Online")}
               </GuardedLink>
 
               <div>
@@ -332,7 +340,7 @@ export function SiteHeader() {
                   aria-expanded={isConsultOpen}
                   className="flex w-full items-center justify-between p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] rounded-lg transition-colors"
                 >
-                  <span>Tư vấn</span>
+                  <span>{t("Tư vấn")}</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
                       isConsultOpen ? "rotate-180" : ""
@@ -361,10 +369,10 @@ export function SiteHeader() {
                         </div>
                         <div>
                           <div className="text-xs font-semibold text-[#111827]">
-                            {INQUIRY_COPY[kind].menuLabel}
+                            {t(INQUIRY_COPY[kind].menuLabel)}
                           </div>
                           <div className="text-[11px] text-[#6b7280]">
-                            {description}
+                            {t(description)}
                           </div>
                         </div>
                       </button>
@@ -375,7 +383,7 @@ export function SiteHeader() {
 
               <div className="pt-4 border-t border-[#e5e7eb] mt-4 p-3">
                 <div className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
-                  Chọn ngôn ngữ
+                  {t("Chọn ngôn ngữ")}
                 </div>
                 <div className="flex items-center">
                   <LanguageSwitcher />

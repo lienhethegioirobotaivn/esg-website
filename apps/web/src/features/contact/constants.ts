@@ -1,5 +1,7 @@
 import type { InquiryKind } from "@esg/shared";
 
+import { msg } from "@/features/locale";
+
 export const HOTLINE_DISPLAY = "0372.831.697";
 export const HOTLINE_HREF = "tel:0372831697";
 
@@ -18,7 +20,7 @@ export interface InquiryCopy {
 
 export const INQUIRY_COPY: Record<InquiryKind, InquiryCopy> = {
   advisory: {
-    menuLabel: "Tư vấn",
+    menuLabel: msg("Tư vấn"),
     title: "Đăng ký tư vấn ESG",
     heading: "Tư vấn hoàn thiện hồ sơ ESG và triển khai cho toàn doanh nghiệp",
     subheading: null,
@@ -31,7 +33,7 @@ export const INQUIRY_COPY: Record<InquiryKind, InquiryCopy> = {
       "Thông tin được sử dụng để liên hệ và tư vấn theo nhu cầu của doanh nghiệp.",
   },
   assessment: {
-    menuLabel: "Kiểm định độc lập",
+    menuLabel: msg("Kiểm định độc lập"),
     title: "Đăng ký kiểm định độc lập",
     heading: "Tư vấn lộ trình đánh giá và cấp chứng nhận ESG",
     subheading: "Phục vụ yêu cầu đối tác tại Mỹ, EU, Nhật Bản và các thị trường khác",

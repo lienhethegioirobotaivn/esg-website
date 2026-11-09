@@ -4,7 +4,13 @@ import { Noto_Sans, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { HTML_LANG, INDEXABLE_LOCALES, isLocale } from "@/features/locale";
+import {
+  HTML_LANG,
+  I18nProvider,
+  INDEXABLE_LOCALES,
+  isLocale,
+} from "@/features/locale";
+import { loadMessages } from "@/features/locale/server";
 import { NO_INDEX } from "@/lib/seo";
 import {
   DEFAULT_OG_IMAGE,
@@ -96,7 +102,9 @@ export default async function RootLayout({
       // className={beVietnamPro.variable}
       className={`${notoSans.variable} ${notoSansSC.variable}`}
     >
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        <I18nProvider messages={loadMessages(locale)}>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

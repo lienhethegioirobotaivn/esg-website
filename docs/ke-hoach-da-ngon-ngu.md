@@ -49,3 +49,20 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Đổi ngôn ngữ qua `LanguageSwitcher` đi qua hộp cảnh báo rời trang (leave-guard) nếu đang có bản nháp chưa lưu; hộp này vẫn tiếng Việt cho đến GĐ3.
 - Chưa làm trong GĐ1 (cố ý): dịch chữ giao diện (GĐ2-3), `hreflang`/sitemap theo ngôn ngữ (GĐ5), phông chữ Hán (biến `--font-noto-sans-sc` hiện không được dùng ở đâu; chữ Hán dùng phông hệ thống nhờ `lang="zh-CN"`), `global-not-found` (URL không khớp tuyến nào hiện hiện trang 404 mặc định của Next).
 - Đã kiểm tra: typecheck, lint, 27 tình huống chuyển hướng bằng curl, 18 kiểm tra trình duyệt bằng Playwright. Chưa kiểm tra được: `pnpm build` (sandbox không tải được phông Google), luồng leave-guard thật (sandbox không đọc được Google Sheet nên không dựng được màn khảo sát), header quốc gia thật của Vercel.
+
+**GĐ2 (09/11/2026): đã làm, chờ Bình test trên máy thật.**
+
+- Cú pháp: `t("Câu tiếng Việt", { biến })` trong component (client: `useT()` từ `@/features/locale`; server: `await getT()` từ `@/features/locale/server`), và `msg("...")` đánh dấu chuỗi nằm trong hằng số ngoài component (rồi `t(biến)` lúc hiển thị). Khóa là câu tiếng Việt, chuỗi thiếu bản dịch thì hiện tiếng Việt.
+- `I18nProvider` bọc trong `app/[locale]/layout.tsx`, nạp từ điển theo ngôn ngữ (`i18n/messages/{en,fr,zh}.json` + `i18n/overrides/*.json`, overrides thắng). `getLocale()` dùng `next/root-params`.
+- Công cụ: `apps/web/scripts/i18n/{extract,glossary,provider,sync}.ts`, lệnh `pnpm --filter web i18n:sync` / `i18n:check`, tự chạy qua `predev`/`prebuild` (lỗi mạng hay thiếu cấu hình chỉ cảnh báo). Trích bằng TypeScript API (`t(...)`, `msg(...)`, gộp được `"a" + "b"`), bỏ bản dịch chuỗi không còn dùng, chỉ dịch chuỗi mới; bảo vệ biến `{x}`, từ khóa giữ nguyên và thuật ngữ trong `i18n/glossary.json` (keep / exact / terms); dịch xong mà mất biến hay thuật ngữ thì loại và báo; giữ kiểu xuống dòng (CRLF) của file JSON.
+- Apps Script: thêm hành động `translate` (dùng `LanguageApp`, tối đa 50 chuỗi mỗi lần) và gọi thử trong `authorize()`; cần dán lại `Code.gs`, chạy `authorize`, triển khai Phiên bản mới. Hướng dẫn ở mục 11 của `huong-dan-cai-dat-apps-script.md`.
+- Đã bọc làm thử: header (cả menu di động), footer, hộp Hướng dẫn, `Modal`, nhóm nút ngôn ngữ, `menuLabel` của `INQUIRY_COPY`. 29 chuỗi, bản en/fr/zh đầu tiên do Claude dịch tay (có thuật ngữ ESG, tên nút khớp giữa các chuỗi).
+- Chưa làm (cố ý): phần còn lại của giao diện (GĐ3, kể cả toàn bộ `INQUIRY_COPY` và hộp Tư vấn), nội dung động (GĐ4).
+- Đã kiểm tra: typecheck, lint, thử script với bridge giả (chuỗi có biến, thuật ngữ, ký tự `&`, chuỗi dịch hỏng, override, mồ côi, CRLF, `--check`, lỗi bridge giữa chừng, tắt bridge), 19 kiểm tra trình duyệt. Chưa kiểm tra được: `LanguageApp` thật (sandbox không truy cập Google), `pnpm build`.
+
+## 5. Rủi ro đã biết
+
+- Header quốc gia chỉ có khi chạy trên Vercel; chạy máy cá nhân dùng `?lang=` hoặc `Accept-Language`. Cloud của Claude không truy cập được Google, nên phần Apps Script chỉ thử được trên bản giả lập.
+- Dịch máy có thể sai thuật ngữ ESG: có từ điển cho chữ cố định; nội dung động sửa tay được trong tab "Bản dịch".
+- Chuyển tuyến vào `app/[locale]` và thêm tiền tố cho mọi liên kết nội bộ là thay đổi lớn nhất của GĐ1; cần test kỹ liên kết, chuyển hướng và cảnh báo rời trang (`leave-guard`).
+- Chuỗi có biến hoặc ghép phải chuyển sang dạng có tham số, nên GĐ3 sửa nhiều file nhưng mỗi chỗ nhỏ.

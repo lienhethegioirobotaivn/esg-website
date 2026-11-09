@@ -1,0 +1,31 @@
+{
+  "keep": [
+    "ESG Report Online",
+    "ESG",
+    "Scope 1",
+    "Scope 2",
+    "Scope 3",
+    "CO2e",
+    "PDF",
+    "Word",
+    "GRI",
+    "ISO",
+    "CBAM"
+  ],
+  "exact": {
+    "Môi trường": { "en": "Environmental", "fr": "Environnement", "zh": "环境" },
+    "Xã hội": { "en": "Social", "fr": "Social", "zh": "社会" },
+    "Quản trị": { "en": "Governance", "fr": "Gouvernance", "zh": "治理" }
+  },
+  "terms": {
+    "khí nhà kính": { "en": "greenhouse gas", "fr": "gaz à effet de serre", "zh": "温室气体" },
+    "tín chỉ carbon": { "en": "carbon credits", "fr": "crédits carbone", "zh": "碳信用" },
+    "báo cáo ESG": { "en": "ESG report", "fr": "rapport ESG", "zh": "ESG报告" },
+    "minh chứng": { "en": "evidence", "fr": "preuves", "zh": "佐证材料" },
+    "trồng rừng": { "en": "reforestation", "fr": "reboisement", "zh": "植树造林" },
+    "Xem bản nháp": { "en": "Preview draft", "fr": "Voir le brouillon", "zh": "查看草稿" },
+    "Tạo báo cáo": { "en": "Create report", "fr": "Créer un rapport", "zh": "创建报告" },
+    "Lưu bản nháp": { "en": "Save draft", "fr": "Enregistrer le brouillon", "zh": "保存草稿" },
+    "Làm báo cáo mới": { "en": "Start new report", "fr": "Nouveau rapport", "zh": "新建报告" }
+  }
+}

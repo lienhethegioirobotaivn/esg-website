@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx scripts/i18n/sync.ts",
     "dev": "next dev",
+    "prebuild": "tsx scripts/i18n/sync.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "i18n:sync": "tsx scripts/i18n/sync.ts",
+    "i18n:check": "tsx scripts/i18n/sync.ts --check"
   },
   "dependencies": {
     "@esg/shared": "workspace:*",
@@ -40,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "packageManager": "pnpm@11.5.2"

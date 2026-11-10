@@ -11,7 +11,7 @@ import {
   postMetadata,
 } from "@/features/about";
 import { JsonLd } from "@/components/seo/json-ld";
-import { getLocale } from "@/features/locale/server";
+import { getLocale, getT } from "@/features/locale/server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +26,9 @@ export async function generateMetadata({
   if (!isPostSection(section)) {
     return {};
   }
-  const post = await getPost(section, slug, await getLocale());
-  return post ? postMetadata(post) : {};
+  const locale = await getLocale();
+  const post = await getPost(section, slug, locale);
+  return post ? postMetadata(post, locale) : {};
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
@@ -44,7 +45,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <>
-      <JsonLd data={postJsonLd(post)} />
+      <JsonLd data={postJsonLd(post, locale, await getT())} />
       <ArticleView post={post} related={related} />
     </>
   );

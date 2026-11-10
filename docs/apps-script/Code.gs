@@ -49,6 +49,7 @@ var TRANSLATION_HEADERS = ['Mã băm', 'Chữ gốc (vi)', 'en', 'fr', 'zh', 'en
 var TRANSLATION_LOCALES = { 'en': true, 'fr': true, 'zh': true };
 var TRANSLATION_MAX_ITEMS = 60;
 var TRANSLATION_HASH_PATTERN = /^[0-9a-f]{16}$/;
+var TRANSLATION_PRUNE_MAX_KEEP = 20000;
 
 function doPost(e) {
   try {
@@ -71,6 +72,15 @@ function doPost(e) {
         return json_(saveTranslations_(body));
       } finally {
         translationLock.releaseLock();
+      }
+    }
+    if (body.action === 'pruneTranslations') {
+      var pruneLock = LockService.getScriptLock();
+      pruneLock.waitLock(20000);
+      try {
+        return json_(pruneTranslations_(body));
+      } finally {
+        pruneLock.releaseLock();
       }
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
@@ -1007,6 +1017,53 @@ function saveTranslations_(body) {
     range.setValues(appended);
   }
   return { ok: true, saved: saved };
+}
+
+function pruneTranslations_(body) {
+  var keep = body.keep;
+  if (!Array.isArray(keep) || keep.length === 0 || keep.length > TRANSLATION_PRUNE_MAX_KEEP) {
+    throw new Error('Danh sách bản dịch cần giữ không hợp lệ.');
+  }
+  var keepSet = {};
+  keep.forEach(function (hash) {
+    if (TRANSLATION_HASH_PATTERN.test(String(hash))) {
+      keepSet[String(hash)] = true;
+    }
+  });
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TRANSLATION_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) {
+    return { ok: true, removed: 0, keptManual: 0 };
+  }
+  var table = readTable_(sheet);
+  var doomed = [];
+  var keptManual = 0;
+  table.rows.forEach(function (record) {
+    var hash = cellText_(record['Mã băm']).trim();
+    if (!hash || keepSet[hash]) {
+      return;
+    }
+    var hasManual = Object.keys(TRANSLATION_LOCALES).some(function (locale) {
+      return cellText_(record[locale + ' (sửa tay)']).trim() !== '';
+    });
+    if (hasManual) {
+      keptManual += 1;
+      return;
+    }
+    doomed.push(record._row);
+  });
+  doomed.sort(function (a, b) { return b - a; });
+  var index = 0;
+  while (index < doomed.length) {
+    var last = doomed[index];
+    var first = last;
+    index += 1;
+    while (index < doomed.length && doomed[index] === first - 1) {
+      first = doomed[index];
+      index += 1;
+    }
+    sheet.deleteRows(first, last - first + 1);
+  }
+  return { ok: true, removed: doomed.length, keptManual: keptManual };
 }
 
 function parseBody_(e) {

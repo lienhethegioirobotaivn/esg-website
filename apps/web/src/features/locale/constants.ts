@@ -6,7 +6,7 @@ export const DEFAULT_LOCALE: Locale = "vi";
 
 export const FALLBACK_LOCALE: Locale = "en";
 
-export const INDEXABLE_LOCALES: readonly Locale[] = ["vi"];
+export const INDEXABLE_LOCALES: readonly Locale[] = ["vi", "en", "zh", "fr"];
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   vi: "Tiếng Việt",
@@ -20,6 +20,13 @@ export const HTML_LANG: Record<Locale, string> = {
   en: "en",
   zh: "zh-CN",
   fr: "fr",
+};
+
+export const OG_LOCALE: Record<Locale, string> = {
+  vi: "vi_VN",
+  en: "en_US",
+  zh: "zh_CN",
+  fr: "fr_FR",
 };
 
 export const LOCALE_COOKIE = "esg-locale";

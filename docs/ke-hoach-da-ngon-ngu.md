@@ -32,7 +32,7 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 **GĐ2 - Nền dịch chữ cố định**: `I18nProvider`, `useT()`, `getT()` với `t("Câu gốc", { biến })`; lệnh `i18n:extract` và `i18n:translate`; từ điển thuật ngữ; bọc thử header và footer.
 **GĐ3 - Bọc chữ giao diện công khai** (2-3 đợt): layout, trang chủ, khảo sát, form doanh nghiệp, Tư vấn, góp ý, carbon, trang Về, hộp thoại, thông báo lỗi (kể cả từ `@esg/shared`, dịch ở nơi hiển thị).
 **GĐ4 - Nội dung động**: dịch vụ dịch + tab "Bản dịch" (sửa `Code.gs`, Bình dán lại và tạo Phiên bản mới); áp cho bộ câu hỏi, gợi ý, lựa chọn; bài viết (dịch từng đoạn chữ trong JSON ProseMirror, giữ cấu trúc, ảnh, bảng) và số liệu thành tựu.
-**GĐ5 - SEO**: metadata, JSON-LD, `og:locale`, `hreflang`, canonical, sitemap theo ngôn ngữ.
+**GĐ5 - SEO** (đã làm, xem bên dưới): metadata, JSON-LD, `og:locale`, `hreflang`, canonical, sitemap theo ngôn ngữ, mở index; kèm dọn bản dịch mồ côi.
 **GĐ6 - Báo cáo**: `copy.ts`, nhãn, câu diễn giải theo ngôn ngữ; phông chữ Hán; Word.
 **GĐ7 - Rà soát**: typecheck, lint, test, cập nhật README và tài liệu bàn giao.
 
@@ -85,6 +85,27 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Sửa 1 - chờ có giới hạn: khi gặp câu chưa dịch, trang tải lại bộ nhớ từ Sheet (cách nhau tối thiểu 8 giây), nếu vẫn thiếu thì dịch ngay, tối đa 4 đợt chạy song song, mỗi đợt 10 câu, và chờ tối đa 8 giây trước khi trả trang; phần chưa xong tiếp tục chạy nền. Các yêu cầu đồng thời dùng chung việc đang chạy, không dịch trùng. Bộ nhớ RAM giảm còn 1 phút và gộp thêm thay vì thay thế.
 - Sửa 2 - dịch sẵn: trang mới `/quan-tri/ban-dich` (link "Bản dịch" trên thanh quản trị) có nút "Dịch sẵn nội dung" dịch toàn bộ bộ câu hỏi, bài viết đã đăng và nhãn số liệu sang en, fr, zh; mỗi lượt gọi `POST /api/admin/translations` chạy tối đa khoảng 40 giây và trang tự gọi lại tới khi xong. Chạy một lần sau khi triển khai và mỗi khi đổi nội dung lớn.
 - Đã kiểm tra: typecheck, lint, `i18n:check` 0 thiếu; Apps Script giả có độ trễ 1,5 giây mỗi lượt dịch: 40 câu xong trong 1,6 giây ở lượt đầu, lượt sau 0 ms; 100 câu với giới hạn chờ 2 giây trả 80 câu rồi lượt kế tiếp đủ 100. Chưa kiểm tra: `LanguageApp` thật, `pnpm build`, giới hạn thời gian hàm của Vercel (gói miễn phí có thể thấp hơn 60 giây, khi đó nút vẫn chạy nhưng cần bấm lại).
+
+### GĐ5 - SEO đa ngôn ngữ và dọn bản dịch mồ côi (10/11/2026): đã làm, chờ Bình test
+- Mở index: `INDEXABLE_LOCALES = ["vi","en","zh","fr"]` (`features/locale/constants.ts`), các trang `/en`, `/zh`, `/fr` không còn `noindex`. Trang `mua-tin-chi-carbon`, `trong-rung`, `cong-cu-ai` giữ nguyên chế độ cũ (`noindex` hoặc bị chặn trong `robots.ts`).
+- `lib/seo.ts`: `pageMetadata` nhận `locale`, đặt `canonical` về chính URL của ngôn ngữ đó (có tiền tố), `alternates.languages` cho `vi`, `en`, `zh-CN`, `fr` và `x-default` (về tiếng Việt, không tiền tố), `og:locale` + `og:locale:alternate`. `breadcrumbJsonLd(items, locale)` đặt URL theo ngôn ngữ. Hàm dùng chung: `localeLanguages`, `localeAlternates`, `openGraphLocales`.
+- Tiêu đề và mô tả trang (trang chủ, Thành tựu, Tin tức), tagline và mô tả site, tên breadcrumb đều đi qua `t(...)` nên dịch theo `i18n:sync`; bài viết dùng tiêu đề và tóm tắt đã dịch từ GĐ4. Các trang chuyển từ `export const metadata` sang `generateMetadata`. `app/[locale]/layout.tsx` dựng metadata theo ngôn ngữ. JSON-LD (Organization, WebSite, Article, BreadcrumbList) có `inLanguage` và URL theo ngôn ngữ.
+- `app/sitemap.ts`: mỗi trang xuất hiện 4 lần (mỗi ngôn ngữ một URL), mỗi dòng có đủ `xhtml:link` hreflang.
+- Dọn mồ côi: `Code.gs` thêm hành động `pruneTranslations` (nhận danh sách mã băm đang dùng, xóa dòng không còn dùng trong tab "Bản dịch"; từ chối danh sách rỗng). Phía web (`server/translation/warm.ts`) gom chữ của bộ câu hỏi, mọi bài (kể cả nháp) và nhãn số liệu làm danh sách cần giữ; nếu lấy bộ câu hỏi hoặc bài lỗi thì dừng, không xóa gì. Dọn tự chạy nền sau khi lưu/xóa bài và lưu số liệu, và chạy cuối nút "Dịch sẵn nội dung". Dòng có chữ ở cột sửa tay luôn được giữ lại kể cả khi chữ gốc không còn dùng (xóa tay nếu muốn).
+- Quy ước chung từ nay: tính năng nào lưu dữ liệu lên Google Sheet/Drive đều phải kèm cơ chế dọn dữ liệu mồ côi.
+- Đã kiểm tra: typecheck, lint, `i18n:check` 0 thiếu (7 chuỗi mới nhập tay); chạy Next và xem head: canonical đúng theo ngôn ngữ, đủ hreflang và `x-default`, `og:locale` đúng, `lang` đúng, không còn `noindex`; sitemap có đủ 4 ngôn ngữ kèm hreflang; mô phỏng Sheet cho `pruneTranslations_`: xóa 3 dòng mồ côi, giữ dòng có sửa tay và dòng đang dùng, từ chối danh sách rỗng. Chưa kiểm tra: Sheet và `LanguageApp` thật, `pnpm build`, Google Search Console.
+- Giới hạn đã biết: (1) bài hoặc câu chưa dịch vẫn hiện tiếng Việt trên URL ngôn ngữ khác nên có thể bị coi là nội dung trùng; hãy bấm "Dịch sẵn nội dung" trước khi gửi sitemap; (2) PDF/Word vẫn lẫn nhãn tiếng Việt cho tới GĐ6; (3) việc Google chọn hiển thị ngôn ngữ nào còn phụ thuộc Google, hreflang chỉ là gợi ý.
+
+## Hướng dẫn nhanh về bản dịch cho người quản trị (đọc trước khi hỏi)
+- **Có cả bản tự động (`en`) và bản sửa tay (`en (sửa tay)`) thì web dùng bản nào?** Bản sửa tay. Ô sửa tay trống thì web dùng bản tự động. Dịch tự động không bao giờ ghi đè cột sửa tay.
+- **Sửa tay xong bao lâu thì web đổi?** Tối đa khoảng 1 phút.
+- **Đổi chữ gốc tiếng Việt thì sao?** Câu mới có mã băm mới nên được dịch lại từ đầu, bản sửa tay của câu cũ không tự theo sang câu mới (cần nhập lại ở dòng mới).
+- **Thêm hoặc sửa câu hỏi trong Sheet câu hỏi có tự dịch không?** Có. Bấm "Dịch sẵn nội dung" ở `/quan-tri/ban-dich` hoặc để người xem đầu tiên kích hoạt (chờ tối đa 8 giây, phần còn lại dịch nền).
+- **Xóa bài viết hoặc đổi chữ thì dòng dịch cũ có bị dọn không?** Có, tự động sau khi lưu/xóa bài hoặc số liệu, và khi bấm "Dịch sẵn nội dung". Dòng có chữ sửa tay thì được giữ.
+- **Muốn xóa hẳn một dòng có sửa tay đã mồ côi?** Xóa tay dòng đó trong tab "Bản dịch".
+- **Web đang hiện lẫn tiếng Việt?** Bấm "Dịch sẵn nội dung" và giữ trang mở tới khi báo xong.
+- **Muốn đổi cách dịch một thuật ngữ cho cả website?** Sửa `src/i18n/glossary.json` (`keep`, `exact`, `terms`).
+- **Thêm chữ cố định mới trong code?** Bọc bằng `t("...")` hoặc `msg("...")`, chạy `pnpm dev` hoặc `pnpm build` (tự đồng bộ) và commit file trong `src/i18n/messages/`.
 
 ## 5. Rủi ro đã biết
 - Header quốc gia chỉ có khi chạy trên Vercel; chạy máy cá nhân dùng `?lang=` hoặc `Accept-Language`. Cloud của Claude không truy cập được Google, nên phần Apps Script chỉ thử được trên bản giả lập.

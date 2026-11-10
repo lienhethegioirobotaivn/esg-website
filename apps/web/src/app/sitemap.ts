@@ -2,11 +2,41 @@ import type { MetadataRoute } from "next";
 
 import { ABOUT_PATH, postPath } from "@/features/about/constants";
 import { getPosts } from "@/features/about/lib/content";
+import { INDEXABLE_LOCALES } from "@/features/locale/constants";
+import { localizePath } from "@/features/locale/lib/path";
+import { localeLanguages } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-async function loadPostEntries(): Promise<MetadataRoute.Sitemap> {
+type Entry = MetadataRoute.Sitemap[number];
+
+interface PageEntry {
+  path: string;
+  lastModified?: Date;
+  changeFrequency: NonNullable<Entry["changeFrequency"]>;
+  priority: number;
+  images?: string[];
+}
+
+function expand(page: PageEntry): MetadataRoute.Sitemap {
+  const languages = Object.fromEntries(
+    Object.entries(localeLanguages(page.path)).map(([key, value]) => [
+      key,
+      absoluteUrl(value),
+    ]),
+  );
+  return INDEXABLE_LOCALES.map((locale) => ({
+    url: absoluteUrl(localizePath(page.path, locale)),
+    ...(page.lastModified ? { lastModified: page.lastModified } : {}),
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
+    ...(page.images ? { images: page.images } : {}),
+    alternates: { languages },
+  }));
+}
+
+async function loadPostPages(): Promise<PageEntry[]> {
   const [achievements, news] = await Promise.all([
     getPosts("thanh-tuu").catch(() => []),
     getPosts("tin-tuc").catch(() => []),
@@ -14,7 +44,7 @@ async function loadPostEntries(): Promise<MetadataRoute.Sitemap> {
   return [...achievements, ...news]
     .filter((post) => !post.isSample)
     .map((post) => ({
-      url: absoluteUrl(postPath(post.section, post.slug)),
+      path: postPath(post.section, post.slug),
       lastModified: new Date(`${post.publishedAt}T00:00:00+07:00`),
       changeFrequency: "monthly" as const,
       priority: 0.6,
@@ -23,33 +53,29 @@ async function loadPostEntries(): Promise<MetadataRoute.Sitemap> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const posts = await loadPostEntries();
+  const posts = await loadPostPages();
   const newest = posts.reduce<Date | undefined>(
     (latest, entry) =>
-      entry.lastModified instanceof Date &&
-      (!latest || entry.lastModified > latest)
+      entry.lastModified && (!latest || entry.lastModified > latest)
         ? entry.lastModified
         : latest,
     undefined,
   );
-  return [
+  const pages: PageEntry[] = [
+    { path: "/", changeFrequency: "weekly", priority: 1 },
     {
-      url: absoluteUrl("/"),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: absoluteUrl(ABOUT_PATH),
+      path: ABOUT_PATH,
       ...(newest ? { lastModified: newest } : {}),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: absoluteUrl(`${ABOUT_PATH}/tin-tuc`),
+      path: `${ABOUT_PATH}/tin-tuc`,
       ...(newest ? { lastModified: newest } : {}),
       changeFrequency: "daily",
       priority: 0.8,
     },
     ...posts,
   ];
+  return pages.flatMap(expand);
 }

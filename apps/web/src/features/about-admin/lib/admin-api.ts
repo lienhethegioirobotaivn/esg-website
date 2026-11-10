@@ -109,6 +109,21 @@ export async function warmTranslations(
   throw new AdminApiError("Phản hồi không hợp lệ.", 500);
 }
 
+export interface PruneResponse {
+  removed: number;
+  keptManual: number;
+}
+
+export async function pruneTranslations(): Promise<PruneResponse> {
+  const data = await postJson("/api/admin/translations", { prune: true });
+  const removed = data["removed"];
+  const keptManual = data["keptManual"];
+  return {
+    removed: typeof removed === "number" ? removed : 0,
+    keptManual: typeof keptManual === "number" ? keptManual : 0,
+  };
+}
+
 export async function uploadImage(file: Blob): Promise<string> {
   const form = new FormData();
   form.set("image", file, "image.jpg");

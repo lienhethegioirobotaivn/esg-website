@@ -8,14 +8,15 @@ import {
   HTML_LANG,
   I18nProvider,
   INDEXABLE_LOCALES,
+  createT,
   isLocale,
 } from "@/features/locale";
+import type { Locale } from "@/features/locale";
 import { loadMessages } from "@/features/locale/server";
-import { NO_INDEX } from "@/lib/seo";
+import { NO_INDEX, openGraphLocales } from "@/lib/seo";
 import {
   DEFAULT_OG_IMAGE,
   SITE_DESCRIPTION,
-  SITE_LOCALE,
   SITE_NAME,
   SITE_TAGLINE,
   getSiteUrl,
@@ -42,32 +43,37 @@ const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
 });
 
-const baseMetadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
-  applicationName: SITE_NAME,
-  title: {
-    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
-    template: `%s | ${SITE_NAME}`,
-  },
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    locale: SITE_LOCALE,
-    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
-    description: SITE_DESCRIPTION,
-    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
-    description: SITE_DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+function buildMetadata(locale: Locale): Metadata {
+  const t = createT(loadMessages(locale));
+  const title = `${SITE_NAME} - ${t(SITE_TAGLINE)}`;
+  const description = t(SITE_DESCRIPTION);
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    applicationName: SITE_NAME,
+    title: {
+      default: title,
+      template: `%s | ${SITE_NAME}`,
+    },
+    description,
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      ...openGraphLocales(locale),
+      title,
+      description,
+      images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [DEFAULT_OG_IMAGE],
+    },
+    icons: {
+      icon: "/favicon.ico",
+    },
+  };
+}
 
 interface LocaleLayoutProps {
   children: ReactNode;
@@ -78,10 +84,13 @@ export async function generateMetadata({
   params,
 }: Pick<LocaleLayoutProps, "params">): Promise<Metadata> {
   const { locale } = await params;
-  if (isLocale(locale) && !INDEXABLE_LOCALES.includes(locale)) {
-    return { ...baseMetadata, robots: NO_INDEX };
+  if (!isLocale(locale)) {
+    return {};
   }
-  return baseMetadata;
+  const metadata = buildMetadata(locale);
+  return INDEXABLE_LOCALES.includes(locale)
+    ? metadata
+    : { ...metadata, robots: NO_INDEX };
 }
 
 export const viewport: Viewport = {

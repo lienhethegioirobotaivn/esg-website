@@ -11,12 +11,17 @@ import {
   getPosts,
 } from "@/features/about";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Thành tựu và tác động",
-  description:
-    "Những dấu mốc, sự kiện và thành tựu của ESG Report Online trong hành trình đồng hành cùng doanh nghiệp Việt Nam xây dựng báo cáo ESG.",
-  path: ABOUT_PATH,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return pageMetadata({
+    title: t("Thành tựu và tác động"),
+    description: t(
+      "Những dấu mốc, sự kiện và thành tựu của ESG Report Online trong hành trình đồng hành cùng doanh nghiệp Việt Nam xây dựng báo cáo ESG.",
+    ),
+    path: ABOUT_PATH,
+    locale: await getLocale(),
+  });
+}
 
 export const dynamic = "force-dynamic";
 

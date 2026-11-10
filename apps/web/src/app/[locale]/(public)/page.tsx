@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { Card, Container } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
+import { HTML_LANG } from "@/features/locale/constants";
+import { localizePath } from "@/features/locale/lib/path";
 import { getLocale, getT } from "@/features/locale/server";
 import { SurveyWorkspace } from "@/features/survey";
 import { msg } from "@/features/locale";
@@ -16,30 +18,16 @@ import {
 import { translateSurvey } from "@/server/translation/translate-survey";
 import { getSurveyBank } from "@/server/survey-bank/get-survey-bank";
 
-export const metadata: Metadata = pageMetadata({
-  title: `${SITE_NAME} - ${SITE_TAGLINE}`,
-  description: SITE_DESCRIPTION,
-  path: "/",
-  absoluteTitle: true,
-});
-
-const homeJsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: SITE_NAME,
-    url: absoluteUrl("/"),
-    logo: absoluteUrl(SITE_LOGO),
-    description: SITE_DESCRIPTION,
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: SITE_NAME,
-    url: absoluteUrl("/"),
-    inLanguage: "vi-VN",
-  },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return pageMetadata({
+    title: `${SITE_NAME} - ${t(SITE_TAGLINE)}`,
+    description: t(SITE_DESCRIPTION),
+    path: "/",
+    locale: await getLocale(),
+    absoluteTitle: true,
+  });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +44,24 @@ async function loadSurvey() {
 
 export default async function HomePage() {
   const t = await getT();
+  const locale = await getLocale();
+  const homeJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: absoluteUrl(localizePath("/", locale)),
+      logo: absoluteUrl(SITE_LOGO),
+      description: t(SITE_DESCRIPTION),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: absoluteUrl(localizePath("/", locale)),
+      inLanguage: HTML_LANG[locale],
+    },
+  ];
   const { survey, error } = await loadSurvey();
 
   return (

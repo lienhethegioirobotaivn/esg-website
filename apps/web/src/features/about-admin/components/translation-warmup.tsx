@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button, Card } from "@/components/ui";
 
-import { warmTranslations } from "../lib/admin-api";
+import { pruneTranslations, warmTranslations } from "../lib/admin-api";
 
 const LOCALES = [
   { code: "en", label: "Tiếng Anh" },
@@ -43,6 +43,11 @@ export function TranslationWarmup() {
           previous = result.remaining;
         }
       }
+      const pruned = await pruneTranslations();
+      setLines((current) => [
+        ...current,
+        `Dọn dẹp: đã xóa ${pruned.removed} dòng bản dịch không còn dùng, giữ ${pruned.keptManual} dòng có chữ sửa tay`,
+      ]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Không thể dịch sẵn nội dung.");
     } finally {
@@ -57,7 +62,8 @@ export function TranslationWarmup() {
         <p className="text-sm text-muted">
           Dịch trước toàn bộ bộ câu hỏi, bài viết và số liệu sang tiếng Anh, Pháp, Trung để
           khách truy cập thấy đúng ngôn ngữ ngay. Chạy lại sau khi cập nhật nội dung; phần đã
-          dịch sẽ được bỏ qua. Có thể mất vài phút, vui lòng giữ trang này mở.
+          dịch sẽ được bỏ qua, các dòng bản dịch không còn dùng được dọn khỏi Sheet (dòng có chữ sửa
+          tay luôn được giữ lại). Có thể mất vài phút, vui lòng giữ trang này mở.
         </p>
       </div>
       <Button

@@ -9,6 +9,7 @@ import {
   readJson,
 } from "@/server/admin/api-helpers";
 import { requireAdminApi } from "@/server/admin/session";
+import { schedulePrune } from "@/server/translation/warm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   try {
     await callAbout("saveStats", { items: parsed.data.items });
     clearContentCache();
+    schedulePrune();
     return NextResponse.json({ ok: true });
   } catch (error) {
     return bridgeErrorResponse(error);

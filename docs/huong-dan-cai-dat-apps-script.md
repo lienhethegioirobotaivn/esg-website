@@ -189,3 +189,14 @@ Chữ lấy từ Sheet (câu hỏi, hướng dẫn, bài viết, số liệu th�
 - **Lần đầu mở một ngôn ngữ:** người xem đầu tiên thấy phần chưa dịch bằng tiếng Việt, việc dịch chạy nền ngay sau khi trả trang (hàng chục chuỗi mỗi lượt) và người xem sau thấy bản đã dịch. Để tránh điều này, đăng nhập `/quan-tri`, mở mục **Bản dịch** và bấm **Dịch sẵn nội dung**: toàn bộ bộ câu hỏi, bài viết đã đăng và số liệu được dịch trước sang cả ba ngôn ngữ (giữ trang mở tới khi báo xong, có thể bấm lại nếu bị ngắt). Chạy sau mỗi lần cập nhật nội dung lớn. Khi vẫn còn câu chưa dịch, trang chờ tối đa 8 giây rồi mới trả kết quả.
 - Thuật ngữ trong `glossary.json` (`keep`, `exact`, `terms`) áp dụng cho cả nội dung động.
 - Chuỗi dịch lỗi hoặc làm mất thuật ngữ được bỏ qua và thử lại sau 10 phút, trong lúc đó vẫn hiện tiếng Việt.
+
+### Dọn bản dịch không còn dùng và câu hỏi thường gặp
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm hành động `pruneTranslations`.
+
+- Tab "Bản dịch" tự được dọn: sau khi lưu hoặc xóa bài, lưu số liệu, và ở cuối nút **Dịch sẵn nội dung**. Dòng nào không còn thuộc bộ câu hỏi, bài viết (kể cả bản nháp) hoặc nhãn số liệu thì bị xóa. Dòng có chữ ở cột `(sửa tay)` luôn được giữ, muốn bỏ thì xóa tay. Nếu web không lấy được dữ liệu (bộ câu hỏi lỗi, rỗng) việc dọn dừng lại và không xóa gì.
+- **Có cả `en` và `en (sửa tay)` thì dùng bản nào?** Bản sửa tay; ô sửa tay trống thì dùng bản tự động. Dịch tự động không bao giờ ghi đè cột sửa tay.
+- **Sửa tay xong bao lâu web đổi?** Tối đa khoảng 1 phút.
+- **Đổi chữ gốc tiếng Việt thì sao?** Câu mới có mã băm mới, được dịch lại; bản sửa tay của câu cũ không tự theo sang, cần nhập lại ở dòng mới.
+- **Thêm hoặc sửa câu hỏi trong Sheet câu hỏi?** Tự được dịch khi có người xem hoặc khi bấm **Dịch sẵn nội dung**.
+- **Trang ở `/en`, `/fr`, `/zh` còn tiếng Việt xen lẫn?** Bấm **Dịch sẵn nội dung** và giữ trang mở tới khi báo xong. Nên làm trước khi gửi sitemap cho Google để tránh nội dung trùng giữa các ngôn ngữ.

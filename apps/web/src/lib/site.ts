@@ -1,7 +1,10 @@
+import { msg } from "@/features/locale/lib/translate";
+
 export const SITE_NAME = "ESG Report Online";
-export const SITE_TAGLINE = "Tạo báo cáo ESG miễn phí cho doanh nghiệp";
-export const SITE_DESCRIPTION =
-  "Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp chuẩn EU. Điền thông tin, thêm minh chứng và tải về báo cáo ESG của bạn.";
+export const SITE_TAGLINE = msg("Tạo báo cáo ESG miễn phí cho doanh nghiệp");
+export const SITE_DESCRIPTION = msg(
+  "Nền tảng tạo báo cáo ESG nội bộ miễn phí cho doanh nghiệp chuẩn EU. Điền thông tin, thêm minh chứng và tải về báo cáo ESG của bạn.",
+);
 export const SITE_LOCALE = "vi_VN";
 export const DEFAULT_OG_IMAGE = "/og-default.png";
 export const SITE_LOGO = "/logo-min-color.png";

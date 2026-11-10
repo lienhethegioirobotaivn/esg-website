@@ -4,6 +4,7 @@ import { clearContentCache } from "@/features/about/lib/content";
 import { callAbout } from "@/server/about/bridge";
 import { bridgeErrorResponse } from "@/server/admin/api-helpers";
 import { requireAdminApi } from "@/server/admin/session";
+import { schedulePrune } from "@/server/translation/warm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export async function DELETE(
   try {
     await callAbout("deletePost", { id });
     clearContentCache();
+    schedulePrune();
     return NextResponse.json({ ok: true });
   } catch (error) {
     return bridgeErrorResponse(error);

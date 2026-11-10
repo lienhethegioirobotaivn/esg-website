@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { bridgeErrorResponse, jsonError, readJson } from "@/server/admin/api-helpers";
 import { requireAdminApi } from "@/server/admin/session";
-import { warmLocale } from "@/server/translation/warm";
+import { pruneUnusedTranslations, warmLocale } from "@/server/translation/warm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,10 +16,23 @@ export async function POST(request: Request) {
     return denied;
   }
   const body = await readJson(request);
-  const locale =
+  const record =
     typeof body === "object" && body !== null
-      ? (body as Record<string, unknown>)["locale"]
-      : null;
+      ? (body as Record<string, unknown>)
+      : {};
+  if (record["prune"] === true) {
+    try {
+      const pruned = await pruneUnusedTranslations();
+      return NextResponse.json({
+        ok: true,
+        removed: pruned?.removed ?? 0,
+        keptManual: pruned?.keptManual ?? 0,
+      });
+    } catch (error) {
+      return bridgeErrorResponse(error);
+    }
+  }
+  const locale = record["locale"];
   if (locale !== "en" && locale !== "fr" && locale !== "zh") {
     return jsonError(400, "Ngôn ngữ không hợp lệ.");
   }

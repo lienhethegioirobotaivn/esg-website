@@ -1,6 +1,7 @@
 import { Eye, FileDown } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 import type {
   DraftJumpTarget,
@@ -25,14 +26,14 @@ function DraftNotice({
   draftState: ReportDraftState;
   onJump?: (target: DraftJumpTarget) => void;
 }) {
+  const t = useT();
   if (!draftState.isDraft) {
     return (
       <div
         role="note"
         className="w-full rounded-card border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900"
       >
-        Báo cáo đủ điều kiện xuất ở trạng thái <strong>Hoàn tất tự khai</strong>
-        .
+        {t("Báo cáo đủ điều kiện xuất ở trạng thái “Hoàn tất tự khai”.")}
       </div>
     );
   }
@@ -41,8 +42,10 @@ function DraftNotice({
       role="note"
       className="w-full rounded-card border border-warning-600/40 bg-warning-50 px-4 py-3 text-sm"
     >
-      <p className="font-medium">Báo cáo sẽ được đánh dấu “Bản nháp”</p>
-      <p className="mt-1 text-muted">Lý do:</p>
+      <p className="font-medium">
+        {t("Báo cáo sẽ được đánh dấu “Bản nháp”")}
+      </p>
+      <p className="mt-1 text-muted">{t("Lý do:")}</p>
       <ul className="mt-1 list-disc space-y-1 pl-5">
         {draftState.reasons.map((reason) => (
           <li key={reason.text}>
@@ -53,16 +56,16 @@ function DraftNotice({
                 onClick={() => onJump(reason.target)}
                 className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-900"
               >
-                Đi tới đây
+                {t("Đi tới đây")}
               </button>
             ) : null}
           </li>
         ))}
       </ul>
       <p className="mt-2 text-muted">
-        Để báo cáo ở trạng thái “Hoàn tất tự khai”: điền đủ thông tin doanh
-        nghiệp, trả lời đầy đủ các câu hỏi bắt buộc và chọn “Có” ở câu xác nhận
-        của người có thẩm quyền.
+        {t(
+          "Để báo cáo ở trạng thái “Hoàn tất tự khai”: điền đủ thông tin doanh nghiệp, trả lời đầy đủ các câu hỏi bắt buộc và chọn “Có” ở câu xác nhận của người có thẩm quyền.",
+        )}
       </p>
     </div>
   );
@@ -78,6 +81,7 @@ export function ReportActions({
   onJump,
   disabled = false,
 }: ReportActionsProps) {
+  const t = useT();
   return (
     <div className="mt-6 flex flex-col gap-3 sm:items-end">
       {draftState ? (
@@ -91,7 +95,9 @@ export function ReportActions({
           disabled={disabled || isPreviewLoading}
           leadingIcon={<Eye aria-hidden className="size-4" />}
         >
-          {isPreviewLoading ? "Đang tạo bản xem trước..." : "Xem bản nháp"}
+          {isPreviewLoading
+            ? t("Đang tạo bản xem trước...")
+            : t("Xem bản nháp")}
         </Button>
         <Button
           className="flex-1 sm:flex-none"
@@ -99,7 +105,7 @@ export function ReportActions({
           disabled={disabled || isExporting}
           leadingIcon={<FileDown aria-hidden className="size-4" />}
         >
-          {isExporting ? "Đang tạo báo cáo..." : "Tạo báo cáo"}
+          {isExporting ? t("Đang tạo báo cáo...") : t("Tạo báo cáo")}
         </Button>
       </div>
       {error ? (

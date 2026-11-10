@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { Button, Modal } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 import type { ReportPreview } from "../hooks/use-report-preview";
 
@@ -15,15 +16,19 @@ export function ReportPreviewDialog({
   preview,
   onClose,
 }: ReportPreviewDialogProps) {
+  const t = useT();
   return (
-    <Modal title="Bản nháp báo cáo" onClose={onClose} size="lg">
+    <Modal title={t("Bản nháp báo cáo")} onClose={onClose} size="lg">
       <p className="mb-3 text-sm text-muted">
         {preview.missingCount === 0
-          ? "Đây là file PDF sẽ được xuất. Thông tin đã đầy đủ."
-          : `Đây là file PDF sẽ được xuất. Còn ${preview.missingCount} mục chưa hoàn thành, các mục này sẽ hiện là chưa trả lời.`}
+          ? t("Đây là file PDF sẽ được xuất. Thông tin đã đầy đủ.")
+          : t(
+              "Đây là file PDF sẽ được xuất. Còn {count} mục chưa hoàn thành, các mục này sẽ hiện là chưa trả lời.",
+              { count: preview.missingCount },
+            )}
       </p>
       <iframe
-        title="Bản xem trước báo cáo PDF"
+        title={t("Bản xem trước báo cáo PDF")}
         src={preview.url}
         className="min-h-0 w-full flex-1 border border-border bg-surface-muted"
       />
@@ -35,10 +40,10 @@ export function ReportPreviewDialog({
           className="inline-flex items-center gap-1.5 text-sm text-primary-700 underline"
         >
           <ExternalLink aria-hidden className="size-4" />
-          Mở trong tab mới
+          {t("Mở trong tab mới")}
         </a>
         <Button variant="secondary" onClick={onClose}>
-          Đóng
+          {t("Đóng")}
         </Button>
       </div>
     </Modal>

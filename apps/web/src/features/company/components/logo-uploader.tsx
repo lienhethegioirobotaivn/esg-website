@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
 import { Button } from "@/components/ui";
+import { useT } from "@/features/locale";
 import { formatFileSize } from "@/lib/format";
 
 import { LOGO_ACCEPTED_TYPES, validateLogoFile } from "../lib/validate-logo";
@@ -17,6 +18,7 @@ interface LogoUploaderProps {
 }
 
 export function LogoUploader({ file, onChange }: LogoUploaderProps) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,7 @@ export function LogoUploader({ file, onChange }: LogoUploaderProps) {
     if (!selected) {
       return;
     }
-    const message = validateLogoFile(selected);
+    const message = validateLogoFile(selected, t);
     if (message) {
       setError(message);
       return;
@@ -59,8 +61,8 @@ export function LogoUploader({ file, onChange }: LogoUploaderProps) {
         htmlFor={INPUT_ID}
         className="block text-[0.8125rem] font-medium text-foreground"
       >
-        Logo doanh nghiệp{" "}
-        <span className="font-normal text-subtle">(không bắt buộc)</span>
+        {t("Logo doanh nghiệp")}{" "}
+        <span className="font-normal text-subtle">{t("(không bắt buộc)")}</span>
       </label>
 
       <input
@@ -77,7 +79,7 @@ export function LogoUploader({ file, onChange }: LogoUploaderProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
-            alt="Logo doanh nghiệp"
+            alt={t("Logo doanh nghiệp")}
             className="size-14 shrink-0 border border-border bg-surface object-contain"
           />
           <div className="min-w-0 flex-1">
@@ -88,10 +90,10 @@ export function LogoUploader({ file, onChange }: LogoUploaderProps) {
             variant="ghost"
             size="sm"
             onClick={handleRemove}
-            aria-label="Xóa logo"
+            aria-label={t("Xóa logo")}
             leadingIcon={<X aria-hidden className="size-4" />}
           >
-            Xóa
+            {t("Xóa")}
           </Button>
         </div>
       ) : (
@@ -101,11 +103,13 @@ export function LogoUploader({ file, onChange }: LogoUploaderProps) {
           onClick={() => inputRef.current?.click()}
           leadingIcon={<ImagePlus aria-hidden className="size-4" />}
         >
-          Tải logo lên
+          {t("Tải logo lên")}
         </Button>
       )}
 
-      <p className="text-xs text-subtle">PNG, JPG hoặc WEBP, tối đa 2 MB.</p>
+      <p className="text-xs text-subtle">
+        {t("PNG, JPG hoặc WEBP, tối đa 2 MB.")}
+      </p>
       {error ? (
         <p role="alert" className="text-xs text-danger-600">
           {error}

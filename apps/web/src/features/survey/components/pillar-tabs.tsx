@@ -1,5 +1,6 @@
 import type { Survey } from "@esg/shared";
 
+import { useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import { countCompleted } from "../lib/progress";
@@ -18,10 +19,11 @@ export function PillarTabs({
   answers,
   onSelectPillar,
 }: PillarTabsProps) {
+  const t = useT();
   return (
     <div
       role="tablist"
-      aria-label="Phần ESG"
+      aria-label={t("Phần ESG")}
       className="grid grid-cols-3 border-b border-border-strong"
     >
       {survey.map((pillar) => {
@@ -44,7 +46,7 @@ export function PillarTabs({
                 : "border-transparent text-muted enabled:hover:text-foreground",
             )}
           >
-            {pillar.name}{" "}
+            {t(pillar.name)}{" "}
             <span className="text-xs text-subtle">
               ({countCompleted(questions, answers)}/{questions.length})
             </span>

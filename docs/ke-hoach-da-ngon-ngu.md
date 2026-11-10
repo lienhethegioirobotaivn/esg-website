@@ -60,6 +60,17 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Thêm 98 chuỗi, bản en/fr/zh do Claude dịch tay (tên nút khớp glossary); lần chạy `i18n:sync` có Apps Script thật sẽ chỉ dịch chuỗi nào còn thiếu.
 - Đã kiểm tra: typecheck, lint (không lỗi mới), `i18n:check` (0 thiếu), Playwright thấy đúng chữ en/fr/zh ở trang chủ (nhánh lỗi tải khảo sát vì sandbox không đọc được Sheet), trang Về, Tin tức, hộp carbon, ô tìm kiếm, header; không có lỗi trang. Chưa kiểm tra được: hộp Tư vấn, thẻ góp ý, hộp rời trang bằng mắt trên trình duyệt (cần màn khảo sát hoặc bridge giả), `pnpm build`.
 
+**GĐ3 đợt 2 (10/11/2026): đã làm, chờ Bình test trên máy thật.**
+- Đã bọc toàn bộ màn khảo sát: form thông tin doanh nghiệp (kể cả "Bối cảnh doanh nghiệp", logo, các mục thu gọn), thẻ câu hỏi, nhóm câu hỏi, điều hướng nhóm, thanh nháp và thông báo khôi phục nháp, tiến độ, kế hoạch cải thiện, tải minh chứng, bảng hướng dẫn, các hộp xuất báo cáo (chưa thể xuất, tải báo cáo, bản nháp, xem trước, làm báo cáo mới), thông báo lỗi trong hook xuất/xem trước báo cáo.
+- `@esg/shared`: thêm `src/i18n.ts` (hàm `msg` danh tính riêng cho package này, không export ra `index.ts`) và bọc `msg(...)` cho nhãn lựa chọn trả lời, nhu cầu tư vấn/thẩm định, loại hình pháp lý, khoảng doanh thu, hoạt động đặc thù, có/không/chưa rõ, kỳ báo cáo, trạng thái kế hoạch và thông báo lỗi zod của form doanh nghiệp, Tư vấn, góp ý. Giá trị lưu vào Sheet không đổi (vẫn tiếng Việt chuẩn), chỉ chữ hiển thị đi qua `t()`.
+- Thêm `translateOptions(options, t)` ở `@/features/locale` để dịch nhãn của danh sách `{ value, label }`; dùng cho ô Quy mô, Ngành, Kỳ báo cáo, Nhu cầu... (cả hộp Tư vấn của đợt 1). `data/company-options.ts` bọc `msg`.
+- `formatSavedAt` nhận thêm ngôn ngữ nên giờ lưu bản nháp hiển thị theo định dạng của ngôn ngữ đang xem. `getReportDraftState` nhận thêm tham số `t` (mặc định tiếng Việt, dùng khi tạo file báo cáo).
+- Cố ý còn tiếng Việt: nội dung bộ câu hỏi lấy từ Sheet (tên nhóm, câu hỏi, hướng dẫn, gợi ý cải thiện, đề xuất của hệ thống) là GĐ4; chữ trong file PDF/Word, dòng chú thích bản nháp trong PDF và nhãn "Chưa trả lời", "Số liệu:" trong báo cáo là GĐ6; thông báo lỗi "tối đa N ký tự" của các ô tùy chọn ở mục Bối cảnh doanh nghiệp (câu ghép tên trường) còn tiếng Việt; thông báo lỗi từ server (API) chỉ dịch được khi trùng một câu đã có bản dịch.
+- Tên 3 trụ cột Môi trường/Xã hội/Quản trị đã dịch ở màn khảo sát nhờ từ điển glossary.
+- Thêm 283 chuỗi, bản en/fr/zh do Claude dịch tay (số tiền: 1 tỷ = 10^9 nên "3 tỷ" = "30 亿" trong tiếng Trung).
+- Đã kiểm tra: typecheck cả `apps/web` và `packages/shared`, lint (không lỗi), `i18n:check` 0 thiếu, Playwright trên trang thử tạm (đã xóa) với bộ câu hỏi giả: form, ô chọn, câu trả lời, tiến độ, kế hoạch, hộp "Chưa thể xuất báo cáo" đúng ngôn ngữ ở en/fr/zh, không lỗi trang. Chưa kiểm tra được: dữ liệu thật từ Sheet, tải PDF/Word (vẫn tiếng Việt), `pnpm build`.
+- Còn lại của GĐ3: không còn đợt 3 riêng, phần `@esg/shared` và `data/*` đã gộp vào đợt này. GĐ3 xem như xong, chờ Bình test rồi sang GĐ4.
+
 ## 5. Rủi ro đã biết
 - Header quốc gia chỉ có khi chạy trên Vercel; chạy máy cá nhân dùng `?lang=` hoặc `Accept-Language`. Cloud của Claude không truy cập được Google, nên phần Apps Script chỉ thử được trên bản giả lập.
 - Dịch máy có thể sai thuật ngữ ESG: có từ điển cho chữ cố định; nội dung động sửa tay được trong tab "Bản dịch".

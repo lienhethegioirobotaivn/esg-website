@@ -9,6 +9,7 @@ import { FileImage, FileText, Plus, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
+import { useT } from "@/features/locale";
 import { formatFileSize } from "@/lib/format";
 
 import { validateEvidenceFile } from "../lib/validate-evidence-file";
@@ -29,6 +30,7 @@ export function EvidenceUploader({
   onAdd,
   onRemove,
 }: EvidenceUploaderProps) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const isFull = items.length >= MAX_EVIDENCE_FILES;
@@ -43,7 +45,7 @@ export function EvidenceUploader({
     if (!file) {
       return;
     }
-    const message = validateEvidenceFile(file);
+    const message = validateEvidenceFile(file, t);
     if (message) {
       setError(message);
       return;
@@ -77,7 +79,7 @@ export function EvidenceUploader({
                 <button
                   type="button"
                   onClick={() => onRemove(item.id)}
-                  aria-label={`Xóa ${item.file.name}`}
+                  aria-label={t("Xóa {name}", { name: item.file.name })}
                   className="rounded-md p-1 text-subtle hover:bg-danger-50 hover:text-danger-600"
                 >
                   <X aria-hidden className="size-4" />
@@ -95,7 +97,7 @@ export function EvidenceUploader({
           className="flex w-full items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-4 py-3 text-sm hover:bg-surface-muted"
         >
           <Upload aria-hidden className="size-4" />
-          Tải lên bằng chứng
+          {t("Tải lên bằng chứng")}
         </button>
       ) : null}
 
@@ -106,7 +108,7 @@ export function EvidenceUploader({
           className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-sm hover:bg-surface-muted"
         >
           <Plus aria-hidden className="size-4" />
-          Thêm bằng chứng
+          {t("Thêm bằng chứng")}
         </button>
       ) : null}
 
@@ -126,10 +128,12 @@ export function EvidenceUploader({
       ) : null}
 
       <p className="text-xs text-subtle">
-        PDF hoặc ảnh, mỗi tệp tối đa{" "}
-        {formatFileSize(MAX_EVIDENCE_FILE_SIZE_BYTES)}. Đã tải{" "}
-        {items.length}/{MAX_EVIDENCE_FILES} tệp.
+        {t("PDF hoặc ảnh, mỗi tệp tối đa {size}. Đã tải {count}/{max} tệp.", {
+          size: formatFileSize(MAX_EVIDENCE_FILE_SIZE_BYTES),
+          count: items.length,
+          max: MAX_EVIDENCE_FILES,
+        })}
       </p>
     </div>
   );
-}
+}

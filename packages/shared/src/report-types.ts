@@ -1,3 +1,5 @@
+import { msg } from "./i18n";
+
 export interface ReportEvidenceInput {
   readonly name: string;
   readonly mimeType: string;
@@ -11,10 +13,10 @@ export interface ReportAnswerInput {
 }
 
 export const PLAN_STATUSES = [
-  "Chưa bắt đầu",
-  "Đang thực hiện",
-  "Hoàn thành",
-  "Tạm hoãn",
+  msg("Chưa bắt đầu"),
+  msg("Đang thực hiện"),
+  msg("Hoàn thành"),
+  msg("Tạm hoãn"),
 ] as const;
 
 export type PlanStatus = (typeof PLAN_STATUSES)[number];

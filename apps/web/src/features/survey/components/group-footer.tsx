@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Save } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 interface GroupFooterProps {
   position: number;
@@ -23,6 +24,7 @@ export function GroupFooter({
   onPrevious,
   onSaveAndContinue,
 }: GroupFooterProps) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
@@ -32,18 +34,18 @@ export function GroupFooter({
           disabled={!hasPrevious}
           leadingIcon={<ArrowLeft aria-hidden className="size-4" />}
         >
-          Nhóm trước
+          {t("Nhóm trước")}
         </Button>
         <div className="min-w-0 text-xs text-subtle">
           <p>
-            Nhóm {position} trên {total}
+            {t("Nhóm {position} trên {total}", { position, total })}
           </p>
           <p className={saveFailed ? "text-danger-600" : undefined}>
             {saveFailed
-              ? "Không lưu được vào trình duyệt này"
+              ? t("Không lưu được vào trình duyệt này")
               : isDirty
-                ? "Có thay đổi chưa lưu"
-                : "Tự động lưu sau mỗi nhóm"}
+                ? t("Có thay đổi chưa lưu")
+                : t("Tự động lưu sau mỗi nhóm")}
           </p>
         </div>
       </div>
@@ -57,7 +59,7 @@ export function GroupFooter({
           hasNext ? <ArrowRight aria-hidden className="size-4" /> : undefined
         }
       >
-        {hasNext ? "Lưu & tiếp tục" : "Lưu bản nháp"}
+        {hasNext ? t("Lưu & tiếp tục") : t("Lưu bản nháp")}
       </Button>
     </div>
   );

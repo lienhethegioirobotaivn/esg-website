@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { getReportCode, saveCompany, saveReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
+import { useT } from "@/features/locale";
 import { downloadBlob } from "@/lib/download-blob";
 
 import { buildReportFileName } from "../lib/report-file-name";
@@ -36,6 +37,7 @@ export function useReportExport({
   answers,
   logo,
 }: UseReportExportInput): ReportExport {
+  const t = useT();
   const [isExporting, setIsExporting] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ReportFormat | null>(null);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
@@ -68,7 +70,7 @@ export function useReportExport({
       if (!result.isValid) {
         setValidation(result);
         if (saveFailed) {
-          setError("Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại.");
+          setError(t("Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại."));
         }
         return;
       }
@@ -76,11 +78,13 @@ export function useReportExport({
       setIsDownloadOpen(true);
       if (saveFailed) {
         setError(
-          "Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại sau khi tải.",
+          t(
+            "Chưa lưu được thông tin doanh nghiệp. Vui lòng thử lại sau khi tải.",
+          ),
         );
       }
     } catch {
-      setError("Không kiểm tra được báo cáo. Vui lòng thử lại.");
+      setError(t("Không kiểm tra được báo cáo. Vui lòng thử lại."));
     } finally {
       setIsExporting(false);
     }
@@ -102,8 +106,8 @@ export function useReportExport({
     } catch {
       setError(
         format === "docx"
-          ? "Không tạo được file Word. Vui lòng thử lại."
-          : "Không tạo được file PDF. Vui lòng thử lại.",
+          ? t("Không tạo được file Word. Vui lòng thử lại.")
+          : t("Không tạo được file PDF. Vui lòng thử lại."),
       );
     } finally {
       setExportingFormat(null);

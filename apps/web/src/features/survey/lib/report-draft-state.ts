@@ -1,4 +1,6 @@
 import type { CompanyField, CompanyFormValues } from "@/features/company";
+import { createT } from "@/features/locale";
+import type { TFunction } from "@/features/locale";
 
 import { getDraft } from "./progress";
 import { validateReport } from "./report-validation";
@@ -22,11 +24,16 @@ export interface ReportDraftState {
   readonly validation: ReportValidation;
 }
 
-export function getReportDraftState(input: {
-  company: CompanyFormValues;
-  entries: readonly GroupEntry[];
-  answers: AnswerMap;
-}): ReportDraftState {
+const identityT = createT({});
+
+export function getReportDraftState(
+  input: {
+    company: CompanyFormValues;
+    entries: readonly GroupEntry[];
+    answers: AnswerMap;
+  },
+  t: TFunction = identityT,
+): ReportDraftState {
   const { company, entries, answers } = input;
   const validation = validateReport({ company, entries, answers });
   const reasons: DraftReason[] = [];
@@ -34,14 +41,18 @@ export function getReportDraftState(input: {
   const firstCompanyIssue = validation.companyIssues[0];
   if (firstCompanyIssue !== undefined) {
     reasons.push({
-      text: `Thông tin doanh nghiệp còn ${validation.companyIssues.length} mục chưa hợp lệ.`,
+      text: t("Thông tin doanh nghiệp còn {count} mục chưa hợp lệ.", {
+        count: validation.companyIssues.length,
+      }),
       target: { kind: "company", field: firstCompanyIssue.field },
     });
   }
   const firstQuestionIssue = validation.questionIssues[0];
   if (firstQuestionIssue !== undefined) {
     reasons.push({
-      text: `Còn ${validation.questionIssues.length} câu hỏi chưa trả lời đầy đủ.`,
+      text: t("Còn {count} câu hỏi chưa trả lời đầy đủ.", {
+        count: validation.questionIssues.length,
+      }),
       target: { kind: "question", questionId: firstQuestionIssue.questionId },
     });
   }
@@ -54,7 +65,10 @@ export function getReportDraftState(input: {
     getDraft(answers, CONFIRMATION_QUESTION_ID).value !== "yes"
   ) {
     reasons.push({
-      text: `Chưa xác nhận thông tin: câu “${confirmation.text}” cần được trả lời “Có”.`,
+      text: t(
+        "Chưa xác nhận thông tin: câu “{question}” cần được trả lời “Có”.",
+        { question: confirmation.text },
+      ),
       target: { kind: "question", questionId: CONFIRMATION_QUESTION_ID },
     });
   }

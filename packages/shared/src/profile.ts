@@ -1,40 +1,41 @@
 import { z } from "zod";
 
 import { INDUSTRY_SOURCES } from "./constants";
+import { msg } from "./i18n";
 
 export const LEGAL_FORMS = [
-  "Công ty cổ phần",
-  "Công ty TNHH",
-  "Doanh nghiệp tư nhân",
-  "Hợp tác xã",
-  "Loại hình khác",
+  msg("Công ty cổ phần"),
+  msg("Công ty TNHH"),
+  msg("Doanh nghiệp tư nhân"),
+  msg("Hợp tác xã"),
+  msg("Loại hình khác"),
 ] as const;
 
 export const REVENUE_BANDS = [
-  { value: "lt3", label: "Dưới 3 tỷ đồng" },
-  { value: "3to10", label: "3 đến dưới 10 tỷ đồng" },
-  { value: "10to50", label: "10 đến dưới 50 tỷ đồng" },
-  { value: "50to200", label: "50 đến dưới 200 tỷ đồng" },
-  { value: "gte200", label: "Từ 200 tỷ đồng" },
-  { value: "undisclosed", label: "Không cung cấp" },
+  { value: "lt3", label: msg("Dưới 3 tỷ đồng") },
+  { value: "3to10", label: msg("3 đến dưới 10 tỷ đồng") },
+  { value: "10to50", label: msg("10 đến dưới 50 tỷ đồng") },
+  { value: "50to200", label: msg("50 đến dưới 200 tỷ đồng") },
+  { value: "gte200", label: msg("Từ 200 tỷ đồng") },
+  { value: "undisclosed", label: msg("Không cung cấp") },
 ] as const;
 
 export const CAPABILITY_OPTIONS = [
-  { value: "machinery", label: "Máy móc" },
-  { value: "chemicals", label: "Hóa chất" },
+  { value: "machinery", label: msg("Máy móc") },
+  { value: "chemicals", label: msg("Hóa chất") },
   { value: "warehouse", label: "Kho" },
-  { value: "fleet", label: "Vận tải" },
-  { value: "construction", label: "Xây dựng" },
-  { value: "food", label: "Thực phẩm" },
-  { value: "animals", label: "Động vật" },
-  { value: "minors", label: "Làm việc với trẻ em" },
+  { value: "fleet", label: msg("Vận tải") },
+  { value: "construction", label: msg("Xây dựng") },
+  { value: "food", label: msg("Thực phẩm") },
+  { value: "animals", label: msg("Động vật") },
+  { value: "minors", label: msg("Làm việc với trẻ em") },
   { value: "cloud_ai", label: "Cloud / AI" },
 ] as const;
 
 export const PRESENCE_OPTIONS = [
-  { value: "yes", label: "Có" },
-  { value: "no", label: "Không" },
-  { value: "unknown", label: "Chưa rõ" },
+  { value: "yes", label: msg("Có") },
+  { value: "no", label: msg("Không") },
+  { value: "unknown", label: msg("Chưa rõ") },
 ] as const;
 
 export const PROFILE_FIELDS = [

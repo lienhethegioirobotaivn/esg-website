@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 interface GroupNavigatorProps {
   position: number;
@@ -19,6 +20,7 @@ export function GroupNavigator({
   onPrevious,
   onNext,
 }: GroupNavigatorProps) {
+  const t = useT();
   return (
     <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3">
       <Button
@@ -27,18 +29,18 @@ export function GroupNavigator({
         disabled={!hasPrevious}
         leadingIcon={<ArrowLeft aria-hidden className="size-4" />}
       >
-        Nhóm trước
+        {t("Nhóm trước")}
       </Button>
       <p className="text-sm text-subtle">
-        Nhóm {position} trên {total}
+        {t("Nhóm {position} trên {total}", { position, total })}
       </p>
       <Button
         onClick={onNext}
         disabled={!hasNext}
         trailingIcon={<ArrowRight aria-hidden className="size-4" />}
       >
-        Nhóm tiếp
+        {t("Nhóm tiếp")}
       </Button>
     </div>
   );
-}
+}

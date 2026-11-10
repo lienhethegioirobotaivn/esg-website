@@ -2,6 +2,7 @@ import { Check, RotateCcw } from "lucide-react";
 import { Fragment } from "react";
 
 import { Button, Card } from "@/components/ui";
+import { useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 import { padNumber } from "@/lib/format";
 
@@ -27,6 +28,7 @@ export function JourneyProgress({
   onSelectGroup,
   onReset,
 }: JourneyProgressProps) {
+  const t = useT();
   const allQuestions = entries.flatMap((entry) => entry.group.questions);
   const completedQuestions = countCompleted(allQuestions, answers);
   const percent =
@@ -41,13 +43,13 @@ export function JourneyProgress({
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base">Tiến độ</h2>
+        <h2 className="text-base">{t("Tiến độ")}</h2>
         <span className="text-sm font-semibold">{percent}%</span>
       </div>
 
       <div
         role="progressbar"
-        aria-label="Tiến độ hoàn thành"
+        aria-label={t("Tiến độ hoàn thành")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
@@ -61,9 +63,12 @@ export function JourneyProgress({
 
       <p className="mt-2 flex justify-between text-xs text-subtle">
         <span>
-          {completedGroups}/{entries.length} nhóm đã trả lời đầy đủ
+          {t("{completed}/{total} nhóm đã trả lời đầy đủ", {
+            completed: completedGroups,
+            total: entries.length,
+          })}
         </span>
-        <span>{evidenceCount} minh chứng</span>
+        <span>{t("{count} minh chứng", { count: evidenceCount })}</span>
       </p>
 
       <ul className="mt-4 space-y-1">
@@ -76,7 +81,7 @@ export function JourneyProgress({
             <Fragment key={entry.group.id}>
               {startsPillar ? (
                 <li className="px-2.5 pb-1 pt-3 text-xs font-semibold text-foreground first:pt-0">
-                  {entry.pillarName}
+                  {t(entry.pillarName)}
                 </li>
               ) : null}
               <li>
@@ -119,7 +124,7 @@ export function JourneyProgress({
       </ul>
 
       <p className="mt-3 border-t border-border pt-3 text-xs text-subtle">
-        Có thể làm các nhóm theo thứ tự bất kỳ.
+        {t("Có thể làm các nhóm theo thứ tự bất kỳ.")}
       </p>
 
       <div className="mt-3 border-t border-border pt-3">
@@ -129,10 +134,10 @@ export function JourneyProgress({
           onClick={onReset}
           leadingIcon={<RotateCcw aria-hidden className="size-4" />}
         >
-          Làm báo cáo mới
+          {t("Làm báo cáo mới")}
         </Button>
         <p className="mt-2 text-xs text-subtle">
-          Xóa toàn bộ nội dung đã nhập để bắt đầu lại từ đầu.
+          {t("Xóa toàn bộ nội dung đã nhập để bắt đầu lại từ đầu.")}
         </p>
       </div>
     </Card>

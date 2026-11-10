@@ -3,6 +3,7 @@ import type { Question } from "@esg/shared";
 
 import { COMPANY_FIELDS } from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
+import { msg } from "@/features/locale";
 
 import { getDraft } from "./progress";
 import type { AnswerDraft, AnswerMap, GroupEntry } from "../types";
@@ -35,9 +36,9 @@ export interface ReportValidation {
 }
 
 export const REASON_LABELS: Record<QuestionIssueReason, string> = {
-  unanswered: "Chưa trả lời",
-  "missing-detail": "Thiếu nội dung, ghi chú hoặc lý do",
-  "invalid-number": "Số liệu chưa hợp lệ",
+  unanswered: msg("Chưa trả lời"),
+  "missing-detail": msg("Thiếu nội dung, ghi chú hoặc lý do"),
+  "invalid-number": msg("Số liệu chưa hợp lệ"),
 };
 
 export function getIncompleteReasons(

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { CompanyFormValues } from "@/features/company";
+import { useT } from "@/features/locale";
 
 import { validateReport } from "../lib/report-validation";
 import { createReportBlob } from "../report/create-report";
@@ -32,6 +33,7 @@ export function useReportPreview({
   answers,
   logo,
 }: UseReportPreviewInput): ReportPreviewState {
+  const t = useT();
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function useReportPreview({
         return { url: URL.createObjectURL(blob), missingCount };
       });
     } catch {
-      setError("Không tạo được bản xem trước. Vui lòng thử lại.");
+      setError(t("Không tạo được bản xem trước. Vui lòng thử lại."));
     } finally {
       setIsLoading(false);
     }

@@ -20,6 +20,7 @@ import {
 } from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
 import { FeedbackCard } from "@/features/contact";
+import { useT } from "@/features/locale";
 import { GuidancePanel } from "@/features/guidance";
 import { LeaveDialog, useLeaveGuard } from "@/features/leave-guard";
 
@@ -122,6 +123,7 @@ function LoadedSurveyWorkspace({
   survey: fullSurvey,
   onReset,
 }: SurveyWorkspaceProps & { onReset: () => void }) {
+  const t = useT();
   const allEntries = useMemo(() => flattenGroups(fullSurvey), [fullSurvey]);
 
   const [initial] = useState(() =>
@@ -184,8 +186,8 @@ function LoadedSurveyWorkspace({
   const reportExport = useReportExport({ company, entries, answers, logo });
   const reportPreview = useReportPreview({ company, entries, answers, logo });
   const draftState = useMemo(
-    () => getReportDraftState({ company, entries, answers }),
-    [company, entries, answers],
+    () => getReportDraftState({ company, entries, answers }, t),
+    [company, entries, answers, t],
   );
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
@@ -287,7 +289,7 @@ function LoadedSurveyWorkspace({
         }
       />
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
-        <aside aria-label="Thông tin doanh nghiệp" className="min-w-0">
+        <aside aria-label={t("Thông tin doanh nghiệp")} className="min-w-0">
           <CompanyProfileForm
             values={company}
             onFieldChange={updateCompany}
@@ -305,7 +307,7 @@ function LoadedSurveyWorkspace({
           <Card>
             <div className="border-b border-border px-5 py-3">
               <h2 id="survey-heading" className="text-base">
-                Bộ câu hỏi đánh giá ESG
+                {t("Bộ câu hỏi đánh giá ESG")}
               </h2>
             </div>
 
@@ -320,8 +322,9 @@ function LoadedSurveyWorkspace({
 
             {company.industry === "" || company.headcount === "" ? (
               <p className="mt-4 px-5 text-[0.8125rem] text-muted">
-                Chọn lĩnh vực hoạt động và quy mô nhân sự ở cột bên trái để xem
-                đầy đủ câu hỏi phù hợp với doanh nghiệp.
+                {t(
+                  "Chọn lĩnh vực hoạt động và quy mô nhân sự ở cột bên trái để xem đầy đủ câu hỏi phù hợp với doanh nghiệp.",
+                )}
               </p>
             ) : null}
 
@@ -354,8 +357,9 @@ function LoadedSurveyWorkspace({
                 />
               ) : (
                 <p className="rounded-card border border-dashed border-border-strong p-8 text-center text-sm text-muted">
-                  Chưa có câu hỏi phù hợp. Vui lòng chọn lĩnh vực hoạt động và
-                  quy mô nhân sự để xem bộ câu hỏi.
+                  {t(
+                    "Chưa có câu hỏi phù hợp. Vui lòng chọn lĩnh vực hoạt động và quy mô nhân sự để xem bộ câu hỏi.",
+                  )}
                 </p>
               )}
             </div>
@@ -385,7 +389,7 @@ function LoadedSurveyWorkspace({
         </section>
 
         <aside
-          aria-label="Hướng dẫn và tiến độ"
+          aria-label={t("Hướng dẫn và tiến độ")}
           className="min-w-0 space-y-6 lg:sticky lg:top-22 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
         >
           <GuidancePanel

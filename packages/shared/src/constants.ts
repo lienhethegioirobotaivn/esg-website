@@ -1,3 +1,5 @@
+import { msg } from "./i18n";
+
 export const MAX_EVIDENCE_FILES = 10;
 
 export const MAX_EVIDENCE_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -70,16 +72,16 @@ export const LOGO_ACCEPTED_MIME_TYPES = [
 export const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 
 export const ADVISORY_NEEDS = [
-  "Chưa có nhu cầu",
-  "Đang tìm hiểu",
-  "Cần đánh giá khoảng cách trước",
-  "Muốn nhận tư vấn & báo giá",
+  msg("Chưa có nhu cầu"),
+  msg("Đang tìm hiểu"),
+  msg("Cần đánh giá khoảng cách trước"),
+  msg("Muốn nhận tư vấn & báo giá"),
 ] as const;
 
 export const ASSESSMENT_NEEDS = [
-  "Chưa có nhu cầu",
-  "Cần trao đổi thêm",
-  "Muốn nhận báo giá",
+  msg("Chưa có nhu cầu"),
+  msg("Cần trao đổi thêm"),
+  msg("Muốn nhận báo giá"),
 ] as const;
 
 export const CONSENT_VALUES = ["", "yes"] as const;

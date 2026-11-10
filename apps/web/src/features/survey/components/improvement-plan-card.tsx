@@ -9,8 +9,7 @@ import type {
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
-
-const statusOptions = PLAN_STATUSES.map((value) => ({ value, label: value }));
+import { useT } from "@/features/locale";
 
 interface ImprovementPlanCardProps {
   plan: ImprovementPlanInput;
@@ -34,6 +33,11 @@ export function ImprovementPlanCard({
   suggestions,
   onChange,
 }: ImprovementPlanCardProps) {
+  const t = useT();
+  const statusOptions = PLAN_STATUSES.map((value) => ({
+    value,
+    label: t(value),
+  }));
   const addedIds = new Set(
     plan.tasks.map((task) => task.fromId).filter((id) => id !== ""),
   );
@@ -64,18 +68,19 @@ export function ImprovementPlanCard({
       <Card>
         <details>
           <summary className="cursor-pointer px-5 py-3 text-base font-semibold">
-            Kế hoạch cải thiện ESG (tùy chọn)
+            {t("Kế hoạch cải thiện ESG (tùy chọn)")}
             {filledCount > 0 ? (
               <span className="ml-2 text-[0.8125rem] font-normal text-muted">
-                {filledCount} đầu việc
+                {t("{count} đầu việc", { count: filledCount })}
               </span>
             ) : null}
           </summary>
 
           <div className="space-y-5 border-t border-border px-5 py-4">
             <p className="text-[0.8125rem] leading-relaxed text-muted">
-              Không bắt buộc. Nếu bạn không thêm đầu việc nào, báo cáo sẽ không
-              có phần kế hoạch của doanh nghiệp.
+              {t(
+                "Không bắt buộc. Nếu bạn không thêm đầu việc nào, báo cáo sẽ không có phần kế hoạch của doanh nghiệp.",
+              )}
             </p>
 
             <div className="space-y-4">
@@ -90,7 +95,7 @@ export function ImprovementPlanCard({
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold">
-                        Đầu việc {index + 1}
+                        {t("Đầu việc {number}", { number: index + 1 })}
                       </span>
                       <Button
                         type="button"
@@ -98,16 +103,18 @@ export function ImprovementPlanCard({
                         onClick={() => removeTask(task.id)}
                         leadingIcon={<Trash2 aria-hidden className="size-4" />}
                       >
-                        Xóa
+                        {t("Xóa")}
                       </Button>
                     </div>
 
                     <Field
-                      label="Công việc cần thực hiện"
+                      label={t("Công việc cần thực hiện")}
                       htmlFor={`plan-description-${task.id}`}
                       error={
                         needsDescription
-                          ? "Nhập nội dung công việc để dòng này được đưa vào báo cáo."
+                          ? t(
+                              "Nhập nội dung công việc để dòng này được đưa vào báo cáo.",
+                            )
                           : undefined
                       }
                     >
@@ -120,13 +127,13 @@ export function ImprovementPlanCard({
                           })
                         }
                         rows={2}
-                        placeholder="Ví dụ: Ban hành quy trình sao lưu dữ liệu"
+                        placeholder={t("Ví dụ: Ban hành quy trình sao lưu dữ liệu")}
                       />
                     </Field>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                       <Field
-                        label="Người/bộ phận phụ trách"
+                        label={t("Người/bộ phận phụ trách")}
                         htmlFor={`plan-owner-${task.id}`}
                       >
                         <Input
@@ -135,11 +142,11 @@ export function ImprovementPlanCard({
                           onChange={(event) =>
                             updateTask(task.id, { owner: event.target.value })
                           }
-                          placeholder="Tên người hoặc bộ phận"
+                          placeholder={t("Tên người hoặc bộ phận")}
                         />
                       </Field>
                       <Field
-                        label="Hạn hoàn thành"
+                        label={t("Hạn hoàn thành")}
                         htmlFor={`plan-due-${task.id}`}
                       >
                         <Input
@@ -152,7 +159,7 @@ export function ImprovementPlanCard({
                         />
                       </Field>
                       <Field
-                        label="Trạng thái"
+                        label={t("Trạng thái")}
                         htmlFor={`plan-status-${task.id}`}
                       >
                         <Select
@@ -162,7 +169,7 @@ export function ImprovementPlanCard({
                             updateTask(task.id, { status: event.target.value })
                           }
                           options={statusOptions}
-                          placeholder="Chọn trạng thái"
+                          placeholder={t("Chọn trạng thái")}
                         />
                       </Field>
                     </div>
@@ -176,25 +183,23 @@ export function ImprovementPlanCard({
                 onClick={() => addTask(createTask())}
                 leadingIcon={<Plus aria-hidden className="size-4" />}
               >
-                Thêm đầu việc
+                {t("Thêm đầu việc")}
               </Button>
             </div>
 
             {suggestions.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold">
-                  Thêm từ đề xuất của hệ thống
+                  {t("Thêm từ đề xuất của hệ thống")}
                 </h3>
                 <p className="text-[0.8125rem] leading-relaxed text-muted">
-                  Đề xuất được tạo từ các câu trả lời cần bổ sung hoặc làm rõ.
-                  Bấm “Thêm” để đưa một đề xuất thành đầu việc của bạn, sau đó
-                  điền người phụ trách, hạn và trạng thái. Đề xuất chưa được
-                  thêm sẽ vẫn xuất hiện trong báo cáo dưới mục “Đề xuất cải
-                  thiện chưa được doanh nghiệp xác nhận”.
+                  {t(
+                    "Đề xuất được tạo từ các câu trả lời cần bổ sung hoặc làm rõ. Bấm “Thêm” để đưa một đề xuất thành đầu việc của bạn, sau đó điền người phụ trách, hạn và trạng thái. Đề xuất chưa được thêm sẽ vẫn xuất hiện trong báo cáo dưới mục “Đề xuất cải thiện chưa được doanh nghiệp xác nhận”.",
+                  )}
                 </p>
                 {available.length === 0 ? (
                   <p className="text-[0.8125rem] text-muted">
-                    Tất cả đề xuất đã được thêm vào kế hoạch.
+                    {t("Tất cả đề xuất đã được thêm vào kế hoạch.")}
                   </p>
                 ) : (
                   <ul className="space-y-2">
@@ -206,7 +211,10 @@ export function ImprovementPlanCard({
                         <div className="min-w-0 text-[0.8125rem] leading-relaxed">
                           <p>{item.text}</p>
                           <p className="text-muted">
-                            {item.basis} • Gợi ý ưu tiên: {item.priority}
+                            {item.basis} •{" "}
+                            {t("Gợi ý ưu tiên: {priority}", {
+                              priority: t(item.priority),
+                            })}
                           </p>
                         </div>
                         <Button
@@ -217,7 +225,7 @@ export function ImprovementPlanCard({
                           }
                           leadingIcon={<Plus aria-hidden className="size-4" />}
                         >
-                          Thêm
+                          {t("Thêm")}
                         </Button>
                       </li>
                     ))}
@@ -228,9 +236,9 @@ export function ImprovementPlanCard({
 
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">
-                Mục tiêu và cách theo dõi
+                {t("Mục tiêu và cách theo dõi")}
               </h3>
-              <Field label="Kết quả mong muốn" htmlFor="plan-goal">
+              <Field label={t("Kết quả mong muốn")} htmlFor="plan-goal">
                 <Textarea
                   id="plan-goal"
                   value={plan.goal}
@@ -240,7 +248,7 @@ export function ImprovementPlanCard({
                   rows={2}
                 />
               </Field>
-              <Field label="Nguồn lực" htmlFor="plan-resources">
+              <Field label={t("Nguồn lực")} htmlFor="plan-resources">
                 <Textarea
                   id="plan-resources"
                   value={plan.resources}
@@ -248,17 +256,17 @@ export function ImprovementPlanCard({
                     onChange({ ...plan, resources: event.target.value })
                   }
                   rows={2}
-                  placeholder="Nhân sự, ngân sách hoặc công cụ dự kiến"
+                  placeholder={t("Nhân sự, ngân sách hoặc công cụ dự kiến")}
                 />
               </Field>
-              <Field label="Chu kỳ xem xét" htmlFor="plan-review-cycle">
+              <Field label={t("Chu kỳ xem xét")} htmlFor="plan-review-cycle">
                 <Input
                   id="plan-review-cycle"
                   value={plan.reviewCycle}
                   onChange={(event) =>
                     onChange({ ...plan, reviewCycle: event.target.value })
                   }
-                  placeholder="Ví dụ: Hằng quý"
+                  placeholder={t("Ví dụ: Hằng quý")}
                 />
               </Field>
             </div>

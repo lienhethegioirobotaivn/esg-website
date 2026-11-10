@@ -1,5 +1,6 @@
 import type { InputType } from "./constants";
 import type { Question } from "./survey";
+import { msg } from "./i18n";
 
 export interface AnswerChoice {
   readonly value: string;
@@ -24,35 +25,35 @@ export interface AnswerInput {
 }
 
 const PRACTICE_CHOICES: readonly AnswerChoice[] = [
-  { value: "yes", label: "Có" },
-  { value: "partial", label: "Có một phần" },
-  { value: "no", label: "Chưa có" },
-  { value: "unknown", label: "Chưa rõ" },
-  { value: "na", label: "Không áp dụng" },
+  { value: "yes", label: msg("Có") },
+  { value: "partial", label: msg("Có một phần") },
+  { value: "no", label: msg("Chưa có") },
+  { value: "unknown", label: msg("Chưa rõ") },
+  { value: "na", label: msg("Không áp dụng") },
 ];
 
 const INCIDENT_CHOICES: readonly AnswerChoice[] = [
-  { value: "yes", label: "Có" },
-  { value: "no", label: "Không" },
-  { value: "unknown", label: "Chưa xác minh" },
+  { value: "yes", label: msg("Có") },
+  { value: "no", label: msg("Không") },
+  { value: "unknown", label: msg("Chưa xác minh") },
 ];
 
 const PRESENCE_CHOICES: readonly AnswerChoice[] = [
-  { value: "yes", label: "Có" },
-  { value: "no", label: "Không" },
-  { value: "unknown", label: "Chưa rõ" },
+  { value: "yes", label: msg("Có") },
+  { value: "no", label: msg("Không") },
+  { value: "unknown", label: msg("Chưa rõ") },
 ];
 
 const DATA_CHOICES: readonly AnswerChoice[] = [
-  { value: "known", label: "Đã có số liệu" },
-  { value: "unknown", label: "Chưa có số liệu" },
-  { value: "na", label: "Không áp dụng" },
+  { value: "known", label: msg("Đã có số liệu") },
+  { value: "unknown", label: msg("Chưa có số liệu") },
+  { value: "na", label: msg("Không áp dụng") },
 ];
 
 const TEXT_CHOICES: readonly AnswerChoice[] = [
-  { value: "provided", label: "Có nội dung" },
-  { value: "unknown", label: "Chưa rõ" },
-  { value: "na", label: "Không áp dụng" },
+  { value: "provided", label: msg("Có nội dung") },
+  { value: "unknown", label: msg("Chưa rõ") },
+  { value: "na", label: msg("Không áp dụng") },
 ];
 
 const NO_FIELDS: AnswerFields = {

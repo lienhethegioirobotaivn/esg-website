@@ -1,5 +1,7 @@
 import type { SurveyGroup } from "@esg/shared";
 
+import { useT } from "@/features/locale";
+
 import type { SurveyAnswerActions } from "../hooks/use-survey-answers";
 import { countCompleted, getDraft } from "../lib/progress";
 import type { AnswerMap } from "../types";
@@ -24,14 +26,19 @@ export function GroupSection({
   actions,
   onFocusQuestion,
 }: GroupSectionProps) {
+  const t = useT();
   const completed = countCompleted(group.questions, answers);
 
   return (
     <div>
       <header>
         <p className="text-xs text-subtle">
-          Nhóm {position}/{total} · Đã xong {completed}/{group.questions.length}{" "}
-          câu
+          {t("Nhóm {position}/{total} · Đã xong {completed}/{count} câu", {
+            position,
+            total,
+            completed,
+            count: group.questions.length,
+          })}
         </p>
         <h3 className="mt-0.5 text-lg">{group.title}</h3>
       </header>
@@ -43,7 +50,7 @@ export function GroupSection({
       <div className="mt-4 space-y-3">
         {group.questions.length === 0 ? (
           <p className="rounded-card border border-dashed border-border-strong p-6 text-center text-sm text-muted">
-            Nhóm này chưa có câu hỏi.
+            {t("Nhóm này chưa có câu hỏi.")}
           </p>
         ) : (
           group.questions.map((question, index) => (

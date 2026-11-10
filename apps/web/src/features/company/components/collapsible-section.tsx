@@ -3,6 +3,8 @@
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useT } from "@/features/locale";
+
 interface CollapsibleSectionProps {
   title: string;
   optional?: boolean;
@@ -14,13 +16,14 @@ export function CollapsibleSection({
   optional = true,
   children,
 }: CollapsibleSectionProps) {
+  const t = useT();
   return (
     <details className="group border-t border-border pt-4">
       <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
         <span>
           {title}
           {optional ? (
-            <span className="font-normal text-subtle"> (không bắt buộc)</span>
+            <span className="font-normal text-subtle"> {t("(không bắt buộc)")}</span>
           ) : null}
         </span>
         <ChevronDown

@@ -19,6 +19,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
+import { msg, translateOptions, useT } from "@/features/locale";
 
 import { REPORT_PERIOD_OPTIONS } from "../constants";
 import type { CompanyField, CompanyFormValues } from "../constants";
@@ -56,10 +57,21 @@ export function CompanyProfileForm({
   onLogoChange,
   onSaved,
 }: CompanyProfileFormProps) {
+  const t = useT();
+  const industries = translateOptions(industryOptions, t);
+  const headcounts = translateOptions(headcountOptions, t);
+  const periods = translateOptions(REPORT_PERIOD_OPTIONS, t);
+  const advisories = translateOptions(advisoryOptions, t);
+  const assessments = translateOptions(assessmentOptions, t);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [savedCode, setSavedCode] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  function err(field: CompanyField): string | undefined {
+    const message = errors[field];
+    return message ? t(message) : undefined;
+  }
 
   function updateField(field: CompanyField, value: string) {
     onFieldChange(field, value);
@@ -111,7 +123,7 @@ export function CompanyProfileForm({
         setErrors(error.fields);
         setSubmitError(error.message);
       } else {
-        setSubmitError("Không lưu được thông tin doanh nghiệp.");
+        setSubmitError(msg("Không lưu được thông tin doanh nghiệp."));
       }
     } finally {
       setIsSaving(false);
@@ -121,7 +133,7 @@ export function CompanyProfileForm({
   return (
     <Card>
       <div className="border-b border-border px-4 py-3">
-        <h2 className="text-base">Thông tin doanh nghiệp</h2>
+        <h2 className="text-base">{t("Thông tin doanh nghiệp")}</h2>
       </div>
 
       <form
@@ -130,20 +142,20 @@ export function CompanyProfileForm({
         className="max-h-[75vh] space-y-4 overflow-y-auto p-4"
       >
         <p className="text-[0.8125rem] leading-relaxed text-muted">
-          Các mục có dấu * là bắt buộc.
+          {t("Các mục có dấu * là bắt buộc.")}
         </p>
 
         <Field
-          label="Tên doanh nghiệp"
+          label={t("Tên doanh nghiệp")}
           htmlFor="company-name"
           required
-          error={errors.name}
+          error={err("name")}
         >
           <Input
             id="company-name"
             value={values.name}
             onChange={(event) => updateField("name", event.target.value)}
-            placeholder="Tên đầy đủ theo đăng ký"
+            placeholder={t("Tên đầy đủ theo đăng ký")}
             aria-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? "company-name-error" : undefined}
           />
@@ -152,15 +164,15 @@ export function CompanyProfileForm({
         <LogoUploader file={logo} onChange={onLogoChange} />
 
         <Field
-          label="Mã số thuế (không bắt buộc)"
+          label={t("Mã số thuế (không bắt buộc)")}
           htmlFor="company-tax-code"
-          error={errors.taxCode}
+          error={err("taxCode")}
         >
           <Input
             id="company-tax-code"
             value={values.taxCode}
             onChange={(event) => updateField("taxCode", event.target.value)}
-            placeholder="Mã số thuế hoặc mã số doanh nghiệp"
+            placeholder={t("Mã số thuế hoặc mã số doanh nghiệp")}
             aria-invalid={Boolean(errors.taxCode)}
             aria-describedby={
               errors.taxCode ? "company-tax-code-error" : undefined
@@ -169,17 +181,17 @@ export function CompanyProfileForm({
         </Field>
 
         <Field
-          label="Lĩnh vực hoạt động"
+          label={t("Lĩnh vực hoạt động")}
           htmlFor="company-industry"
           required
-          error={errors.industry}
+          error={err("industry")}
         >
           <Select
             id="company-industry"
             value={values.industry}
             onChange={(event) => updateField("industry", event.target.value)}
-            options={industryOptions}
-            placeholder="Chọn thông tin"
+            options={industries}
+            placeholder={t("Chọn thông tin")}
             className={values.industry === "" ? "text-subtle" : undefined}
             aria-invalid={Boolean(errors.industry)}
             aria-describedby={
@@ -189,17 +201,17 @@ export function CompanyProfileForm({
         </Field>
 
         <Field
-          label="Quy mô nhân sự"
+          label={t("Quy mô nhân sự")}
           htmlFor="company-headcount"
           required
-          error={errors.headcount}
+          error={err("headcount")}
         >
           <Select
             id="company-headcount"
             value={values.headcount}
             onChange={(event) => updateField("headcount", event.target.value)}
-            options={headcountOptions}
-            placeholder="Chọn thông tin"
+            options={headcounts}
+            placeholder={t("Chọn thông tin")}
             className={values.headcount === "" ? "text-subtle" : undefined}
             aria-invalid={Boolean(errors.headcount)}
             aria-describedby={
@@ -209,16 +221,16 @@ export function CompanyProfileForm({
         </Field>
 
         <Field
-          label="Địa chỉ trụ sở"
+          label={t("Địa chỉ trụ sở")}
           htmlFor="company-address"
           required
-          error={errors.address}
+          error={err("address")}
         >
           <Textarea
             id="company-address"
             value={values.address}
             onChange={(event) => updateField("address", event.target.value)}
-            placeholder="Số nhà, đường, phường / xã, tỉnh / thành phố"
+            placeholder={t("Số nhà, đường, phường / xã, tỉnh / thành phố")}
             rows={3}
             aria-invalid={Boolean(errors.address)}
             aria-describedby={
@@ -229,10 +241,10 @@ export function CompanyProfileForm({
 
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Kỳ báo cáo"
+            label={t("Kỳ báo cáo")}
             htmlFor="company-report-period"
             required
-            error={errors.reportPeriod}
+            error={err("reportPeriod")}
           >
             <Select
               id="company-report-period"
@@ -240,8 +252,8 @@ export function CompanyProfileForm({
               onChange={(event) =>
                 updateField("reportPeriod", event.target.value)
               }
-              options={REPORT_PERIOD_OPTIONS}
-              placeholder="Chọn kỳ"
+              options={periods}
+              placeholder={t("Chọn kỳ")}
               className={values.reportPeriod === "" ? "text-subtle" : undefined}
               aria-invalid={Boolean(errors.reportPeriod)}
               aria-describedby={
@@ -251,10 +263,10 @@ export function CompanyProfileForm({
           </Field>
 
           <Field
-            label="Năm báo cáo"
+            label={t("Năm báo cáo")}
             htmlFor="company-report-year"
             required
-            error={errors.reportYear}
+            error={err("reportYear")}
           >
             <Input
               id="company-report-year"
@@ -274,12 +286,12 @@ export function CompanyProfileForm({
           </Field>
         </div>
 
-        <Field label="Phạm vi báo cáo ESG" htmlFor="company-report-scope">
+        <Field label={t("Phạm vi báo cáo ESG")} htmlFor="company-report-scope">
           <Textarea
             id="company-report-scope"
             value={values.reportScope}
             onChange={(event) => updateField("reportScope", event.target.value)}
-            placeholder="Ví dụ: Toàn công ty, hoặc riêng văn phòng TP.HCM"
+            placeholder={t("Ví dụ: Toàn công ty, hoặc riêng văn phòng TP.HCM")}
             rows={3}
           />
         </Field>
@@ -290,11 +302,11 @@ export function CompanyProfileForm({
           onFieldChange={updateField}
         />
 
-        <CollapsibleSection title="Thông tin liên hệ">
+        <CollapsibleSection title={t("Thông tin liên hệ")}>
           <Field
-            label="Người liên hệ"
+            label={t("Người liên hệ")}
             htmlFor="company-contact-name"
-            error={errors.contactName}
+            error={err("contactName")}
           >
             <Input
               id="company-contact-name"
@@ -302,7 +314,7 @@ export function CompanyProfileForm({
               onChange={(event) =>
                 updateField("contactName", event.target.value)
               }
-              placeholder="Họ tên người phụ trách báo cáo"
+              placeholder={t("Họ tên người phụ trách báo cáo")}
               aria-invalid={Boolean(errors.contactName)}
               aria-describedby={
                 errors.contactName ? "company-contact-name-error" : undefined
@@ -310,7 +322,7 @@ export function CompanyProfileForm({
             />
           </Field>
 
-          <Field label="Email" htmlFor="company-email" error={errors.email}>
+          <Field label="Email" htmlFor="company-email" error={err("email")}>
             <Input
               id="company-email"
               type="email"
@@ -326,9 +338,9 @@ export function CompanyProfileForm({
           </Field>
 
           <Field
-            label="Số điện thoại"
+            label={t("Số điện thoại")}
             htmlFor="company-phone"
-            error={errors.phone}
+            error={err("phone")}
           >
             <Input
               id="company-phone"
@@ -336,7 +348,7 @@ export function CompanyProfileForm({
               inputMode="tel"
               value={values.phone}
               onChange={(event) => updateField("phone", event.target.value)}
-              placeholder="Số điện thoại liên hệ"
+              placeholder={t("Số điện thoại liên hệ")}
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={
                 errors.phone ? "company-phone-error" : undefined
@@ -345,11 +357,11 @@ export function CompanyProfileForm({
           </Field>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Nhu cầu và chia sẻ dữ liệu">
+        <CollapsibleSection title={t("Nhu cầu và chia sẻ dữ liệu")}>
           <Field
-            label="Nhu cầu tư vấn"
+            label={t("Nhu cầu tư vấn")}
             htmlFor="company-advisory-need"
-            error={errors.advisoryNeed}
+            error={err("advisoryNeed")}
           >
             <Select
               id="company-advisory-need"
@@ -357,16 +369,16 @@ export function CompanyProfileForm({
               onChange={(event) =>
                 updateField("advisoryNeed", event.target.value)
               }
-              options={advisoryOptions}
-              placeholder="Chọn thông tin"
+              options={advisories}
+              placeholder={t("Chọn thông tin")}
               className={values.advisoryNeed === "" ? "text-subtle" : undefined}
             />
           </Field>
 
           <Field
-            label="Nhu cầu thẩm định"
+            label={t("Nhu cầu thẩm định")}
             htmlFor="company-assessment-need"
-            error={errors.assessmentNeed}
+            error={err("assessmentNeed")}
           >
             <Select
               id="company-assessment-need"
@@ -374,8 +386,8 @@ export function CompanyProfileForm({
               onChange={(event) =>
                 updateField("assessmentNeed", event.target.value)
               }
-              options={assessmentOptions}
-              placeholder="Chọn thông tin"
+              options={assessments}
+              placeholder={t("Chọn thông tin")}
               className={
                 values.assessmentNeed === "" ? "text-subtle" : undefined
               }
@@ -388,7 +400,7 @@ export function CompanyProfileForm({
             onChange={(checked) =>
               updateField("consentB2B", checked ? "yes" : "")
             }
-            label="Đồng ý được liên hệ về nhu cầu kết nối đối tác"
+            label={t("Đồng ý được liên hệ về nhu cầu kết nối đối tác")}
           />
 
           <Switch
@@ -397,13 +409,13 @@ export function CompanyProfileForm({
             onChange={(checked) =>
               updateField("consentData", checked ? "yes" : "")
             }
-            label="Đồng ý cho dùng dữ liệu đã tổng hợp, ẩn danh để nghiên cứu thị trường"
+            label={t("Đồng ý cho dùng dữ liệu đã tổng hợp, ẩn danh để nghiên cứu thị trường")}
           />
 
           <p className="text-xs leading-relaxed text-subtle">
-            Hai lựa chọn trên không bắt buộc và không ảnh hưởng việc tạo báo
-            cáo. Mặc định là không đồng ý. Bạn có thể rút lại bất cứ lúc nào
-            bằng cách liên hệ ban quản trị.
+            {t(
+              "Hai lựa chọn trên không bắt buộc và không ảnh hưởng việc tạo báo cáo. Mặc định là không đồng ý. Bạn có thể rút lại bất cứ lúc nào bằng cách liên hệ ban quản trị.",
+            )}
           </p>
         </CollapsibleSection>
 
@@ -420,18 +432,20 @@ export function CompanyProfileForm({
             )
           }
         >
-          {isSaving ? "Đang lưu..." : "Lưu thông tin doanh nghiệp"}
+          {isSaving ? t("Đang lưu...") : t("Lưu thông tin doanh nghiệp")}
         </Button>
 
         {savedCode !== null ? (
           <p role="status" className="text-xs text-primary-700">
-            Đã lưu thông tin doanh nghiệp. Mã báo cáo của bạn: {savedCode}.
+            {t("Đã lưu thông tin doanh nghiệp. Mã báo cáo của bạn: {code}.", {
+              code: savedCode,
+            })}
           </p>
         ) : null}
 
         {submitError !== null ? (
           <p role="alert" className="text-xs text-danger-600">
-            {submitError}
+            {t(submitError)}
           </p>
         ) : null}
       </form>

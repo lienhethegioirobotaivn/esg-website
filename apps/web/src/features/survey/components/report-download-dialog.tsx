@@ -3,6 +3,7 @@
 import { FileDown, FileText, Info, LoaderCircle } from "lucide-react";
 
 import { Button, Modal } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 import type { DraftJumpTarget, DraftReason } from "../lib/report-draft-state";
 import type { ReportFormat } from "../lib/report-file-name";
@@ -26,14 +27,15 @@ export function ReportDownloadDialog({
   onDownload,
   onClose,
 }: ReportDownloadDialogProps) {
+  const t = useT();
   const busy = exportingFormat !== null;
   return (
-    <Modal title="Tải báo cáo" onClose={onClose}>
+    <Modal title={t("Tải báo cáo")} onClose={onClose}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">Bạn có thể tải cả hai định dạng.</p>
+        <p className="text-sm text-muted">{t("Bạn có thể tải cả hai định dạng.")}</p>
         {isDraft ? (
           <span className="rounded-full bg-warning-50 px-3 py-1 text-xs font-medium text-warning-600">
-            Bản nháp
+            {t("Bản nháp")}
           </span>
         ) : null}
       </div>
@@ -52,10 +54,12 @@ export function ReportDownloadDialog({
               )
             }
           >
-            {exportingFormat === "pdf" ? "Đang tạo PDF..." : "Tải xuống PDF"}
+            {exportingFormat === "pdf"
+              ? t("Đang tạo PDF...")
+              : t("Tải xuống PDF")}
           </Button>
           <p className="mt-1.5 text-xs text-muted">
-            Giữ nguyên bố cục, phù hợp để in và chia sẻ.
+            {t("Giữ nguyên bố cục, phù hợp để in và chia sẻ.")}
           </p>
         </div>
         <div>
@@ -72,11 +76,14 @@ export function ReportDownloadDialog({
               )
             }
           >
-            {exportingFormat === "docx" ? "Đang tạo Word..." : "Tải xuống Word"}
+            {exportingFormat === "docx"
+              ? t("Đang tạo Word...")
+              : t("Tải xuống Word")}
           </Button>
           <p className="mt-1.5 text-xs text-muted">
-            Định dạng .docx để tiếp tục chỉnh sửa. Bố cục đơn giản hơn bản PDF
-            và không có biểu đồ.
+            {t(
+              "Định dạng .docx để tiếp tục chỉnh sửa. Bố cục đơn giản hơn bản PDF và không có biểu đồ.",
+            )}
           </p>
         </div>
       </div>
@@ -91,9 +98,13 @@ export function ReportDownloadDialog({
             className="mt-0.5 size-4 shrink-0 text-warning-600"
           />
           <div>
-            <p className="font-medium">Báo cáo này sẽ mang chữ “Bản nháp”</p>
+            <p className="font-medium">
+              {t("Báo cáo này sẽ mang chữ “Bản nháp”")}
+            </p>
             <p className="mt-0.5 text-muted">
-              Bạn vẫn tải được. Chữ “Bản nháp” sẽ biến mất khi bạn xử lý xong:
+              {t(
+                "Bạn vẫn tải được. Chữ “Bản nháp” sẽ biến mất khi bạn xử lý xong:",
+              )}
             </p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
               {reasons.map((reason) => (
@@ -104,7 +115,7 @@ export function ReportDownloadDialog({
                     onClick={() => onJump(reason.target)}
                     className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-900"
                   >
-                    Đi tới đây
+                    {t("Đi tới đây")}
                   </button>
                 </li>
               ))}
@@ -126,10 +137,10 @@ export function ReportDownloadDialog({
           disabled={busy}
           onClick={onClose}
         >
-          Quay lại chỉnh sửa
+          {t("Quay lại chỉnh sửa")}
         </Button>
         <p className="mt-3 text-xs text-muted">
-          Hồ sơ tự khai, chưa được thẩm định độc lập.
+          {t("Hồ sơ tự khai, chưa được thẩm định độc lập.")}
         </p>
       </div>
     </Modal>

@@ -1,6 +1,7 @@
 import type { Question } from "@esg/shared";
 
 import { Card } from "@/components/ui";
+import { useT } from "@/features/locale";
 
 interface GuidancePanelProps {
   question: Question | null;
@@ -11,23 +12,24 @@ export function GuidancePanel({
   question,
   questionNumber,
 }: GuidancePanelProps) {
+  const t = useT();
   return (
     <Card className="p-4">
       <h2 id="guidance-heading" className="text-base">
-        Hướng dẫn
+        {t("Hướng dẫn")}
       </h2>
 
       {question ? (
         <div className="mt-3 space-y-3 text-sm">
           <p className="text-sm font-semibold text-subtle">
-            Câu {questionNumber}
+            {t("Câu {number}", { number: questionNumber })}
           </p>
           <h3 className="font-semibold">{question.guidance.title}</h3>
           <p className="leading-relaxed text-muted">{question.guidance.body}</p>
 
           {question.guidance.suggestedEvidence ? (
             <div className="border-t border-border pt-3">
-              <p className="font-semibold">Minh chứng gợi ý</p>
+              <p className="font-semibold">{t("Minh chứng gợi ý")}</p>
               <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted">
                 {question.guidance.suggestedEvidence}
               </p>
@@ -42,7 +44,7 @@ export function GuidancePanel({
         </div>
       ) : (
         <p className="mt-3 text-sm text-muted">
-          Chưa có câu hỏi nào. Hướng dẫn của từng câu sẽ hiển thị ở đây.
+          {t("Chưa có câu hỏi nào. Hướng dẫn của từng câu sẽ hiển thị ở đây.")}
         </p>
       )}
     </Card>

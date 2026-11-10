@@ -3,6 +3,7 @@ import type { DetailKind, Question } from "@esg/shared";
 
 import { Field, Input, Textarea } from "@/components/ui";
 import { EvidenceUploader } from "@/features/evidence";
+import { msg, useT } from "@/features/locale";
 import { cn } from "@/lib/cn";
 
 import type { SurveyAnswerActions } from "../hooks/use-survey-answers";
@@ -19,15 +20,17 @@ interface QuestionCardProps {
 }
 
 const DETAIL_LABELS: Record<Exclude<DetailKind, "none">, string> = {
-  note: "Ghi chú",
-  reason: "Lý do không áp dụng",
-  content: "Nội dung",
+  note: msg("Ghi chú"),
+  reason: msg("Lý do không áp dụng"),
+  content: msg("Nội dung"),
 };
 
 const DETAIL_PLACEHOLDERS: Record<Exclude<DetailKind, "none">, string> = {
-  note: "Nguồn số liệu, phương pháp hoặc cách doanh nghiệp đang thực hiện",
-  reason: "Nêu lý do câu hỏi không áp dụng với doanh nghiệp",
-  content: "Nhập nội dung trả lời",
+  note: msg(
+    "Nguồn số liệu, phương pháp hoặc cách doanh nghiệp đang thực hiện",
+  ),
+  reason: msg("Nêu lý do câu hỏi không áp dụng với doanh nghiệp"),
+  content: msg("Nhập nội dung trả lời"),
 };
 
 const IMPROVEMENT_VALUES: readonly string[] = ["no", "unknown"];
@@ -40,6 +43,7 @@ export function QuestionCard({
   actions,
   onFocus,
 }: QuestionCardProps) {
+  const t = useT();
   const detailId = `description-${question.id}`;
   const numberId = `number-${question.id}`;
   const evidenceInputId = `evidence-${question.id}`;
@@ -88,8 +92,8 @@ export function QuestionCard({
                 <Field
                   label={
                     question.unit === ""
-                      ? "Giá trị"
-                      : `Giá trị (${question.unit})`
+                      ? t("Giá trị")
+                      : t("Giá trị ({unit})", { unit: question.unit })
                   }
                   htmlFor={numberId}
                   required
@@ -101,7 +105,7 @@ export function QuestionCard({
                     onChange={(event) =>
                       actions.setNumber(question.id, event.target.value)
                     }
-                    placeholder="Nhập số liệu trong kỳ báo cáo"
+                    placeholder={t("Nhập số liệu trong kỳ báo cáo")}
                   />
                 </Field>
               ) : null}
@@ -110,8 +114,10 @@ export function QuestionCard({
                 <Field
                   label={
                     fields.detailRequired
-                      ? DETAIL_LABELS[fields.detail]
-                      : `${DETAIL_LABELS[fields.detail]} (tùy chọn)`
+                      ? t(DETAIL_LABELS[fields.detail])
+                      : t("{label} (tùy chọn)", {
+                          label: t(DETAIL_LABELS[fields.detail]),
+                        })
                   }
                   htmlFor={detailId}
                   required={fields.detailRequired}
@@ -122,7 +128,7 @@ export function QuestionCard({
                     onChange={(event) =>
                       actions.describe(question.id, event.target.value)
                     }
-                    placeholder={DETAIL_PLACEHOLDERS[fields.detail]}
+                    placeholder={t(DETAIL_PLACEHOLDERS[fields.detail])}
                     rows={3}
                   />
                 </Field>
@@ -131,7 +137,7 @@ export function QuestionCard({
               {fields.evidence ? (
                 <div className="space-y-1.5">
                   <p className="text-[0.8125rem] font-medium text-foreground">
-                    Bằng chứng (tùy chọn)
+                    {t("Bằng chứng (tùy chọn)")}
                   </p>
                   <EvidenceUploader
                     inputId={evidenceInputId}

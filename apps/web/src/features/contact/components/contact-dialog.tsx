@@ -8,7 +8,7 @@ import type { FormEvent } from "react";
 
 import { Button, Field, Input, Modal, Select, Textarea } from "@/components/ui";
 import { headcountOptions, industryOptions } from "@/data";
-import { useT } from "@/features/locale";
+import { translateOptions, useT } from "@/features/locale";
 
 import {
   HOTLINE_DISPLAY,
@@ -196,7 +196,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
             >
               <Select
                 id="inquiry-headcount"
-                options={headcountOptions}
+                options={translateOptions(headcountOptions, t)}
                 placeholder={t("Chọn quy mô")}
                 value={values.headcount}
                 onChange={(event) => update("headcount", event.target.value)}
@@ -212,7 +212,7 @@ export function ContactDialog({ kind, onClose }: ContactDialogProps) {
             >
               <Select
                 id="inquiry-industry"
-                options={industryOptions}
+                options={translateOptions(industryOptions, t)}
                 placeholder={t("Chọn ngành nghề")}
                 value={values.industry}
                 onChange={(event) => update("industry", event.target.value)}

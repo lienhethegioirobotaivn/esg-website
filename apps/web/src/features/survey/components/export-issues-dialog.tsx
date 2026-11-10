@@ -3,6 +3,8 @@
 import { COMPANY_FIELD_LABELS } from "@/features/company";
 import type { CompanyField } from "@/features/company";
 import { Button, Modal } from "@/components/ui";
+import { useT } from "@/features/locale";
+import type { TFunction } from "@/features/locale";
 
 import { REASON_LABELS } from "../lib/report-validation";
 import type { QuestionIssue, ReportValidation } from "../lib/report-validation";
@@ -20,7 +22,10 @@ interface IssueGroup {
   readonly issues: QuestionIssue[];
 }
 
-function groupIssues(issues: readonly QuestionIssue[]): IssueGroup[] {
+function groupIssues(
+  issues: readonly QuestionIssue[],
+  t: TFunction,
+): IssueGroup[] {
   const groups: IssueGroup[] = [];
   for (const issue of issues) {
     const last = groups[groups.length - 1];
@@ -29,7 +34,10 @@ function groupIssues(issues: readonly QuestionIssue[]): IssueGroup[] {
     } else {
       groups.push({
         groupId: issue.groupId,
-        heading: `${issue.pillarName} · Nhóm ${issue.groupPosition}: ${issue.groupTitle}`,
+        heading: `${t(issue.pillarName)} · ${t("Nhóm {position}: {title}", {
+          position: issue.groupPosition,
+          title: issue.groupTitle,
+        })}`,
         issues: [issue],
       });
     }
@@ -46,20 +54,23 @@ export function ExportIssuesDialog({
   onJumpToQuestion,
   onClose,
 }: ExportIssuesDialogProps) {
+  const t = useT();
   const { companyIssues, questionIssues } = validation;
   const total = companyIssues.length + questionIssues.length;
-  const groups = groupIssues(questionIssues);
+  const groups = groupIssues(questionIssues, t);
 
   return (
-    <Modal title="Chưa thể xuất báo cáo" onClose={onClose}>
+    <Modal title={t("Chưa thể xuất báo cáo")} onClose={onClose}>
       <p className="text-sm text-muted">
-        Còn {total} mục cần hoàn thành. Bấm vào từng mục để chuyển tới vị trí
-        cần điền.
+        {t(
+          "Còn {total} mục cần hoàn thành. Bấm vào từng mục để chuyển tới vị trí cần điền.",
+          { total },
+        )}
       </p>
 
       {companyIssues.length > 0 ? (
         <section className="mt-5">
-          <h3 className="text-sm">Thông tin doanh nghiệp</h3>
+          <h3 className="text-sm">{t("Thông tin doanh nghiệp")}</h3>
           <ul className="mt-2 space-y-1.5">
             {companyIssues.map((issue) => (
               <li key={issue.field}>
@@ -69,9 +80,9 @@ export function ExportIssuesDialog({
                   onClick={() => onJumpToCompany(issue.field)}
                 >
                   <span className="font-medium">
-                    {COMPANY_FIELD_LABELS[issue.field]}
+                    {t(COMPANY_FIELD_LABELS[issue.field])}
                   </span>
-                  <span className="text-danger-600"> · {issue.message}</span>
+                  <span className="text-danger-600"> · {t(issue.message)}</span>
                 </button>
               </li>
             ))}
@@ -90,10 +101,12 @@ export function ExportIssuesDialog({
                   className={linkClassName}
                   onClick={() => onJumpToQuestion(issue)}
                 >
-                  <span className="font-medium">Câu {issue.questionNumber}.</span>{" "}
+                  <span className="font-medium">
+                    {t("Câu {number}.", { number: issue.questionNumber })}
+                  </span>{" "}
                   <span className="line-clamp-2">{issue.questionText}</span>
                   <span className="block text-xs text-danger-600">
-                    {issue.reasons.map((reason) => REASON_LABELS[reason]).join(", ")}
+                    {issue.reasons.map((reason) => t(REASON_LABELS[reason])).join(", ")}
                   </span>
                 </button>
               </li>
@@ -104,7 +117,7 @@ export function ExportIssuesDialog({
 
       <div className="mt-6 flex justify-end">
         <Button variant="secondary" onClick={onClose}>
-          Đóng
+          {t("Đóng")}
         </Button>
       </div>
     </Modal>

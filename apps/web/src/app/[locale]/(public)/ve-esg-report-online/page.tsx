@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ABOUT_PATH } from "@/features/about/constants";
-import { getT } from "@/features/locale/server";
+import { getLocale, getT } from "@/features/locale/server";
 import { pageMetadata } from "@/lib/seo";
 
 import {
@@ -22,9 +22,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AchievementsPage() {
   const t = await getT();
+  const locale = await getLocale();
   const [stats, posts] = await Promise.all([
-    getAchievementStats(),
-    getPosts("thanh-tuu"),
+    getAchievementStats(locale),
+    getPosts("thanh-tuu", locale),
   ]);
 
   return (

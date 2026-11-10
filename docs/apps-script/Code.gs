@@ -44,6 +44,11 @@ var ABOUT_READ_ACTIONS = { listPosts: true, listStats: true, uploadImage: true }
 var TRANSLATE_LANGUAGES = { 'vi': true, 'en': true, 'fr': true, 'zh-CN': true };
 var TRANSLATE_MAX_TEXTS = 50;
 var TRANSLATE_MAX_CHARS = 5000;
+var TRANSLATION_SHEET_NAME = 'Bản dịch';
+var TRANSLATION_HEADERS = ['Mã băm', 'Chữ gốc (vi)', 'en', 'fr', 'zh', 'en (sửa tay)', 'fr (sửa tay)', 'zh (sửa tay)', 'Cập nhật lúc'];
+var TRANSLATION_LOCALES = { 'en': true, 'fr': true, 'zh': true };
+var TRANSLATION_MAX_ITEMS = 60;
+var TRANSLATION_HASH_PATTERN = /^[0-9a-f]{16}$/;
 
 function doPost(e) {
   try {
@@ -55,6 +60,18 @@ function doPost(e) {
     }
     if (body.action === 'translate') {
       return json_(translateTexts_(body));
+    }
+    if (body.action === 'listTranslations') {
+      return json_(listTranslations_(body));
+    }
+    if (body.action === 'saveTranslations') {
+      var translationLock = LockService.getScriptLock();
+      translationLock.waitLock(20000);
+      try {
+        return json_(saveTranslations_(body));
+      } finally {
+        translationLock.releaseLock();
+      }
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -910,6 +927,86 @@ function translateTexts_(body) {
     return LanguageApp.translate(value, source, target, { contentType: 'html' });
   });
   return { ok: true, translations: translations };
+}
+
+function translationLocale_(body) {
+  var locale = String(body.locale || '');
+  if (!TRANSLATION_LOCALES[locale]) {
+    throw new Error('Ngôn ngữ bản dịch không hợp lệ.');
+  }
+  return locale;
+}
+
+function listTranslations_(body) {
+  var locale = translationLocale_(body);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TRANSLATION_SHEET_NAME);
+  var items = {};
+  if (!sheet || sheet.getLastRow() < 2) {
+    return { ok: true, items: items };
+  }
+  var table = readTable_(sheet);
+  table.rows.forEach(function (record) {
+    var hash = cellText_(record['Mã băm']).trim();
+    var manual = cellText_(record[locale + ' (sửa tay)']).trim();
+    var auto = cellText_(record[locale]).trim();
+    var text = manual || auto;
+    if (hash && text) {
+      items[hash] = text;
+    }
+  });
+  return { ok: true, items: items };
+}
+
+function saveTranslations_(body) {
+  var locale = translationLocale_(body);
+  var items = body.items;
+  if (!Array.isArray(items) || items.length === 0 || items.length > TRANSLATION_MAX_ITEMS) {
+    throw new Error('Danh sách bản dịch không hợp lệ.');
+  }
+  var sheet = ensureTable_(TRANSLATION_SHEET_NAME, TRANSLATION_HEADERS);
+  var table = readTable_(sheet);
+  var rowByHash = {};
+  table.rows.forEach(function (record) {
+    rowByHash[cellText_(record['Mã băm']).trim()] = record;
+  });
+  var localeColumn = table.columns[locale];
+  var now = new Date();
+  var appended = [];
+  var saved = 0;
+  items.forEach(function (item) {
+    var hash = String(item.hash || '');
+    var text = String(item.text || '');
+    if (!TRANSLATION_HASH_PATTERN.test(hash) || text === '' || text.length > TRANSLATE_MAX_CHARS) {
+      return;
+    }
+    var existing = rowByHash[hash];
+    if (existing) {
+      if (cellText_(existing[locale]).trim() === '') {
+        sheet.getRange(existing._row, localeColumn).setValue(text);
+        sheet.getRange(existing._row, table.columns['Cập nhật lúc']).setValue(now);
+        saved += 1;
+      }
+      return;
+    }
+    var row = TRANSLATION_HEADERS.map(function () { return ''; });
+    row[0] = hash;
+    row[1] = String(item.source || '').slice(0, TRANSLATE_MAX_CHARS);
+    row[TRANSLATION_HEADERS.indexOf(locale)] = text;
+    row[TRANSLATION_HEADERS.indexOf('Cập nhật lúc')] = now;
+    appended.push(row);
+    rowByHash[hash] = { _row: -1 };
+    saved += 1;
+  });
+  if (appended.length > 0) {
+    var start = Math.max(sheet.getLastRow(), 1) + 1;
+    if (sheet.getMaxRows() < start + appended.length - 1) {
+      sheet.insertRowsAfter(sheet.getMaxRows(), appended.length);
+    }
+    var range = sheet.getRange(start, 1, appended.length, TRANSLATION_HEADERS.length);
+    range.setNumberFormat('@');
+    range.setValues(appended);
+  }
+  return { ok: true, saved: saved };
 }
 
 function parseBody_(e) {

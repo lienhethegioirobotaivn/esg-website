@@ -3,7 +3,13 @@ import "server-only";
 import { postInputSchema, statItemSchema } from "@esg/shared";
 import { z } from "zod";
 
+import type { Locale } from "@/features/locale";
 import { callAbout, isAboutBridgeConfigured } from "@/server/about/bridge";
+import {
+  translateLabels,
+  translatePostFull,
+  translatePostsLite,
+} from "@/server/translation/translate-posts";
 
 import { SAMPLE_STATS } from "../data/sample-stats";
 import { SAMPLE_ACHIEVEMENTS, SAMPLE_NEWS } from "../data/sample-posts";
@@ -91,7 +97,7 @@ async function loadPublished(): Promise<Post[]> {
   }
 }
 
-export async function getPosts(section: PostSection): Promise<Post[]> {
+async function getRawPosts(section: PostSection): Promise<Post[]> {
   if (!isAboutBridgeConfigured()) {
     const source = section === "tin-tuc" ? SAMPLE_NEWS : SAMPLE_ACHIEVEMENTS;
     return [...source].sort(byNewest);
@@ -100,15 +106,34 @@ export async function getPosts(section: PostSection): Promise<Post[]> {
   return posts.filter((post) => post.section === section);
 }
 
+export async function getPosts(
+  section: PostSection,
+  locale: Locale = "vi",
+): Promise<Post[]> {
+  return translatePostsLite(await getRawPosts(section), locale);
+}
+
 export async function getPost(
   section: PostSection,
   slug: string,
+  locale: Locale = "vi",
 ): Promise<Post | null> {
-  const posts = await getPosts(section);
-  return posts.find((post) => post.slug === slug) ?? null;
+  const posts = await getRawPosts(section);
+  const post = posts.find((item) => item.slug === slug) ?? null;
+  return post ? translatePostFull(post, locale) : null;
 }
 
-export async function getAchievementStats(): Promise<AchievementStats | null> {
+export async function getAchievementStats(
+  locale: Locale = "vi",
+): Promise<AchievementStats | null> {
+  const stats = await getRawAchievementStats();
+  if (!stats) {
+    return null;
+  }
+  return { ...stats, items: await translateLabels(stats.items, locale) };
+}
+
+async function getRawAchievementStats(): Promise<AchievementStats | null> {
   if (!isAboutBridgeConfigured()) {
     return SAMPLE_STATS;
   }

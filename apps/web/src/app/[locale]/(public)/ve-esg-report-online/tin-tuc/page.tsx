@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ABOUT_PATH } from "@/features/about/constants";
 import { NewsView, getPosts } from "@/features/about";
+import { getLocale } from "@/features/locale/server";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -14,6 +15,6 @@ export const metadata: Metadata = pageMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function NewsPage() {
-  const posts = await getPosts("tin-tuc");
+  const posts = await getPosts("tin-tuc", await getLocale());
   return <NewsView posts={posts} />;
 }

@@ -178,3 +178,14 @@ Apps Script có thêm hành động `translate` (dùng dịch vụ `LanguageApp`
 - `apps/web/src/i18n/glossary.json`: `keep` là từ giữ nguyên (ESG, Scope 1...), `exact` là chuỗi dịch cố định nguyên câu, `terms` là thuật ngữ được thay đúng bản dịch quy định khi gặp trong câu.
 - `pnpm --filter web i18n:check` báo lỗi (mã thoát 1) nếu còn chuỗi chưa có bản dịch, dùng khi muốn kiểm tra trước khi triển khai.
 - Hạn mức dịch theo ngày của Google Apps Script có giới hạn. Nếu gặp lỗi hết hạn mức, chạy lại `i18n:sync` vào ngày hôm sau, lệnh sẽ dịch tiếp phần còn thiếu.
+
+### Dịch nội dung động (bộ câu hỏi, bài viết, số liệu)
+
+Chữ lấy từ Sheet (câu hỏi, hướng dẫn, bài viết, số liệu thành tựu) không nằm trong code nên được dịch lúc có người xem và lưu vào tab **Bản dịch** của chính Google Sheet này (script tự tạo tab lần đầu). Cần dán lại `Code.gs` và tạo **Phiên bản mới** như trên vì có thêm hai hành động `listTranslations` và `saveTranslations`.
+
+- Mỗi dòng là một câu tiếng Việt gốc, khóa là mã băm của câu (cột A). Cột `en`, `fr`, `zh` là bản dịch tự động.
+- **Sửa tay:** ghi bản dịch đúng vào cột `en (sửa tay)`, `fr (sửa tay)` hoặc `zh (sửa tay)`. Cột sửa tay luôn thắng cột tự động và không bao giờ bị ghi đè. Sau tối đa 5 phút website tự lấy bản mới.
+- **Sửa chữ gốc trong Sheet câu hỏi hoặc trong trang quản trị:** câu mới có mã băm mới nên được dịch lại tự động; dòng của câu cũ nằm lại trong tab, xóa tay nếu muốn gọn.
+- **Lần đầu mở một ngôn ngữ:** người xem đầu tiên thấy phần chưa dịch bằng tiếng Việt, việc dịch chạy nền ngay sau khi trả trang (hàng chục chuỗi mỗi lượt) và người xem sau thấy bản đã dịch. Có thể làm nóng trước bằng cách mở trang chủ, trang Thành tựu, Tin tức và từng bài ở `/en`, `/fr`, `/zh`.
+- Thuật ngữ trong `glossary.json` (`keep`, `exact`, `terms`) áp dụng cho cả nội dung động.
+- Chuỗi dịch lỗi hoặc làm mất thuật ngữ được bỏ qua và thử lại sau 10 phút, trong lúc đó vẫn hiện tiếng Việt.

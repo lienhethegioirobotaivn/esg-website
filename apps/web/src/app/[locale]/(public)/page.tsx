@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { Card, Container } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
-import { getT } from "@/features/locale/server";
+import { getLocale, getT } from "@/features/locale/server";
 import { SurveyWorkspace } from "@/features/survey";
 import { msg } from "@/features/locale";
 import { pageMetadata } from "@/lib/seo";
@@ -13,6 +13,7 @@ import {
   SITE_TAGLINE,
   absoluteUrl,
 } from "@/lib/site";
+import { translateSurvey } from "@/server/translation/translate-survey";
 import { getSurveyBank } from "@/server/survey-bank/get-survey-bank";
 
 export const metadata: Metadata = pageMetadata({
@@ -44,7 +45,9 @@ export const dynamic = "force-dynamic";
 
 async function loadSurvey() {
   try {
-    return { survey: await getSurveyBank(), error: null };
+    const locale = await getLocale();
+    const survey = await translateSurvey(await getSurveyBank(), locale);
+    return { survey, error: null };
   } catch (error) {
     console.error(error);
     return { survey: null, error: msg("Không tải được bộ câu hỏi.") };

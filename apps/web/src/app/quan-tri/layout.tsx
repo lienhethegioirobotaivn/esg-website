@@ -34,6 +34,11 @@ export default async function AdminLayout({
                 <Link href={ABOUT_PATH} className="text-muted hover:underline">
                   Xem trang web
                 </Link>
+                {signedIn ? (
+                  <Link href="/quan-tri/ban-dich" className="text-muted hover:underline">
+                    Bản dịch
+                  </Link>
+                ) : null}
                 {signedIn ? <LogoutButton /> : null}
               </div>
             </Container>

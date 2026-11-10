@@ -3,12 +3,14 @@ import "server-only";
 import type { TargetLocale } from "@/features/locale/lib/glossary";
 import { callAbout, isAboutBridgeConfigured } from "@/server/about/bridge";
 
-const MEMORY_TTL_MS = 5 * 60_000;
+const MEMORY_TTL_MS = 60_000;
+const MIN_REFRESH_INTERVAL_MS = 8_000;
 const RETRY_AFTER_FAILURE_MS = 30_000;
 const LIST_TIMEOUT_MS = 4_000;
 
 interface MemoryEntry {
   at: number;
+  loadedAt: number;
   items: Map<string, string>;
 }
 
@@ -45,12 +47,19 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-export async function getMemory(locale: TargetLocale): Promise<Map<string, string>> {
+export async function getMemory(
+  locale: TargetLocale,
+  options: { refresh?: boolean } = {},
+): Promise<Map<string, string>> {
   const current = memory.get(locale);
   if (!isAboutBridgeConfigured()) {
     return current?.items ?? new Map();
   }
-  if (current && Date.now() - current.at < MEMORY_TTL_MS) {
+  const now = Date.now();
+  const isFresh = current !== undefined && now - current.at < MEMORY_TTL_MS;
+  const canRefresh =
+    current === undefined || now - current.loadedAt >= MIN_REFRESH_INTERVAL_MS;
+  if (current && isFresh && !(options.refresh && canRefresh)) {
     return current.items;
   }
   try {
@@ -58,14 +67,19 @@ export async function getMemory(locale: TargetLocale): Promise<Map<string, strin
       callAbout("listTranslations", { locale }),
       LIST_TIMEOUT_MS,
     );
-    const items = toItems(response["items"]);
-    memory.set(locale, { at: Date.now(), items });
+    const loaded = toItems(response["items"]);
+    const items = current?.items ?? new Map<string, string>();
+    for (const [hash, text] of loaded) {
+      items.set(hash, text);
+    }
+    memory.set(locale, { at: Date.now(), loadedAt: Date.now(), items });
     return items;
   } catch (error) {
     console.error(error);
     const items = current?.items ?? new Map<string, string>();
     memory.set(locale, {
       at: Date.now() - MEMORY_TTL_MS + RETRY_AFTER_FAILURE_MS,
+      loadedAt: Date.now(),
       items,
     });
     return items;
@@ -81,5 +95,9 @@ export function rememberTranslations(
   for (const entry of entries) {
     items.set(entry.hash, entry.text);
   }
-  memory.set(locale, { at: current?.at ?? Date.now(), items });
+  memory.set(locale, {
+    at: current?.at ?? Date.now(),
+    loadedAt: current?.loadedAt ?? 0,
+    items,
+  });
 }

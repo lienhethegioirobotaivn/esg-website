@@ -184,8 +184,8 @@ Apps Script có thêm hành động `translate` (dùng dịch vụ `LanguageApp`
 Chữ lấy từ Sheet (câu hỏi, hướng dẫn, bài viết, số liệu thành tựu) không nằm trong code nên được dịch lúc có người xem và lưu vào tab **Bản dịch** của chính Google Sheet này (script tự tạo tab lần đầu). Cần dán lại `Code.gs` và tạo **Phiên bản mới** như trên vì có thêm hai hành động `listTranslations` và `saveTranslations`.
 
 - Mỗi dòng là một câu tiếng Việt gốc, khóa là mã băm của câu (cột A). Cột `en`, `fr`, `zh` là bản dịch tự động.
-- **Sửa tay:** ghi bản dịch đúng vào cột `en (sửa tay)`, `fr (sửa tay)` hoặc `zh (sửa tay)`. Cột sửa tay luôn thắng cột tự động và không bao giờ bị ghi đè. Sau tối đa 5 phút website tự lấy bản mới.
+- **Sửa tay:** ghi bản dịch đúng vào cột `en (sửa tay)`, `fr (sửa tay)` hoặc `zh (sửa tay)`. Cột sửa tay luôn thắng cột tự động và không bao giờ bị ghi đè. Sau tối đa 1 phút website tự lấy bản mới.
 - **Sửa chữ gốc trong Sheet câu hỏi hoặc trong trang quản trị:** câu mới có mã băm mới nên được dịch lại tự động; dòng của câu cũ nằm lại trong tab, xóa tay nếu muốn gọn.
-- **Lần đầu mở một ngôn ngữ:** người xem đầu tiên thấy phần chưa dịch bằng tiếng Việt, việc dịch chạy nền ngay sau khi trả trang (hàng chục chuỗi mỗi lượt) và người xem sau thấy bản đã dịch. Có thể làm nóng trước bằng cách mở trang chủ, trang Thành tựu, Tin tức và từng bài ở `/en`, `/fr`, `/zh`.
+- **Lần đầu mở một ngôn ngữ:** người xem đầu tiên thấy phần chưa dịch bằng tiếng Việt, việc dịch chạy nền ngay sau khi trả trang (hàng chục chuỗi mỗi lượt) và người xem sau thấy bản đã dịch. Để tránh điều này, đăng nhập `/quan-tri`, mở mục **Bản dịch** và bấm **Dịch sẵn nội dung**: toàn bộ bộ câu hỏi, bài viết đã đăng và số liệu được dịch trước sang cả ba ngôn ngữ (giữ trang mở tới khi báo xong, có thể bấm lại nếu bị ngắt). Chạy sau mỗi lần cập nhật nội dung lớn. Khi vẫn còn câu chưa dịch, trang chờ tối đa 8 giây rồi mới trả kết quả.
 - Thuật ngữ trong `glossary.json` (`keep`, `exact`, `terms`) áp dụng cho cả nội dung động.
 - Chuỗi dịch lỗi hoặc làm mất thuật ngữ được bỏ qua và thử lại sau 10 phút, trong lúc đó vẫn hiện tiếng Việt.

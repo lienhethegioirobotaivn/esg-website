@@ -6,7 +6,7 @@ import type { Locale } from "@/features/locale";
 
 import { translateTexts } from "./translate-texts";
 
-function collect(survey: Survey): string[] {
+export function collectSurveyTexts(survey: Survey): string[] {
   const texts: string[] = [];
   for (const pillar of survey) {
     texts.push(pillar.name);
@@ -32,7 +32,7 @@ export async function translateSurvey(survey: Survey, locale: Locale): Promise<S
   if (locale === "vi") {
     return survey;
   }
-  const map = await translateTexts(locale, collect(survey));
+  const map = await translateTexts(locale, collectSurveyTexts(survey));
   if (map.size === 0) {
     return survey;
   }

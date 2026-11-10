@@ -87,6 +87,28 @@ export async function saveStats(
   await postJson("/api/admin/stats", { items });
 }
 
+export interface WarmResponse {
+  total: number;
+  remaining: number;
+}
+
+export async function warmTranslations(
+  locale: "en" | "fr" | "zh",
+): Promise<WarmResponse> {
+  const response = await postJson("/api/admin/translations", { locale });
+  const data: unknown = response;
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    typeof (data as Record<string, unknown>)["total"] === "number" &&
+    typeof (data as Record<string, unknown>)["remaining"] === "number"
+  ) {
+    const record = data as Record<string, number>;
+    return { total: record["total"] ?? 0, remaining: record["remaining"] ?? 0 };
+  }
+  throw new AdminApiError("Phản hồi không hợp lệ.", 500);
+}
+
 export async function uploadImage(file: Blob): Promise<string> {
   const form = new FormData();
   form.set("image", file, "image.jpg");

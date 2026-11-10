@@ -133,6 +133,13 @@ export async function getAchievementStats(
   return { ...stats, items: await translateLabels(stats.items, locale) };
 }
 
+export async function getPublishedPostsRaw(): Promise<Post[]> {
+  if (!isAboutBridgeConfigured()) {
+    return [];
+  }
+  return loadPublished();
+}
+
 async function getRawAchievementStats(): Promise<AchievementStats | null> {
   if (!isAboutBridgeConfigured()) {
     return SAMPLE_STATS;

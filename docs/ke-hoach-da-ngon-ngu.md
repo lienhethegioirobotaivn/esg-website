@@ -96,6 +96,14 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Đã kiểm tra: typecheck, lint, `i18n:check` 0 thiếu (7 chuỗi mới nhập tay); chạy Next và xem head: canonical đúng theo ngôn ngữ, đủ hreflang và `x-default`, `og:locale` đúng, `lang` đúng, không còn `noindex`; sitemap có đủ 4 ngôn ngữ kèm hreflang; mô phỏng Sheet cho `pruneTranslations_`: xóa 3 dòng mồ côi, giữ dòng có sửa tay và dòng đang dùng, từ chối danh sách rỗng. Chưa kiểm tra: Sheet và `LanguageApp` thật, `pnpm build`, Google Search Console.
 - Giới hạn đã biết: (1) bài hoặc câu chưa dịch vẫn hiện tiếng Việt trên URL ngôn ngữ khác nên có thể bị coi là nội dung trùng; hãy bấm "Dịch sẵn nội dung" trước khi gửi sitemap; (2) PDF/Word vẫn lẫn nhãn tiếng Việt cho tới GĐ6; (3) việc Google chọn hiển thị ngôn ngữ nào còn phụ thuộc Google, hreflang chỉ là gợi ý.
 
+### GĐ6 đợt 1 - Tự động dịch, không cần bấm nút (10/11/2026): đã làm, chờ Bình test
+- Lớp 1 (tự động khi lưu): sau khi lưu hoặc xóa bài và lưu số liệu, web dịch nền chữ mới sang en, fr, zh (tối đa khoảng 40 giây) rồi dọn dòng mồ côi. Các route lưu có `maxDuration = 60`. Hàm: `scheduleTranslationMaintenance()` trong `server/translation/warm.ts`.
+- Lớp 2 (định kỳ, cho Sheet câu hỏi): endpoint `GET|POST /api/cron/translations` (`?prune=1` để dọn khi đã dịch xong), bảo vệ bằng `Authorization: Bearer <CRON_SECRET>`; trả `{ done, remaining, locales, pruned }`, chưa đặt `CRON_SECRET` thì trả 503, sai khóa trả 401. Biến môi trường mới: `CRON_SECRET` (tối thiểu 16 ký tự).
+- Apps Script gọi endpoint: `installTranslationTriggers()` (chạy tay một lần) tạo trigger 10 phút một lần và trigger khi sửa Sheet (không tính tab "Bản dịch"). Sửa Sheet chỉ đặt cờ `TRANSLATION_DIRTY`; mỗi 10 phút nếu có cờ (hoặc đã quá 24 giờ) thì `runTranslationSync()` gọi endpoint lặp tối đa 6 vòng/4,5 phút tới khi `done`, chưa xong thì giữ cờ để lượt sau làm tiếp. Cần hai Script Properties: `WEB_BASE_URL`, `WEB_CRON_SECRET` (trùng `CRON_SECRET`).
+- Có thể dùng Vercel Cron thay thế (`vercel.json`, gửi `Authorization: Bearer $CRON_SECRET` tự động) nhưng gói miễn phí chỉ chạy tối đa mỗi ngày một lần.
+- Đã kiểm tra: typecheck, lint; endpoint trả 401 khi thiếu hoặc sai khóa, 503 khi chưa đặt khóa, qua được xác thực với khóa đúng (lỗi 502 do sandbox không có Sheet); mô phỏng Apps Script: xong sau 3 vòng thì ghi mốc chạy và xóa cờ, tiến độ đứng yên thì dừng và giữ cờ. Chưa kiểm tra: Apps Script, Vercel và `LanguageApp` thật.
+- Đợt 2 (còn lại của GĐ6): báo cáo PDF/Word theo ngôn ngữ và phông chữ Hán.
+
 ## Hướng dẫn nhanh về bản dịch cho người quản trị (đọc trước khi hỏi)
 - **Có cả bản tự động (`en`) và bản sửa tay (`en (sửa tay)`) thì web dùng bản nào?** Bản sửa tay. Ô sửa tay trống thì web dùng bản tự động. Dịch tự động không bao giờ ghi đè cột sửa tay.
 - **Sửa tay xong bao lâu thì web đổi?** Tối đa khoảng 1 phút.
@@ -103,7 +111,7 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - **Thêm hoặc sửa câu hỏi trong Sheet câu hỏi có tự dịch không?** Có. Bấm "Dịch sẵn nội dung" ở `/quan-tri/ban-dich` hoặc để người xem đầu tiên kích hoạt (chờ tối đa 8 giây, phần còn lại dịch nền).
 - **Xóa bài viết hoặc đổi chữ thì dòng dịch cũ có bị dọn không?** Có, tự động sau khi lưu/xóa bài hoặc số liệu, và khi bấm "Dịch sẵn nội dung". Dòng có chữ sửa tay thì được giữ.
 - **Muốn xóa hẳn một dòng có sửa tay đã mồ côi?** Xóa tay dòng đó trong tab "Bản dịch".
-- **Web đang hiện lẫn tiếng Việt?** Bấm "Dịch sẵn nội dung" và giữ trang mở tới khi báo xong.
+- **Web đang hiện lẫn tiếng Việt?** Thường tự hết sau vài phút (lưu bài thì dịch ngay, sửa Sheet câu hỏi thì trigger Apps Script dịch trong tối đa 10 phút). Muốn dịch ngay thì bấm "Dịch sẵn nội dung" và giữ trang mở tới khi báo xong.
 - **Muốn đổi cách dịch một thuật ngữ cho cả website?** Sửa `src/i18n/glossary.json` (`keep`, `exact`, `terms`).
 - **Thêm chữ cố định mới trong code?** Bọc bằng `t("...")` hoặc `msg("...")`, chạy `pnpm dev` hoặc `pnpm build` (tự đồng bộ) và commit file trong `src/i18n/messages/`.
 

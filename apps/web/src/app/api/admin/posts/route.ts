@@ -9,10 +9,11 @@ import {
   readJson,
 } from "@/server/admin/api-helpers";
 import { requireAdminApi } from "@/server/admin/session";
-import { schedulePrune } from "@/server/translation/warm";
+import { scheduleTranslationMaintenance } from "@/server/translation/warm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const denied = await requireAdminApi();
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   try {
     const response = await callAbout("savePost", { post: parsed.data });
     clearContentCache();
-    schedulePrune();
+    scheduleTranslationMaintenance();
     return NextResponse.json({ ok: true, id: response["id"] });
   } catch (error) {
     return bridgeErrorResponse(error);

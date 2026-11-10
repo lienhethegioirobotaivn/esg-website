@@ -53,11 +53,13 @@ async function collectContentTexts(): Promise<ContentTexts> {
   return { live: clean(live), all: clean(all) };
 }
 
-export async function warmLocale(
+const WARM_LOCALES: readonly TargetLocale[] = ["en", "fr", "zh"];
+
+async function warmTexts(
   locale: TargetLocale,
+  live: readonly string[],
   budgetMs: number,
 ): Promise<WarmResult> {
-  const { live } = await collectContentTexts();
   const found = await translateTexts(locale, live, {
     waitMs: budgetMs,
     ignoreBackoff: true,
@@ -65,8 +67,45 @@ export async function warmLocale(
   return { total: live.length, remaining: live.length - found.size };
 }
 
-export function schedulePrune(): void {
-  const task = pruneUnusedTranslations().catch((error: unknown) => {
+export async function warmLocale(
+  locale: TargetLocale,
+  budgetMs: number,
+): Promise<WarmResult> {
+  const { live } = await collectContentTexts();
+  return warmTexts(locale, live, budgetMs);
+}
+
+export interface WarmAllResult {
+  locales: Record<TargetLocale, WarmResult>;
+  done: boolean;
+}
+
+export async function warmAllLocales(budgetMs: number): Promise<WarmAllResult> {
+  const { live } = await collectContentTexts();
+  const results = await Promise.all(
+    WARM_LOCALES.map((locale) => warmTexts(locale, live, budgetMs)),
+  );
+  const locales = {
+    en: results[0] ?? { total: live.length, remaining: live.length },
+    fr: results[1] ?? { total: live.length, remaining: live.length },
+    zh: results[2] ?? { total: live.length, remaining: live.length },
+  };
+  return {
+    locales,
+    done: Object.values(locales).every((result) => result.remaining === 0),
+  };
+}
+
+const MAINTENANCE_BUDGET_MS = 40_000;
+
+export function scheduleTranslationMaintenance(): void {
+  const task = (async () => {
+    if (!isAboutBridgeConfigured()) {
+      return;
+    }
+    await warmAllLocales(MAINTENANCE_BUDGET_MS);
+    await pruneUnusedTranslations();
+  })().catch((error: unknown) => {
     console.error(error);
   });
   try {

@@ -50,6 +50,10 @@ var TRANSLATION_LOCALES = { 'en': true, 'fr': true, 'zh': true };
 var TRANSLATION_MAX_ITEMS = 60;
 var TRANSLATION_HASH_PATTERN = /^[0-9a-f]{16}$/;
 var TRANSLATION_PRUNE_MAX_KEEP = 20000;
+var TRANSLATION_SYNC_MAX_ROUNDS = 6;
+var TRANSLATION_SYNC_MAX_MS = 270000;
+var TRANSLATION_SYNC_INTERVAL_MINUTES = 10;
+var TRANSLATION_SYNC_FULL_EVERY_MS = 24 * 60 * 60 * 1000;
 
 function doPost(e) {
   try {
@@ -1064,6 +1068,90 @@ function pruneTranslations_(body) {
     sheet.deleteRows(first, last - first + 1);
   }
   return { ok: true, removed: doomed.length, keptManual: keptManual };
+}
+
+function installTranslationTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    var handler = trigger.getHandlerFunction();
+    if (handler === 'runScheduledTranslationSync' || handler === 'onTranslationSourceEdit') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  ScriptApp.newTrigger('runScheduledTranslationSync')
+    .timeBased()
+    .everyMinutes(TRANSLATION_SYNC_INTERVAL_MINUTES)
+    .create();
+  ScriptApp.newTrigger('onTranslationSourceEdit')
+    .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
+    .onEdit()
+    .create();
+  PropertiesService.getScriptProperties().setProperty('TRANSLATION_DIRTY', '1');
+}
+
+function onTranslationSourceEdit(e) {
+  var name = e && e.range ? e.range.getSheet().getName() : '';
+  if (name === TRANSLATION_SHEET_NAME) {
+    return;
+  }
+  PropertiesService.getScriptProperties().setProperty('TRANSLATION_DIRTY', '1');
+}
+
+function runScheduledTranslationSync() {
+  var props = PropertiesService.getScriptProperties();
+  var last = Number(props.getProperty('TRANSLATION_LAST_FULL_RUN') || '0');
+  var dirty = props.getProperty('TRANSLATION_DIRTY') === '1';
+  if (!dirty && Date.now() - last < TRANSLATION_SYNC_FULL_EVERY_MS) {
+    return;
+  }
+  runTranslationSync();
+}
+
+function runTranslationSync() {
+  var props = PropertiesService.getScriptProperties();
+  var baseUrl = String(props.getProperty('WEB_BASE_URL') || '').replace(/\/+$/, '');
+  var secret = props.getProperty('WEB_CRON_SECRET');
+  if (!baseUrl || !secret) {
+    throw new Error('Thiếu WEB_BASE_URL hoặc WEB_CRON_SECRET trong Script Properties.');
+  }
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) {
+    return;
+  }
+  try {
+    props.deleteProperty('TRANSLATION_DIRTY');
+    var started = Date.now();
+    var previous = -1;
+    var finished = false;
+    for (var round = 0; round < TRANSLATION_SYNC_MAX_ROUNDS; round += 1) {
+      var response = UrlFetchApp.fetch(baseUrl + '/api/cron/translations?prune=1', {
+        method: 'get',
+        headers: { Authorization: 'Bearer ' + secret },
+        muteHttpExceptions: true,
+      });
+      if (response.getResponseCode() !== 200) {
+        throw new Error('Web trả về mã ' + response.getResponseCode() + ': ' + response.getContentText());
+      }
+      var data = JSON.parse(response.getContentText());
+      if (data.done) {
+        finished = true;
+        break;
+      }
+      if (previous >= 0 && data.remaining >= previous) {
+        break;
+      }
+      previous = data.remaining;
+      if (Date.now() - started > TRANSLATION_SYNC_MAX_MS) {
+        break;
+      }
+    }
+    if (finished) {
+      props.setProperty('TRANSLATION_LAST_FULL_RUN', String(Date.now()));
+    } else {
+      props.setProperty('TRANSLATION_DIRTY', '1');
+    }
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function parseBody_(e) {

@@ -200,3 +200,13 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm hành 
 - **Đổi chữ gốc tiếng Việt thì sao?** Câu mới có mã băm mới, được dịch lại; bản sửa tay của câu cũ không tự theo sang, cần nhập lại ở dòng mới.
 - **Thêm hoặc sửa câu hỏi trong Sheet câu hỏi?** Tự được dịch khi có người xem hoặc khi bấm **Dịch sẵn nội dung**.
 - **Trang ở `/en`, `/fr`, `/zh` còn tiếng Việt xen lẫn?** Bấm **Dịch sẵn nội dung** và giữ trang mở tới khi báo xong. Nên làm trước khi gửi sitemap cho Google để tránh nội dung trùng giữa các ngôn ngữ.
+
+### Tự động dịch, không cần bấm nút
+
+1. Trên web (Vercel hoặc nơi host), đặt biến môi trường `CRON_SECRET` là một chuỗi ngẫu nhiên dài từ 16 ký tự trở lên rồi deploy lại.
+2. Trong Apps Script: **Project Settings → Script Properties**, thêm `WEB_BASE_URL` (địa chỉ website, ví dụ `https://esg.example.vn`, không có dấu `/` ở cuối) và `WEB_CRON_SECRET` (đúng bằng `CRON_SECRET`).
+3. Dán lại `Code.gs`, chọn hàm `installTranslationTriggers` rồi bấm **Run** một lần và cấp quyền (cần quyền gọi dịch vụ bên ngoài và quản lý trigger). Kiểm tra mục **Triggers** có hai trigger: `runScheduledTranslationSync` (mỗi 10 phút) và `onTranslationSourceEdit` (khi sửa Sheet).
+4. Thử ngay: chọn `runTranslationSync` rồi **Run**, xem **Executions** không báo lỗi; tab "Bản dịch" bắt đầu có dòng mới.
+
+Cách hoạt động: lưu hoặc xóa bài và lưu số liệu trên trang quản trị tự dịch ngay. Sửa Sheet câu hỏi đặt một cờ, trong tối đa 10 phút trigger gọi web dịch phần mới và dọn dòng mồ côi (không dọn dòng có chữ sửa tay). Ngoài ra mỗi 24 giờ chạy một lượt đầy đủ. Nếu Apps Script báo "Web trả về mã 401", `WEB_CRON_SECRET` đang khác `CRON_SECRET`; mã 503 nghĩa là web chưa đặt `CRON_SECRET`.
+

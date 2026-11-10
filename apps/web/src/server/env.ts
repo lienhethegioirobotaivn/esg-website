@@ -34,6 +34,7 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().min(1).default("gemini-3.8-flash"),
   ),
+  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
   SURVEY_REVALIDATE_SECONDS: z.preprocess(
     emptyToUndefined,
     z.coerce.number().int().min(0).default(300),

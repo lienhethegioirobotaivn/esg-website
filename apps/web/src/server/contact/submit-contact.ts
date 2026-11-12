@@ -4,6 +4,7 @@ import { feedbackSchema, flattenIssues, inquirySchema } from "@esg/shared";
 import type { Feedback, Inquiry } from "@esg/shared";
 
 import { headcountOptions, industryOptions } from "@/data";
+import { msg } from "@/features/locale/lib/translate";
 
 import { CompanyBridgeError, callBridge } from "../company/save-company";
 import { getServerEnv } from "../env";
@@ -48,7 +49,7 @@ export async function submitInquiry(input: unknown): Promise<void> {
   const parsed = inquirySchema.safeParse(input);
   if (!parsed.success) {
     throw new ContactInputError(
-      "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các mục được đánh dấu.",
+      msg("Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các mục được đánh dấu."),
       flattenIssues(parsed.error),
     );
   }
@@ -74,7 +75,7 @@ export async function submitFeedback(input: unknown): Promise<void> {
   const parsed = feedbackSchema.safeParse(input);
   if (!parsed.success) {
     throw new ContactInputError(
-      "Dữ liệu chưa hợp lệ.",
+      msg("Dữ liệu chưa hợp lệ."),
       flattenIssues(parsed.error),
     );
   }

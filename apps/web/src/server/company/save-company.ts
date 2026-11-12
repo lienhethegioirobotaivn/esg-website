@@ -1,4 +1,5 @@
 import "server-only";
+import { msg } from "@/features/locale/lib/translate";
 
 import { randomInt } from "node:crypto";
 
@@ -201,7 +202,7 @@ export async function saveCompany(
   const parsed = companyProfileSchema.safeParse(readFields(form));
   if (!parsed.success) {
     throw new CompanyInputError(
-      "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các mục được đánh dấu.",
+      msg("Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các mục được đánh dấu."),
       flattenIssues(parsed.error),
     );
   }

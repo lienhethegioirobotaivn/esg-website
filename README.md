@@ -48,6 +48,7 @@ Mở `http://localhost:3000`.
 | `GOOGLE_APPS_SCRIPT_URL` | Địa chỉ web app Apps Script để lưu doanh nghiệp |
 | `GOOGLE_APPS_SCRIPT_SECRET` | Mã bí mật, trùng với Script Properties trong Apps Script |
 | `SURVEY_REVALIDATE_SECONDS` | Thời gian cache bộ câu hỏi (mặc định 300 giây) |
+| `CRON_SECRET` | Khóa bí mật (từ 16 ký tự) cho endpoint tự động dịch `/api/cron/translations`, trùng `WEB_CRON_SECRET` trong Script Properties của Apps Script |
 
 Biến tùy chọn để trống được xem như chưa đặt. Hướng dẫn cài Apps Script: [docs/huong-dan-cai-dat-apps-script.md](docs/huong-dan-cai-dat-apps-script.md).
 
@@ -103,6 +104,8 @@ Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo t
 ## Tài liệu
 
 - [Bối cảnh dự án](docs/boi-canh-du-an.md)
+- [Đa ngôn ngữ (vi, en, fr, zh): kiến trúc, vận hành, kiểm thử](docs/da-ngon-ngu.md)
+- [Kế hoạch và nhật ký triển khai đa ngôn ngữ](docs/ke-hoach-da-ngon-ngu.md)
 - [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
 - [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)
 - [So sánh báo cáo xuất và mẫu](docs/so-sanh-bao-cao-xuat-va-mau.md)

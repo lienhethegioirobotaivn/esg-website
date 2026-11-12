@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { msg } from "@/features/locale/lib/translate";
 
 import {
   CompanyBridgeError,
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
-    return errorResponse(400, "Dữ liệu gửi lên không hợp lệ.");
+    return errorResponse(400, msg("Dữ liệu gửi lên không hợp lệ."));
   }
 
   try {
@@ -35,10 +36,10 @@ export async function POST(request: Request) {
     if (error instanceof CompanyBridgeError) {
       console.error(error.message);
       return error.kind === "not-configured"
-        ? errorResponse(503, "Chưa cấu hình kết nối lưu dữ liệu vào Google Sheet.")
-        : errorResponse(502, "Không lưu được vào Google Sheet. Vui lòng thử lại sau.");
+        ? errorResponse(503, msg("Chưa cấu hình kết nối lưu dữ liệu vào Google Sheet."))
+        : errorResponse(502, msg("Không lưu được vào Google Sheet. Vui lòng thử lại sau."));
     }
     console.error(error);
-    return errorResponse(500, "Không lưu được thông tin doanh nghiệp.");
+    return errorResponse(500, msg("Không lưu được thông tin doanh nghiệp."));
   }
 }

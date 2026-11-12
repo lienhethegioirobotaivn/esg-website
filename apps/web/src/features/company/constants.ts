@@ -4,7 +4,7 @@ import {
   REPORT_PERIOD_LABELS,
 } from "@esg/shared";
 
-import { msg } from "@/features/locale";
+import { msg } from "../locale/lib/translate";
 
 const BASE_COMPANY_FIELDS = [
   "name",

@@ -4,6 +4,7 @@ import type { ReportModel } from "@esg/shared";
 import type { Locale } from "@/features/locale/constants";
 import type { TFunction } from "@/features/locale/lib/translate";
 
+import { mapStrings, softenHyphens } from "./cjk-break";
 import { registerReportFonts } from "./fonts";
 import { ReportDocument } from "./report-document";
 import type { TocKey } from "./report-document";
@@ -26,15 +27,24 @@ export async function generateReportBlob(
   fontBaseUrl: string = DEFAULT_FONT_BASE_URL,
 ): Promise<Blob> {
   registerReportFonts(fontBaseUrl, input.locale);
+  const isChinese = input.locale === "zh";
+  const model = isChinese ? mapStrings(input.model, softenHyphens) : input.model;
+  const t: TFunction = isChinese
+    ? (source, vars) => softenHyphens(input.t(source, vars))
+    : input.t;
+  const draftNotice =
+    isChinese && input.draftNotice !== null
+      ? softenHyphens(input.draftNotice)
+      : input.draftNotice;
   const found: Partial<Record<TocKey, number>> = {};
   const render = (pages: Partial<Record<TocKey, number>>) =>
     pdf(
       <ReportDocument
-        model={input.model}
+        model={model}
         logo={input.logo}
         images={input.images}
-        draftNotice={input.draftNotice}
-        t={input.t}
+        draftNotice={draftNotice}
+        t={t}
         locale={input.locale}
         pages={pages}
         onPage={(key, pageNumber) => {

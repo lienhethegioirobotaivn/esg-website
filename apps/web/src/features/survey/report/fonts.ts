@@ -2,10 +2,13 @@ import { Font } from "@react-pdf/renderer";
 
 import type { Locale } from "@/features/locale/constants";
 
+import { splitCjkWord } from "./cjk-break";
+
 export const REPORT_FONT_FAMILY = "DejaVuSans";
 const CJK_FONT_FAMILY = "NotoSansSC";
 
 const registered = new Set<string>();
+
 let hyphenationDisabled = false;
 
 export function reportFontFamily(locale: Locale): string {
@@ -30,7 +33,7 @@ export function registerReportFonts(baseUrl: string, locale: Locale): void {
     registered.add(key);
   }
   if (!hyphenationDisabled) {
-    Font.registerHyphenationCallback((word) => [word]);
+    Font.registerHyphenationCallback(splitCjkWord);
     hyphenationDisabled = true;
   }
 }

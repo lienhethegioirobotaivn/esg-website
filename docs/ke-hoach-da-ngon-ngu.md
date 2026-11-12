@@ -115,6 +115,12 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Chưa kiểm tra: bản dịch thực tế của 572 chuỗi, xuất file trên trình duyệt thật (logo, ảnh minh chứng, canvas biểu đồ trong Word), mở file Word tiếng Trung trên máy có Microsoft YaHei.
 - Giới hạn đã biết: số dùng định dạng `vi-VN`; dấu phân cách `, ` và `; ` giữ ký tự ASCII ở bản tiếng Trung; đơn vị của câu hỏi (ví dụ "tấn", "người") chỉ dịch được khi có trong bản dịch.
 
+### GĐ6 đợt 2 - sửa lỗi sau test (12/11/2026): đã làm, chờ Bình test
+- Lỗi chữ đè lên nhau trong PDF tiếng Trung: chữ Hán không có khoảng trắng nên react-pdf coi cả câu là một từ và không xuống dòng, chữ tràn sang cột bên cạnh. Chỉ ảnh hưởng PDF tiếng Trung; vi, en, fr xuống dòng theo khoảng trắng bình thường, Word tự xuống dòng chữ Hán.
+- Cách sửa: `report/cjk-break.ts` tách chữ Hán thành từng chữ cho bộ ngắt dòng của PDF (dấu câu đóng như `，。）` đi liền chữ trước, dấu mở như `（` đi liền chữ sau, từ Latin giữ nguyên). react-pdf luôn chèn dấu `-` khi ngắt giữa từ nên phông Noto Sans SC trong `public/fonts` đã được đổi để ký tự `-` ASCII hiển thị trống; mọi dấu `-` thật trong báo cáo tiếng Trung được đổi sang `‐` (U+2010) trước khi vẽ (`softenHyphens`).
+- Lỗi `pnpm typecheck` ở `tools/esg-agents`: công cụ này import trực tiếp `features/company/constants.ts` mà file đó dùng đường dẫn alias `@/features/locale` nên `tools/esg-agents` không tìm thấy. Đã đổi thành đường dẫn tương đối `../locale/lib/translate`. Quy ước: file nào được `tools/esg-agents` import trực tiếp từ `apps/web` thì không dùng alias `@/`.
+- Đã kiểm tra: typecheck `apps/web`, `packages/shared`, `tools/esg-agents` sạch; eslint 0 lỗi; xuất thử PDF tiếng Trung với câu dài: xuống dòng đúng trong khung, không còn tràn, không có dấu `-` ở cuối dòng.
+
 ## Hướng dẫn nhanh về bản dịch cho người quản trị (đọc trước khi hỏi)
 - **Có cả bản tự động (`en`) và bản sửa tay (`en (sửa tay)`) thì web dùng bản nào?** Bản sửa tay. Ô sửa tay trống thì web dùng bản tự động. Dịch tự động không bao giờ ghi đè cột sửa tay.
 - **Sửa tay xong bao lâu thì web đổi?** Tối đa khoảng 1 phút.
@@ -124,7 +130,7 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - **Muốn xóa hẳn một dòng có sửa tay đã mồ côi?** Xóa tay dòng đó trong tab "Bản dịch".
 - **Web đang hiện lẫn tiếng Việt?** Thường tự hết sau vài phút (lưu bài thì dịch ngay, sửa Sheet câu hỏi thì trigger Apps Script dịch trong tối đa 10 phút). Muốn dịch ngay thì bấm "Dịch sẵn nội dung" và giữ trang mở tới khi báo xong.
 - **Muốn đổi cách dịch một thuật ngữ cho cả website?** Sửa `src/i18n/glossary.json` (`keep`, `exact`, `terms`).
-- **Báo cáo PDF/Word tiếng Trung hiện ô trống ở một chữ?** Phông Noto Sans SC trong `public/fonts` chỉ gồm khoảng 7.500 chữ thông dụng; chữ hiếm ngoài bộ này sẽ trống. Muốn đủ bộ, thay bằng bản đầy đủ (khoảng 10 MB mỗi file).
+- **Báo cáo PDF/Word tiếng Trung hiện ô trống ở một chữ?** Phông Noto Sans SC trong `public/fonts` chỉ gồm khoảng 7.500 chữ thông dụng; chữ hiếm ngoài bộ này sẽ trống. Muốn đủ bộ, thay bằng bản đầy đủ (khoảng 10 MB mỗi file) nhưng phải làm cho ký tự `-` hiển thị trống (xem GĐ6 đợt 2 - sửa lỗi sau test).
 - **Thêm chữ cố định mới trong code?** Bọc bằng `t("...")` hoặc `msg("...")`, chạy `pnpm dev` hoặc `pnpm build` (tự đồng bộ) và commit file trong `src/i18n/messages/`.
 
 ## 5. Rủi ro đã biết

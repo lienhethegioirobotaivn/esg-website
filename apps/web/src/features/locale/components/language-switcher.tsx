@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { useLeaveGuardStore } from "@/features/leave-guard/store/leave-guard-store";
 import { cn } from "@/lib/cn";
@@ -22,6 +22,18 @@ export function LanguageSwitcher() {
   const isGuarded = useLeaveGuardStore((state) => state.guard !== null);
   const pendingHref = useLeaveGuardStore((state) => state.pendingHref);
   const requestLeave = useLeaveGuardStore((state) => state.requestLeave);
+  const [isPending, startTransition] = useTransition();
+  const [pendingLocale, setPendingLocale] = useState<Locale | null>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isPending) {
+      root.setAttribute("data-locale-pending", "");
+    } else {
+      root.removeAttribute("data-locale-pending");
+    }
+    return () => root.removeAttribute("data-locale-pending");
+  }, [isPending]);
 
   useEffect(() => {
     if (pendingHref === null) {
@@ -30,7 +42,7 @@ export function LanguageSwitcher() {
   }, [pendingHref, locale]);
 
   function switchTo(next: Locale) {
-    if (next === locale) {
+    if (next === locale || isPending) {
       return;
     }
     persistLocale(next);
@@ -42,13 +54,22 @@ export function LanguageSwitcher() {
       requestLeave(target);
       return;
     }
-    router.push(target);
+    setPendingLocale(next);
+    startTransition(() => {
+      router.push(target);
+    });
   }
 
   return (
-    <div role="group" aria-label={t("Ngôn ngữ")} className="flex items-center gap-1">
+    <div
+      role="group"
+      aria-label={t("Ngôn ngữ")}
+      aria-busy={isPending}
+      className="flex items-center gap-1"
+    >
       {LOCALES.map((item) => {
         const isActive = item === locale;
+        const isLoading = isPending && item === pendingLocale;
         return (
           <button
             key={item}
@@ -61,13 +82,18 @@ export function LanguageSwitcher() {
           >
             <span
               className={cn(
-                "block h-4 w-6 overflow-hidden rounded-[3px] ring-1 ring-border-strong transition-[opacity,box-shadow]",
-                isActive
+                "relative block h-4 w-6 overflow-hidden rounded-[3px] ring-1 ring-border-strong transition-[opacity,box-shadow]",
+                isActive || isLoading
                   ? "ring-2 ring-primary-600 ring-offset-2"
                   : "opacity-60",
               )}
             >
               <FlagIcon locale={item} />
+              {isLoading ? (
+                <span className="absolute inset-0 flex items-center justify-center bg-white/70">
+                  <span className="size-3 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+                </span>
+              ) : null}
             </span>
             <span
               className={cn(

@@ -126,6 +126,7 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Lỗ hổng tìm thấy và đã sửa: các thông báo lỗi từ API (`/api/company`, `/api/contact`, `save-company`, `submit-contact`) hiện cho người dùng và đã được `t(...)` lúc hiển thị nhưng chưa có trong danh mục dịch vì nằm ở phía máy chủ; đã đánh dấu bằng `msg(...)` nên được đồng bộ và dịch.
 - Chạy kiểm tra toàn bộ: `pnpm typecheck` (3 package) sạch, `pnpm lint` 0 lỗi (4 cảnh báo `alt` của ảnh trong react-pdf vốn có từ trước), `@esg/shared` test 22 đạt. `i18n:check` báo còn 577 chuỗi chưa dịch (gồm 572 chuỗi báo cáo ở GĐ6 đợt 2 và 5 chuỗi lỗi API mới): chạy `pnpm --filter web i18n:sync` một lần trên máy có Apps Script rồi commit `src/i18n/messages/`.
 - Tài liệu: thêm `docs/da-ngon-ngu.md` (kiến trúc, vận hành, SEO, báo cáo, cách thêm chữ, danh sách kiểm thử thủ công, giới hạn); README thêm biến `CRON_SECRET` và liên kết hai tài liệu đa ngôn ngữ.
+- Bổ sung 12/11/2026: thêm mục 9 "Checklist khi phát triển tính năng mới" vào `docs/da-ngon-ngu.md` (chữ giao diện, liên kết, SEO, nội dung động, báo cáo, hệ thống).
 - Còn lại sau GĐ7: không có giai đoạn mới. Việc theo dõi: chạy sync, test thủ công theo mục 7 của `docs/da-ngon-ngu.md`, kiểm tra `pnpm build` và Apps Script thật.
 
 ## Hướng dẫn nhanh về bản dịch cho người quản trị (đọc trước khi hỏi)

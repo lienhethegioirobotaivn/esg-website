@@ -75,3 +75,46 @@ Tài liệu bàn giao cho người phát triển và người quản trị. Nh�
 - Chữ hiếm ngoài bộ 7.500 chữ của phông Noto Sans SC trong PDF sẽ hiện ô trống.
 - Trang quản trị, email thông báo nội bộ, công cụ AI nhập liệu (`cong-cu-ai`) và `features/survey/lib/report-data.ts` (không còn được dùng) vẫn là tiếng Việt.
 - Gói Vercel miễn phí giới hạn thời gian hàm; nút "Dịch sẵn nội dung" có thể phải bấm lại.
+
+## 9. Checklist khi phát triển tính năng mới (bắt buộc đọc)
+
+Mọi chữ người dùng nhìn thấy ở trang công khai phải đi qua một trong các đường dưới đây. Trước khi gộp code, đi hết danh sách này.
+
+**Chữ trong giao diện**
+- [ ] Chữ cố định trong component: `t("...")` (client dùng `useT()`, server dùng `await getT()`). Không viết tiếng Việt thẳng vào JSX, `placeholder`, `aria-label`, `title`, `alt`, nội dung toast, nút, thông báo lỗi.
+- [ ] Chữ nằm trong hằng số, danh sách lựa chọn, bảng nhãn: bọc `msg("...")` ở nơi khai báo và `t(...)` ở nơi hiển thị; danh sách `{ value, label }` dùng `translateOptions`.
+- [ ] Chuỗi có biến: `t("Đã chọn {count} mục", { count })`, không nối chuỗi và không dùng template literal.
+- [ ] Số nhiều, ngày giờ, số tiền: không ghép sẵn câu; dùng định dạng theo ngôn ngữ (`useLocale()`), không cố định `vi-VN`.
+- [ ] Thông báo lỗi trả từ API: viết bằng `msg("...")` phía máy chủ và `t(error.message)` phía client.
+- [ ] Giá trị lưu trữ hoặc so sánh (`value`, trạng thái, khóa) luôn là tiếng Việt chuẩn hoặc mã; chỉ dịch ở bước hiển thị.
+
+**Địa chỉ và liên kết**
+- [ ] Trang công khai mới nằm trong `app/[locale]/...`; liên kết nội bộ dùng `LocaleLink`, `GuardedLink` hoặc `useLocalePath`, không viết `<a href="/...">` hay `router.push("/...")` trực tiếp.
+- [ ] Trang không được lập chỉ mục (công cụ nội bộ, trang tạm) khai báo `robots: NO_INDEX` và chặn trong `robots.ts`.
+
+**SEO của trang mới**
+- [ ] Dùng `generateMetadata` với `pageMetadata({ title: t(...), description: t(...), path, locale })`; không dùng `export const metadata` tĩnh.
+- [ ] Thêm đường dẫn vào `app/sitemap.ts` (hàm `expand` tự sinh đủ ngôn ngữ và hreflang).
+- [ ] JSON-LD và breadcrumb dùng `breadcrumbJsonLd(items, locale)`, tên mục qua `t(...)`, có `inLanguage`.
+
+**Nội dung động (Sheet, bài viết, dữ liệu do người quản trị nhập)**
+- [ ] Loader mới nhận `locale` và dịch qua `translateTexts`/các hàm trong `server/translation`; chữ gốc luôn là tiếng Việt.
+- [ ] Bổ sung đường lấy chữ của nội dung mới vào `collectContentTexts` (`server/translation/warm.ts`): nếu bỏ sót, chữ đó không được dịch sẵn và cũng bị dọn nhầm khỏi tab "Bản dịch".
+- [ ] Nếu tính năng lưu dữ liệu lên Google Sheet hoặc Drive: làm luôn việc dọn dữ liệu mồ côi và gọi `scheduleTranslationMaintenance()` sau khi lưu hoặc xóa.
+- [ ] Thông tin người dùng nhập (tên công ty, mô tả) không dịch.
+
+**Báo cáo PDF và Word**
+- [ ] Thêm mục hoặc nhãn vào báo cáo: câu mới trong `packages/shared` dùng `t("...")` của `report-text.ts`; chữ trong PDF dùng `useReportT()`, trong Word dùng `t` truyền vào `generate-docx.ts`.
+- [ ] Không dùng `-` ASCII hay ký tự ngoài bộ phông Noto Sans SC cho tiếng Trung; xuất thử bản tiếng Trung.
+- [ ] Chữ mới đã đi qua `t` thì bản `zh` mới đúng; xuất thử đủ vi, en, fr, zh.
+
+**Máy chủ và hệ thống**
+- [ ] Email nội bộ và dữ liệu gửi vào Sheet giữ tiếng Việt; không dịch.
+- [ ] File được `tools/esg-agents` import từ `apps/web` không dùng alias `@/`.
+- [ ] Biến môi trường mới ghi vào README và `.env.example`.
+
+**Trước khi gộp**
+- [ ] `pnpm --filter web i18n:sync`, đọc cảnh báo, commit `src/i18n/messages/`.
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm --filter web i18n:check` không báo thiếu.
+- [ ] Mở trang mới ở `/`, `/en`, `/fr`, `/zh`; thuật ngữ sai thì thêm vào `glossary.json` hoặc `overrides`.
+- [ ] Cập nhật tài liệu này nếu thêm cơ chế mới.

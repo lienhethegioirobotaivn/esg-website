@@ -12,6 +12,7 @@ import {
   formatVietnamDate,
   parseQuantity,
 } from "./report-format";
+import { msg } from "./i18n";
 import { REPORT_QUESTION_LABELS } from "./report-labels";
 import {
   CAPABILITY_OPTIONS,
@@ -41,6 +42,8 @@ import type {
   PlanStatus,
   PlanTaskInput,
 } from "./report-types";
+import { t, withTranslator } from "./report-text";
+import type { ReportTranslator } from "./report-text";
 import type { Question, Survey } from "./survey";
 
 export interface ReportBuildInput {
@@ -52,6 +55,7 @@ export interface ReportBuildInput {
   readonly contentVersion: string;
   readonly isDraft: boolean;
   readonly plan?: ImprovementPlanInput;
+  readonly translate?: ReportTranslator;
 }
 
 interface Entry {
@@ -69,22 +73,22 @@ const EMPTY_ANSWER: ReportAnswerInput = {
 };
 
 const INDUSTRY_LABELS: Record<IndustryValue, string> = {
-  manufacturing: "Sản xuất",
-  retail: "Thương mại và bán lẻ",
-  services: "Dịch vụ",
-  it: "Công nghệ thông tin",
-  construction: "Xây dựng và bất động sản",
-  agriculture: "Nông nghiệp và thực phẩm",
-  education: "Giáo dục và đào tạo",
-  other: "Hoạt động đặc thù",
+  manufacturing: msg("Sản xuất"),
+  retail: msg("Thương mại và bán lẻ"),
+  services: msg("Dịch vụ"),
+  it: msg("Công nghệ thông tin"),
+  construction: msg("Xây dựng và bất động sản"),
+  agriculture: msg("Nông nghiệp và thực phẩm"),
+  education: msg("Giáo dục và đào tạo"),
+  other: msg("Hoạt động đặc thù"),
 };
 
 const HEADCOUNT_LABELS: Record<string, string> = {
-  "lt-10": "Dưới 10 người",
-  "10-49": "10 – 49 người",
-  "50-199": "50 – 199 người",
-  "200-499": "200 – 499 người",
-  "gte-500": "Từ 500 người",
+  "lt-10": msg("Dưới 10 người"),
+  "10-49": msg("10 – 49 người"),
+  "50-199": msg("50 – 199 người"),
+  "200-499": msg("200 – 499 người"),
+  "gte-500": msg("Từ 500 người"),
 };
 
 const SECTION_IDS = {
@@ -105,15 +109,20 @@ const SECTION_IDS = {
 } as const;
 
 const NO_EVIDENCE = "—";
-const PRIORITY_HIGH = "Cao";
-const PRIORITY_MEDIUM = "Trung bình";
-const PRIORITY_CLARIFY = "Cần làm rõ trước";
+const PRIORITY_HIGH = msg("Cao");
+const PRIORITY_MEDIUM = msg("Trung bình");
+const PRIORITY_CLARIFY = msg("Cần làm rõ trước");
+const REASON_INCIDENT = msg("Có sự cố hoặc vụ việc được khai báo");
+const REASON_NO = msg("Chưa có");
+const REASON_PARTIAL = msg("Có một phần");
+const REASON_UNKNOWN = msg("Chưa rõ");
+const REASON_NO_DATA = msg("Chưa có dữ liệu");
 
 function priorityOf(rank: number): string {
   if (rank <= 1) {
-    return PRIORITY_HIGH;
+    return t(PRIORITY_HIGH);
   }
-  return rank === 2 ? PRIORITY_MEDIUM : PRIORITY_CLARIFY;
+  return t(rank === 2 ? PRIORITY_MEDIUM : PRIORITY_CLARIFY);
 }
 const MAX_LISTED = 3;
 
@@ -137,9 +146,9 @@ function joinSentences(parts: readonly (string | null)[]): string | null {
 
 function describeEvidence(question: Question, fileName: string): string {
   return [
-    `${question.id} — ${REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text)}`,
-    `Tệp: ${fileName}`,
-    `Minh chứng cho câu: ${question.text}`,
+    `${question.id} — ${labelFor(question)}`,
+    t("Tệp: {fileName}", { fileName }),
+    t("Minh chứng cho câu: {text}", { text: question.text }),
   ].join("\n");
 }
 
@@ -166,8 +175,13 @@ function buildEntries(survey: Survey): Entry[] {
   );
 }
 
+function labelById(id: string): string | null {
+  const known = REPORT_QUESTION_LABELS[id];
+  return known === undefined ? null : t(known);
+}
+
 function labelFor(question: Question): string {
-  return REPORT_QUESTION_LABELS[question.id] ?? (question.topic || question.text);
+  return labelById(question.id) ?? (question.topic || question.text);
 }
 
 function rankGaps(
@@ -182,20 +196,20 @@ function rankGaps(
       continue;
     }
     if (question.inputType === "INCIDENT" && value === "yes") {
-      gaps.push({ rank: 0, entry, reason: "Có sự cố hoặc vụ việc được khai báo" });
+      gaps.push({ rank: 0, entry, reason: REASON_INCIDENT });
     } else if (question.inputType === "PRACTICE" && value === "no") {
-      gaps.push({ rank: 1, entry, reason: "Chưa có" });
+      gaps.push({ rank: 1, entry, reason: REASON_NO });
     } else if (question.inputType === "PRACTICE" && value === "partial") {
-      gaps.push({ rank: 2, entry, reason: "Có một phần" });
+      gaps.push({ rank: 2, entry, reason: REASON_PARTIAL });
     } else if (question.inputType === "PRACTICE" && value === "unknown") {
-      gaps.push({ rank: 3, entry, reason: "Chưa rõ" });
+      gaps.push({ rank: 3, entry, reason: REASON_UNKNOWN });
     } else if (
       question.inputType !== "PRACTICE" &&
       question.inputType !== "INCIDENT" &&
       question.inputType !== "PRESENCE" &&
       value === "unknown"
     ) {
-      gaps.push({ rank: 4, entry, reason: "Chưa có dữ liệu" });
+      gaps.push({ rank: 4, entry, reason: REASON_NO_DATA });
     }
   }
   return gaps
@@ -208,16 +222,18 @@ function suggestionText(gap: Gap): string {
   const { question } = gap.entry;
   const hint = clean(question.improvementHint);
   if (gap.rank === 0) {
-    return `Rà soát tình trạng xử lý và biện pháp khắc phục: ${labelFor(question)}`;
+    return t("Rà soát tình trạng xử lý và biện pháp khắc phục: {label}", {
+      label: labelFor(question),
+    });
   }
-  return hint !== "" ? hint : `Rà soát và bổ sung: ${labelFor(question)}`;
+  return hint !== "" ? hint : t("Rà soát và bổ sung: {label}", { label: labelFor(question) });
 }
 
 function toSuggestion(gap: Gap): ReportSuggestion {
   return {
     id: gap.entry.question.id,
     text: suggestionText(gap),
-    basis: `căn cứ ${gap.entry.question.id}: ${gap.reason}`,
+    basis: t("căn cứ {id}: {reason}", { id: gap.entry.question.id, reason: t(gap.reason) }),
     priority: priorityOf(gap.rank),
   };
 }
@@ -225,18 +241,21 @@ function toSuggestion(gap: Gap): ReportSuggestion {
 export function listImprovementSuggestions(
   survey: Survey,
   answers: Readonly<Record<string, ReportAnswerInput>>,
+  translate?: ReportTranslator,
 ): ReportSuggestion[] {
-  return rankGaps(buildEntries(survey), answers).map(toSuggestion);
+  return withTranslator(translate, () =>
+    rankGaps(buildEntries(survey), answers).map(toSuggestion),
+  );
 }
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const NOT_PROVIDED = "Chưa cung cấp";
+const NOT_PROVIDED = msg("Chưa cung cấp");
 
 function formatDue(value: string): string {
   const text = value.trim();
   const match = ISO_DATE.exec(text);
   if (match === null) {
-    return text === "" ? NOT_PROVIDED : text;
+    return text === "" ? t(NOT_PROVIDED) : text;
   }
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
@@ -267,6 +286,10 @@ function sortTasks(tasks: readonly PlanTaskInput[]): PlanTaskInput[] {
 }
 
 export function buildReportModel(input: ReportBuildInput): ReportModel {
+  return withTranslator(input.translate, () => buildModel(input));
+}
+
+function buildModel(input: ReportBuildInput): ReportModel {
   const { survey, company, answers } = input;
 
   const entries = buildEntries(survey);
@@ -282,9 +305,10 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
 
   function answerText(question: Question, draft: ReportAnswerInput): string {
     if (draft.value === null) {
-      return "Chưa khai báo";
+      return t("Chưa khai báo");
     }
-    const label = getChoiceLabel(question.inputType, draft.value) ?? draft.value;
+    const choice = getChoiceLabel(question.inputType, draft.value);
+    const label = choice === null ? draft.value : t(choice);
     const fields = getAnswerFields(question.inputType, draft.value);
     const note = clean(draft.description);
     const numeric = question.inputType === "NUMBER" || question.inputType === "INTEGER";
@@ -310,8 +334,8 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       return NO_EVIDENCE;
     }
     return draft.evidence.length > 0
-      ? `Đã đính kèm ${draft.evidence.length} tệp; chưa xác minh`
-      : "Chưa đính kèm bằng chứng";
+      ? t("Đã đính kèm {count} tệp; chưa xác minh", { count: draft.evidence.length })
+      : t("Chưa đính kèm bằng chứng");
   }
 
   function item(id: string): ReportItem | null {
@@ -342,7 +366,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     const note = clean(draft.description);
     const numeric = question.inputType === "NUMBER" || question.inputType === "INTEGER";
     if (draft.value === null) {
-      return { id, state: "empty", text: "Chưa khai báo", value: null, unit: question.unit, source: "" };
+      return { id, state: "empty", text: t("Chưa khai báo"), value: null, unit: question.unit, source: "" };
     }
     if (draft.value === "known" || draft.value === "provided") {
       return numeric
@@ -357,9 +381,9 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
         : { id, state: "known", text: note, value: null, unit: "", source: "" };
     }
     if (draft.value === "na") {
-      return { id, state: "na", text: "Không áp dụng", value: null, unit: question.unit, source: note };
+      return { id, state: "na", text: t("Không áp dụng"), value: null, unit: question.unit, source: note };
     }
-    return { id, state: "unknown", text: "Chưa có dữ liệu", value: null, unit: question.unit, source: note };
+    return { id, state: "unknown", text: t("Chưa có dữ liệu"), value: null, unit: question.unit, source: note };
   }
 
   function practiceCounts(ids: readonly string[]): PracticeCounts {
@@ -390,7 +414,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
           (value === "no" || value === "partial" || value === "unknown")
         );
       })
-      .map((id) => REPORT_QUESTION_LABELS[id] ?? id);
+      .map((id) => labelById(id) ?? id);
   }
 
   function practiceSentence(ids: readonly string[]): string | null {
@@ -399,17 +423,22 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       return null;
     }
     const parts = [
-      counts.yes > 0 ? `${counts.yes} ở mức Có` : null,
-      counts.partial > 0 ? `${counts.partial} Có một phần` : null,
-      counts.no > 0 ? `${counts.no} Chưa có` : null,
-      counts.unknown > 0 ? `${counts.unknown} Chưa rõ` : null,
-      counts.na > 0 ? `${counts.na} Không áp dụng` : null,
-      counts.unanswered > 0 ? `${counts.unanswered} chưa khai báo` : null,
+      counts.yes > 0 ? t("{count} ở mức Có", { count: counts.yes }) : null,
+      counts.partial > 0 ? t("{count} Có một phần", { count: counts.partial }) : null,
+      counts.no > 0 ? t("{count} Chưa có", { count: counts.no }) : null,
+      counts.unknown > 0 ? t("{count} Chưa rõ", { count: counts.unknown }) : null,
+      counts.na > 0 ? t("{count} Không áp dụng", { count: counts.na }) : null,
+      counts.unanswered > 0 ? t("{count} chưa khai báo", { count: counts.unanswered }) : null,
     ].filter((part): part is string => part !== null);
     const labels = gapLabels(ids);
     return joinSentences([
-      `Trong ${counts.total} nội dung thực hành của phần này: ${parts.join(", ")}.`,
-      labels.length > 0 ? `Cần bổ sung hoặc làm rõ: ${listLabels(labels)}.` : null,
+      t("Trong {total} nội dung thực hành của phần này: {parts}.", {
+        total: counts.total,
+        parts: parts.join(", "),
+      }),
+      labels.length > 0
+        ? t("Cần bổ sung hoặc làm rõ: {labels}.", { labels: listLabels(labels) })
+        : null,
     ]);
   }
 
@@ -441,7 +470,10 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     if (headcountValue === null || headcountValue <= 0) {
       return null;
     }
-    return `Bình quân ${formatQuantity(m.value / headcountValue)} ${unit} cho mỗi người lao động, tính từ số liệu tự khai.`;
+    return t("Bình quân {value} {unit} cho mỗi người lao động, tính từ số liệu tự khai.", {
+      value: formatQuantity(m.value / headcountValue),
+      unit,
+    });
   }
 
   function dataSentence(m: ReportMetric | null, name: string): string | null {
@@ -449,22 +481,26 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       return null;
     }
     if (m.state === "known") {
-      return `${name} trong kỳ: ${quantity(m)} theo số liệu tự khai.`;
+      return t("{name} trong kỳ: {quantity} theo số liệu tự khai.", {
+        name,
+        quantity: quantity(m) ?? "",
+      });
     }
     if (m.state === "unknown") {
-      return `${name}: chưa có dữ liệu; báo cáo không suy ra số liệu thay thế.`;
+      return t("{name}: chưa có dữ liệu; báo cáo không suy ra số liệu thay thế.", { name });
     }
     return null;
   }
 
   const industry = clean(company["industry"]);
-  const industryLabel = isIndustry(industry) ? INDUSTRY_LABELS[industry] : industry;
+  const industryLabel = isIndustry(industry) ? t(INDUSTRY_LABELS[industry]) : industry;
   const headcountBand = clean(company["headcount"]);
-  const sizeBand = HEADCOUNT_LABELS[headcountBand] ?? headcountBand;
+  const sizeBandKey = HEADCOUNT_LABELS[headcountBand];
+  const sizeBand = sizeBandKey === undefined ? headcountBand : t(sizeBandKey);
   const disclosureLevel =
     headcountBand in HEADCOUNT_TIERS && HEADCOUNT_TIERS[headcountBand as keyof typeof HEADCOUNT_TIERS] === "extended"
-      ? "Mở rộng"
-      : "Cơ bản";
+      ? t("Mở rộng")
+      : t("Cơ bản");
   const companyName = clean(company["name"]);
   const period = formatPeriodRange(clean(company["reportPeriod"]), clean(company["reportYear"]));
   const issuedAt = formatVietnamDate(input.generatedAt);
@@ -473,16 +509,16 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const secondarySectors =
     secondaryCodes.length === 0
       ? null
-      : secondaryCodes.map((code) => (isIndustry(code) ? INDUSTRY_LABELS[code] : code)).join("; ");
+      : secondaryCodes.map((code) => (isIndustry(code) ? t(INDUSTRY_LABELS[code]) : code)).join("; ");
   const capabilityCodes = splitCodes(clean(company["capabilities"]));
   const capabilities =
     capabilityCodes.length === 0
       ? null
-      : capabilityCodes.map((code) => findOptionLabel(CAPABILITY_OPTIONS, code)).join("; ");
+      : capabilityCodes.map((code) => t(findOptionLabel(CAPABILITY_OPTIONS, code))).join("; ");
 
   const presence = (value: string | undefined): string | null => {
     const code = clean(value);
-    return code === "" ? null : findOptionLabel(PRESENCE_OPTIONS, code);
+    return code === "" ? null : t(findOptionLabel(PRESENCE_OPTIONS, code));
   };
 
   const sites = parseTableLines(clean(company["sites"]), 3)
@@ -549,7 +585,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const confirmedIds = new Set(planTasks.map((task) => task.fromId).filter((id) => id !== ""));
   const actions: ReportAction[] = sortTasks(planTasks).map((task) => ({
     description: clean(task.description),
-    owner: orNull(task.owner) ?? NOT_PROVIDED,
+    owner: orNull(task.owner) ?? t(NOT_PROVIDED),
     due: formatDue(task.due),
     status: toPlanStatus(task.status),
   }));
@@ -571,11 +607,11 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       return names.length > 0 ? `${heading}: ${names.join("; ")}` : null;
     };
     const parts = [
-      lineOf("Có sự cố hoặc vụ việc được khai báo", "Sự cố được khai báo"),
-      lineOf("Chưa có", "Chưa có"),
-      lineOf("Có một phần", "Có một phần"),
-      lineOf("Chưa rõ", "Chưa rõ"),
-      lineOf("Chưa có dữ liệu", "Chưa có dữ liệu"),
+      lineOf(REASON_INCIDENT, t("Sự cố được khai báo")),
+      lineOf(REASON_NO, t(REASON_NO)),
+      lineOf(REASON_PARTIAL, t(REASON_PARTIAL)),
+      lineOf(REASON_UNKNOWN, t(REASON_UNKNOWN)),
+      lineOf(REASON_NO_DATA, t(REASON_NO_DATA)),
     ].filter((part): part is string => part !== null);
     const topRank = Math.min(...list.map((gap) => gap.rank));
     gapRows.push({ title, reason: parts.join("\n"), priority: priorityOf(topRank) });
@@ -583,7 +619,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
 
   const topicCounts = new Map<string, number>();
   for (const gap of rankedGaps) {
-    const topic = gap.entry.question.topic === "" ? "Khác" : gap.entry.question.topic;
+    const topic = gap.entry.question.topic === "" ? t("Khác") : gap.entry.question.topic;
     topicCounts.set(topic, (topicCounts.get(topic) ?? 0) + 1);
   }
   const gapsByTopic: ChartDatum[] = [...topicCounts.entries()]
@@ -594,25 +630,54 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const integrityIncident = item("C-046");
   const incidentNotes = [
     envIncident !== null && draftOf("C-019").value === "yes"
-      ? "Có sự cố môi trường được khai báo trong kỳ."
+      ? t("Có sự cố môi trường được khai báo trong kỳ.")
       : null,
     integrityIncident !== null && draftOf("C-046").value === "yes"
-      ? "Có vụ việc liêm chính được khai báo trong kỳ."
+      ? t("Có vụ việc liêm chính được khai báo trong kỳ.")
       : null,
   ];
 
   const executiveSummary =
     joinSentences([
-      `${companyName === "" ? "Doanh nghiệp" : companyName} lập hồ sơ tự khai ESG cho kỳ ${period}.`,
-      `Hồ sơ ghi nhận ${answeredCount} nội dung khai báo hợp lệ trên ${entries.length} nội dung áp dụng.`,
+      t("{name} lập hồ sơ tự khai ESG cho kỳ {period}.", {
+        name: companyName === "" ? t("Doanh nghiệp") : companyName,
+        period,
+      }),
+      t("Hồ sơ ghi nhận {answered} nội dung khai báo hợp lệ trên {total} nội dung áp dụng.", {
+        answered: answeredCount,
+        total: entries.length,
+      }),
       practice.total > 0
-        ? `Trong ${practice.total} câu thực hành: ${practice.yes} ở mức Có, ${practice.partial} Có một phần, ${practice.no} Chưa có, ${practice.unknown} Chưa rõ${practice.na > 0 ? ` và ${practice.na} Không áp dụng` : ""}.`
+        ? practice.na > 0
+          ? t(
+              "Trong {total} câu thực hành: {yes} ở mức Có, {partial} Có một phần, {no} Chưa có, {unknown} Chưa rõ và {na} Không áp dụng.",
+              {
+                total: practice.total,
+                yes: practice.yes,
+                partial: practice.partial,
+                no: practice.no,
+                unknown: practice.unknown,
+                na: practice.na,
+              },
+            )
+          : t(
+              "Trong {total} câu thực hành: {yes} ở mức Có, {partial} Có một phần, {no} Chưa có, {unknown} Chưa rõ.",
+              {
+                total: practice.total,
+                yes: practice.yes,
+                partial: practice.partial,
+                no: practice.no,
+                unknown: practice.unknown,
+              },
+            )
         : null,
       ...incidentNotes,
       evidenceCount > 0
-        ? `${evidenceCount} tệp minh chứng được đính kèm; việc đính kèm chưa đồng nghĩa nội dung đã được xác minh.`
-        : "Chưa có tệp minh chứng nào được đính kèm.",
-      "Thông tin là tự khai và chưa được xác minh độc lập.",
+        ? t("{count} tệp minh chứng được đính kèm; việc đính kèm chưa đồng nghĩa nội dung đã được xác minh.", {
+            count: evidenceCount,
+          })
+        : t("Chưa có tệp minh chứng nào được đính kèm."),
+      t("Thông tin là tự khai và chưa được xác minh độc lập."),
     ]) ?? "";
 
   const electricity = metric("C-002");
@@ -630,28 +695,28 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     scope1 === null && scope2 === null
       ? null
       : ghgKnown.length === 2
-        ? "Đã khai báo Scope 1 và Scope 2"
+        ? t("Đã khai báo Scope 1 và Scope 2")
         : ghgKnown.length === 1
-          ? "Khai báo một phần"
-          : "Chưa có dữ liệu";
+          ? t("Khai báo một phần")
+          : t("Chưa có dữ liệu");
 
   const energy = section(SECTION_IDS.energy, [
-    dataSentence(electricity, "Điện tiêu thụ"),
+    dataSentence(electricity, t("Điện tiêu thụ")),
     perPerson(electricity, "kWh"),
   ]);
   const waterSection = section(SECTION_IDS.water, [
-    dataSentence(water, "Nước sử dụng"),
+    dataSentence(water, t("Nước sử dụng")),
     perPerson(water, "m³"),
   ]);
   const waste = section(SECTION_IDS.waste, [
-    dataSentence(wasteNon, "Chất thải không nguy hại"),
-    dataSentence(wasteHaz, "Chất thải nguy hại"),
+    dataSentence(wasteNon, t("Chất thải không nguy hại")),
+    dataSentence(wasteHaz, t("Chất thải nguy hại")),
   ]);
   const climate = section(SECTION_IDS.climate, [
-    dataSentence(scope1, "Phát thải Scope 1"),
-    dataSentence(scope2, "Phát thải Scope 2 location-based"),
+    dataSentence(scope1, t("Phát thải Scope 1")),
+    dataSentence(scope2, t("Phát thải Scope 2 location-based")),
     scope1 !== null || scope2 !== null
-      ? "Số liệu phát thải là giá trị doanh nghiệp tự khai; báo cáo không tự tính hoặc suy ra lượng giảm phát thải."
+      ? t("Số liệu phát thải là giá trị doanh nghiệp tự khai; báo cáo không tự tính hoặc suy ra lượng giảm phát thải.")
       : null,
   ]);
   const materials = section(SECTION_IDS.materials);
@@ -662,24 +727,34 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
 
   const safetyExtra = [
     accidents?.state === "known"
-      ? `Doanh nghiệp khai báo ${quantity(accidents)} tai nạn lao động trong phạm vi báo cáo${
-          fatalities?.state === "known" ? ` và ${fatalities.value !== null ? formatQuantity(fatalities.value) : fatalities.text} trường hợp tử vong liên quan công việc` : ""
-        }.`
+      ? fatalities?.state === "known"
+        ? t(
+            "Doanh nghiệp khai báo {accidents} tai nạn lao động trong phạm vi báo cáo và {fatalities} trường hợp tử vong liên quan công việc.",
+            {
+              accidents: quantity(accidents) ?? "",
+              fatalities: fatalities.value !== null ? formatQuantity(fatalities.value) : fatalities.text,
+            },
+          )
+        : t("Doanh nghiệp khai báo {accidents} tai nạn lao động trong phạm vi báo cáo.", {
+            accidents: quantity(accidents) ?? "",
+          })
       : accidents?.state === "unknown"
-        ? "Chưa có dữ liệu về tai nạn lao động; báo cáo không suy ra là không có tai nạn."
+        ? t("Chưa có dữ liệu về tai nạn lao động; báo cáo không suy ra là không có tai nạn.")
         : null,
   ];
 
   const trainingSentence =
     trainingHours?.state === "known"
       ? joinSentences([
-          `Tổng thời lượng đào tạo khai báo: ${quantity(trainingHours)}.`,
-          perPerson(trainingHours, "giờ"),
+          t("Tổng thời lượng đào tạo khai báo: {quantity}.", { quantity: quantity(trainingHours) ?? "" }),
+          perPerson(trainingHours, t("giờ")),
         ])
       : null;
 
   const workforceExtra =
-    headcount?.state === "known" ? [`Số người lao động cuối kỳ: ${quantity(headcount)}.`] : [];
+    headcount?.state === "known"
+      ? [t("Số người lao động cuối kỳ: {quantity}.", { quantity: quantity(headcount) ?? "" })]
+      : [];
 
   const coordinationItems = items(SECTION_IDS.coordination);
   const esgRole = orNull(answers["C-041"]?.description);
@@ -696,7 +771,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
     const industryKey = (Object.keys(INDUSTRY_SOURCES) as IndustryValue[]).find(
       (key) => INDUSTRY_SOURCES[key] === source,
     );
-    const title = industryKey === undefined ? source : INDUSTRY_LABELS[industryKey];
+    const title = industryKey === undefined ? source : t(INDUSTRY_LABELS[industryKey]);
     modules.push({
       source,
       title,
@@ -717,12 +792,13 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const followups =
     missingEvidence.length > 0
       ? [
-          "Bổ sung hoặc đối chiếu căn cứ cho:",
-          ...missingEvidence.map((id) => `• ${REPORT_QUESTION_LABELS[id] ?? id}`),
+          t("Bổ sung hoặc đối chiếu căn cứ cho:"),
+          ...missingEvidence.map((id) => `• ${labelById(id) ?? id}`),
         ].join("\n")
       : null;
   const focusLabels = rankedGaps.slice(0, MAX_LISTED).map((gap) => labelOf(gap.entry.question));
-  const focus = focusLabels.length > 0 ? `Tập trung xem xét: ${focusLabels.join("; ")}.` : null;
+  const focus =
+    focusLabels.length > 0 ? t("Tập trung xem xét: {labels}.", { labels: focusLabels.join("; ") }) : null;
 
   const evidenceRows: ReportEvidenceRow[] = [];
   const evidenceGroups: ReportEvidenceGroup[] = [];
@@ -743,7 +819,7 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
           id: code,
           description: describeEvidence(question, file.name),
           scope: period,
-          status: "Đã đính kèm; chưa xác minh",
+          status: t("Đã đính kèm; chưa xác minh"),
         });
         files.push({ code, name: file.name });
       }
@@ -762,21 +838,38 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
   const unansweredSummary =
     unanswered.length === 0
       ? null
-      : `${unanswered.length} nội dung chưa khai báo: ${unanswered.join(", ")}.`;
+      : t("{count} nội dung chưa khai báo: {ids}.", {
+          count: unanswered.length,
+          ids: unanswered.join(", "),
+        });
 
   const confirmed = draftOf("C-060").value === "yes";
-  const reportId = input.reportCode ?? "Chưa lưu hồ sơ";
+  const reportId = input.reportCode ?? t("Chưa lưu hồ sơ");
 
   const limitationParts = [
     orNull(company["dataLimitations"]),
-    "Số liệu và thực hành do doanh nghiệp tự cung cấp; chưa có xác minh độc lập.",
-    unanswered.length > 0 ? `${unanswered.length} nội dung trong phạm vi chưa được khai báo.` : null,
+    t("Số liệu và thực hành do doanh nghiệp tự cung cấp; chưa có xác minh độc lập."),
+    unanswered.length > 0
+      ? t("{count} nội dung trong phạm vi chưa được khai báo.", { count: unanswered.length })
+      : null,
   ];
 
   const profileContext = joinSentences([
-    `${companyName === "" ? "Doanh nghiệp" : companyName} thuộc nhóm quy mô ${sizeBand}, hoạt động chính trong lĩnh vực ${industryLabel}${
-      secondarySectors !== null ? `, kèm ngành bổ sung ${secondarySectors}` : ""
-    }.`,
+    secondarySectors !== null
+      ? t(
+          "{name} thuộc nhóm quy mô {sizeBand}, hoạt động chính trong lĩnh vực {industry}, kèm ngành bổ sung {sectors}.",
+          {
+            name: companyName === "" ? t("Doanh nghiệp") : companyName,
+            sizeBand,
+            industry: industryLabel,
+            sectors: secondarySectors,
+          },
+        )
+      : t("{name} thuộc nhóm quy mô {sizeBand}, hoạt động chính trong lĩnh vực {industry}.", {
+          name: companyName === "" ? t("Doanh nghiệp") : companyName,
+          sizeBand,
+          industry: industryLabel,
+        }),
     activitiesText,
   ]) ?? "";
 
@@ -788,16 +881,16 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       legalForm: orNull(company["legalForm"]),
       period,
       reportId,
-      status: input.isDraft ? "BẢN NHÁP" : "HOÀN TẤT TỰ KHAI",
+      status: input.isDraft ? t("BẢN NHÁP") : t("HOÀN TẤT TỰ KHAI"),
       isDraft: input.isDraft,
       issuedAt,
       disclosureLevel,
       contentVersion: input.contentVersion,
       answerVersion: formatVersionStamp(input.generatedAt),
-      reportVersion: input.isDraft ? "Bản nháp" : "1.0",
+      reportVersion: input.isDraft ? t("Bản nháp") : "1.0",
       reviewStatus: confirmed
-        ? "Doanh nghiệp đã xác nhận thông tin; chưa rà soát độc lập"
-        : "Chưa xác nhận; chưa rà soát độc lập",
+        ? t("Doanh nghiệp đã xác nhận thông tin; chưa rà soát độc lập")
+        : t("Chưa xác nhận; chưa rà soát độc lập"),
       countries: orNull(company["countries"]),
       reportReference: `${reportId} • ESG Report Online`,
     },
@@ -822,16 +915,20 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       scopeLimitations: joinSentences([orNull(company["reportScope"]), orNull(company["dataLimitations"])]),
       products: activitiesText,
       markets: orNull(company["markets"]),
-      revenueBand: revenue === "" ? null : findOptionLabel(REVENUE_BANDS, revenue),
+      revenueBand: revenue === "" ? null : t(findOptionLabel(REVENUE_BANDS, revenue)),
       supplierGroupsText: supplierNames.length > 0 ? supplierNames.join("; ") : null,
       downstreamGroupsText: downstreamList.length > 0 ? downstreamList.join("; ") : null,
       supplierGroups,
       valueChainContext:
         supplierNames.length > 0 || downstreamList.length > 0
           ? joinSentences([
-              supplierNames.length > 0 ? `Nhóm nhà cung cấp được nêu: ${supplierNames.join("; ")}.` : null,
-              downstreamList.length > 0 ? `Nhóm đối tác đầu ra: ${downstreamList.join("; ")}.` : null,
-              "Báo cáo chưa đánh giá tác động tại nhà cung cấp hoặc đối tác nếu hồ sơ không có số liệu tương ứng.",
+              supplierNames.length > 0
+                ? t("Nhóm nhà cung cấp được nêu: {names}.", { names: supplierNames.join("; ") })
+                : null,
+              downstreamList.length > 0
+                ? t("Nhóm đối tác đầu ra: {names}.", { names: downstreamList.join("; ") })
+                : null,
+              t("Báo cáo chưa đánh giá tác động tại nhà cung cấp hoặc đối tác nếu hồ sơ không có số liệu tương ứng."),
             ])
           : null,
     },
@@ -840,12 +937,14 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       water,
       ghgStatus,
       overviewAssessment: joinSentences([
-        dataSentence(electricity, "Điện tiêu thụ"),
-        dataSentence(water, "Nước sử dụng"),
+        dataSentence(electricity, t("Điện tiêu thụ")),
+        dataSentence(water, t("Nước sử dụng")),
         practiceSentence(environmentIds),
       ]),
       overviewGaps:
-        environmentGapLabels.length > 0 ? `Cần làm rõ: ${environmentGapLabels.join("; ")}.` : null,
+        environmentGapLabels.length > 0
+          ? t("Cần làm rõ: {labels}.", { labels: environmentGapLabels.join("; ") })
+          : null,
       energy,
       fuel: metric("C-003"),
       climate,
@@ -904,23 +1003,23 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       limitations: joinSentences(limitationParts) ?? "",
       permittedReferences: input.contentVersion,
       verificationStatement:
-        "Không có xác minh độc lập, chứng nhận, chữ ký số hoặc dấu xác nhận của tổ chức bên ngoài.",
+        t("Không có xác minh độc lập, chứng nhận, chữ ký số hoặc dấu xác nhận của tổ chức bên ngoài."),
     },
     appendix: { rows: appendixRows, unansweredSummary },
     confirmation: {
       role: orNull(company["confirmingRole"]),
       confirmedAt: confirmed ? issuedAt : null,
       status: confirmed
-        ? "Doanh nghiệp đã xác nhận thông tin; không có xác nhận pháp lý"
-        : "Chưa xác nhận",
+        ? t("Doanh nghiệp đã xác nhận thông tin; không có xác nhận pháp lý")
+        : t("Chưa xác nhận"),
     },
     charts: {
       practiceStatus: [
-        { label: "Có", value: practice.yes },
-        { label: "Có một phần", value: practice.partial },
-        { label: "Chưa có", value: practice.no },
-        { label: "Chưa rõ", value: practice.unknown },
-        { label: "Không áp dụng", value: practice.na },
+        { label: t("Có"), value: practice.yes },
+        { label: t("Có một phần"), value: practice.partial },
+        { label: t("Chưa có"), value: practice.no },
+        { label: t("Chưa rõ"), value: practice.unknown },
+        { label: t("Không áp dụng"), value: practice.na },
       ],
       pillarStatus: survey.map((pillar) => {
         const ids = pillar.groups.flatMap((group) => group.questions.map((question) => question.id));
@@ -933,10 +1032,10 @@ export function buildReportModel(input: ReportBuildInput): ReportModel {
       ].filter((datum): datum is ChartDatum => datum !== null),
       waste: [
         wasteNon?.state === "known" && wasteNon.value !== null
-          ? { label: "Không nguy hại", value: wasteNon.value }
+          ? { label: t("Không nguy hại"), value: wasteNon.value }
           : null,
         wasteHaz?.state === "known" && wasteHaz.value !== null
-          ? { label: "Nguy hại", value: wasteHaz.value }
+          ? { label: t("Nguy hại"), value: wasteHaz.value }
           : null,
       ].filter((datum): datum is ChartDatum => datum !== null),
       gapsByTopic,

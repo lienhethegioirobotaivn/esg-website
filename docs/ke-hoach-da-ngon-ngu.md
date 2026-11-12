@@ -104,6 +104,17 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - Đã kiểm tra: typecheck, lint; endpoint trả 401 khi thiếu hoặc sai khóa, 503 khi chưa đặt khóa, qua được xác thực với khóa đúng (lỗi 502 do sandbox không có Sheet); mô phỏng Apps Script: xong sau 3 vòng thì ghi mốc chạy và xóa cờ, tiến độ đứng yên thì dừng và giữ cờ. Chưa kiểm tra: Apps Script, Vercel và `LanguageApp` thật.
 - Đợt 2 (còn lại của GĐ6): báo cáo PDF/Word theo ngôn ngữ và phông chữ Hán.
 
+### GĐ6 đợt 2 - Báo cáo PDF/Word theo ngôn ngữ (11/11/2026): đã làm, chờ Bình test
+- Dịch model báo cáo (`packages/shared`): `buildReportModel` và `listImprovementSuggestions` nhận hàm dịch tùy chọn (`translate`); không truyền thì kết quả giống hệt trước đây (đã so với bản gốc bằng file mẫu). Cơ chế: `report-text.ts` giữ hàm dịch đang dùng, các câu trong `report-model.ts`, nhãn trong `report-labels.ts` và `report-format.ts` gọi `t("... {biến} ...", { biến })` hoặc `msg(...)`. Trạng thái nội bộ (như mức ưu tiên của lỗ hổng) giữ giá trị tiếng Việt để so sánh và chỉ dịch khi xuất.
+- PDF: `report-text-context.tsx` (`ReportTextProvider`, `useReportT`, `useReportLocale`) đưa `t` và ngôn ngữ vào toàn bộ cây tài liệu; `copy.ts` (205 đoạn), `report-document.tsx`, `pdf-parts.tsx` bọc `t(...)`/`msg(...)`; ngôn ngữ tài liệu PDF theo trang.
+- Word: `generate-docx.ts` bọc toàn bộ chữ bằng `t`; đặt phông Đông Á (Microsoft YaHei) và ngôn ngữ mặc định theo bản dịch (vi-VN, en-US, fr-FR, zh-CN) trong style mặc định của tài liệu.
+- Phông chữ Hán: thêm `public/fonts/NotoSansSC-Regular.ttf` và `NotoSansSC-Bold.ttf` (Noto Sans SC, giấy phép OFL, đã cắt còn khoảng 2,3 MB mỗi file gồm bộ chữ GB2312 7.445 chữ, Latin, Latin mở rộng cho tiếng Việt và Pháp, dấu câu CJK). Chỉ tải khi xuất báo cáo tiếng Trung. Chữ ngoài bộ này (hiếm) sẽ hiện ô trống. `fonts.ts` có `reportFontFamily(locale)` và `registerReportFonts(baseUrl, locale)`; tiếng Việt, Anh, Pháp vẫn dùng DejaVu Sans.
+- `create-report.ts` và hai hook (`use-report-export`, `use-report-preview`) truyền `t` và ngôn ngữ hiện tại; thông báo bản nháp và tên bộ câu hỏi cũng được dịch.
+- Việc cần làm sau khi gộp: còn 572 chuỗi mới chưa có bản dịch en/fr/zh. Chạy một lần `pnpm --filter web i18n:sync` (dịch tự động qua Apps Script, mất vài phút), đọc lại các chuỗi cảnh báo (thêm vào `src/i18n/overrides/<ngôn ngữ>.json` nếu muốn sửa), rồi commit các file trong `src/i18n/messages/`.
+- Đã kiểm tra: typecheck và lint (web và shared) sạch; 22 test của shared đạt (18 cũ + 4 mới); với hàm dịch giữ nguyên, nội dung PDF và Word giống hệt bản gốc; với hàm dịch đánh dấu, chữ tiếng Việt còn lại chỉ là dữ liệu người dùng và nội dung bộ câu hỏi (đã dịch riêng ở GĐ4); xuất thử PDF tiếng Trung bằng Noto Sans SC: phông nhúng đúng, chữ Hán và tiếng Việt cùng hiển thị, bố cục không vỡ.
+- Chưa kiểm tra: bản dịch thực tế của 572 chuỗi, xuất file trên trình duyệt thật (logo, ảnh minh chứng, canvas biểu đồ trong Word), mở file Word tiếng Trung trên máy có Microsoft YaHei.
+- Giới hạn đã biết: số dùng định dạng `vi-VN`; dấu phân cách `, ` và `; ` giữ ký tự ASCII ở bản tiếng Trung; đơn vị của câu hỏi (ví dụ "tấn", "người") chỉ dịch được khi có trong bản dịch.
+
 ## Hướng dẫn nhanh về bản dịch cho người quản trị (đọc trước khi hỏi)
 - **Có cả bản tự động (`en`) và bản sửa tay (`en (sửa tay)`) thì web dùng bản nào?** Bản sửa tay. Ô sửa tay trống thì web dùng bản tự động. Dịch tự động không bao giờ ghi đè cột sửa tay.
 - **Sửa tay xong bao lâu thì web đổi?** Tối đa khoảng 1 phút.
@@ -113,6 +124,7 @@ Trạng thái: đã chốt phần lớn quyết định (mục 3), còn hai đi�
 - **Muốn xóa hẳn một dòng có sửa tay đã mồ côi?** Xóa tay dòng đó trong tab "Bản dịch".
 - **Web đang hiện lẫn tiếng Việt?** Thường tự hết sau vài phút (lưu bài thì dịch ngay, sửa Sheet câu hỏi thì trigger Apps Script dịch trong tối đa 10 phút). Muốn dịch ngay thì bấm "Dịch sẵn nội dung" và giữ trang mở tới khi báo xong.
 - **Muốn đổi cách dịch một thuật ngữ cho cả website?** Sửa `src/i18n/glossary.json` (`keep`, `exact`, `terms`).
+- **Báo cáo PDF/Word tiếng Trung hiện ô trống ở một chữ?** Phông Noto Sans SC trong `public/fonts` chỉ gồm khoảng 7.500 chữ thông dụng; chữ hiếm ngoài bộ này sẽ trống. Muốn đủ bộ, thay bằng bản đầy đủ (khoảng 10 MB mỗi file).
 - **Thêm chữ cố định mới trong code?** Bọc bằng `t("...")` hoặc `msg("...")`, chạy `pnpm dev` hoặc `pnpm build` (tự đồng bộ) và commit file trong `src/i18n/messages/`.
 
 ## 5. Rủi ro đã biết

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { getReportCode, saveCompany, saveReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
-import { useT } from "@/features/locale";
+import { useLocale, useT } from "@/features/locale";
 import { downloadBlob } from "@/lib/download-blob";
 
 import { buildReportFileName } from "../lib/report-file-name";
@@ -38,6 +38,7 @@ export function useReportExport({
   logo,
 }: UseReportExportInput): ReportExport {
   const t = useT();
+  const locale = useLocale();
   const [isExporting, setIsExporting] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ReportFormat | null>(null);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
@@ -97,7 +98,7 @@ export function useReportExport({
     setExportingFormat(format);
     setError(null);
     try {
-      const input = { company, entries, answers, logo };
+      const input = { company, entries, answers, logo, t, locale };
       const blob =
         format === "docx"
           ? await createReportDocxBlob(input)

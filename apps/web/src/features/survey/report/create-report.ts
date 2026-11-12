@@ -3,6 +3,9 @@ import type { ReportAnswerInput, Survey } from "@esg/shared";
 
 import { getReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
+import type { Locale } from "@/features/locale/constants";
+import { msg } from "@/features/locale/lib/translate";
+import type { TFunction } from "@/features/locale/lib/translate";
 
 import { loadPlan } from "../lib/plan-storage";
 import { getDraft } from "../lib/progress";
@@ -11,7 +14,7 @@ import type { AnswerMap, GroupEntry } from "../types";
 import { collectEvidenceImages } from "./report-images";
 import { prepareReportLogo } from "./report-logo";
 
-const CONTENT_VERSION = "Bộ câu hỏi ESG v0.1";
+const CONTENT_VERSION = msg("Bộ câu hỏi ESG v0.1");
 
 interface CreateReportInput {
   company: CompanyFormValues;
@@ -19,6 +22,8 @@ interface CreateReportInput {
   answers: AnswerMap;
   draftNotice?: string | null;
   logo?: File | null;
+  t: TFunction;
+  locale: Locale;
 }
 
 export function toSurvey(entries: readonly GroupEntry[]): Survey {
@@ -72,15 +77,23 @@ async function prepareReport(input: CreateReportInput) {
     answers: toReportAnswers(entries, answers),
     reportCode: getReportCode(),
     generatedAt: new Date().toISOString(),
-    contentVersion: CONTENT_VERSION,
+    contentVersion: input.t(CONTENT_VERSION),
     isDraft,
     plan: loadPlan(),
+    translate: input.t,
   });
   const logo = input.logo
     ? await prepareReportLogo(input.logo).catch(() => null)
     : null;
   const images = await collectEvidenceImages(entries, answers);
-  return { model, logo, images, draftNotice: input.draftNotice ?? null };
+  return {
+    model,
+    logo,
+    images,
+    draftNotice: input.draftNotice ?? null,
+    t: input.t,
+    locale: input.locale,
+  };
 }
 
 export async function createReportBlob(

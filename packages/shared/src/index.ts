@@ -14,6 +14,8 @@ export * from "./report-format";
 export * from "./report-labels";
 export * from "./report-model";
 export * from "./report-period";
+export type { ReportTranslator } from "./report-text";
+export { withTranslator } from "./report-text";
 export * from "./report-types";
 export * from "./select-survey";
 export * from "./survey";

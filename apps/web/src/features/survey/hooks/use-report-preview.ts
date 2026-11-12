@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { CompanyFormValues } from "@/features/company";
-import { useT } from "@/features/locale";
+import { useLocale, useT } from "@/features/locale";
 
 import { validateReport } from "../lib/report-validation";
 import { createReportBlob } from "../report/create-report";
@@ -34,6 +34,7 @@ export function useReportPreview({
   logo,
 }: UseReportPreviewInput): ReportPreviewState {
   const t = useT();
+  const locale = useLocale();
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +52,17 @@ export function useReportPreview({
       const draftNotice =
         missingCount === 0
           ? null
-          : `Còn ${missingCount} mục chưa hoàn thành, nội dung có thể thay đổi khi bạn điền thêm.`;
+          : t("Còn {count} mục chưa hoàn thành, nội dung có thể thay đổi khi bạn điền thêm.", {
+              count: missingCount,
+            });
       const blob = await createReportBlob({
         company,
         entries,
         answers,
         draftNotice,
         logo,
+        t,
+        locale,
       });
       setPreview((current) => {
         if (current) {

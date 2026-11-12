@@ -1,4 +1,5 @@
 import type { ReportPeriod } from "./report-period";
+import { t } from "./report-text";
 
 const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -16,7 +17,7 @@ function isReportPeriod(value: string): value is ReportPeriod {
 
 export function formatPeriodRange(period: string, year: string): string {
   if (!isReportPeriod(period) || year.trim() === "") {
-    return "Chưa xác định";
+    return t("Chưa xác định");
   }
   const [start, end] = PERIOD_RANGES[period];
   return `${start}/${year} – ${end}/${year}`;

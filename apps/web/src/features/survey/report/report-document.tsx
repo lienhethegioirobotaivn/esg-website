@@ -1,5 +1,5 @@
 import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
-import type { ReportMetric, ReportModel } from "@esg/shared";
+import type { ReportMetric, ReportModel, ReportTheme } from "@esg/shared";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 
@@ -33,7 +33,8 @@ import type { EvidenceImage } from "./pdf-parts";
 import type { ReportLogo } from "./report-logo";
 import { ReportTextProvider } from "./report-text-context";
 import { reportFontFamily } from "./fonts";
-import { COLORS, styles } from "./theme";
+import { ReportThemeProvider } from "./report-theme-context";
+import { createReportStyles } from "./theme";
 
 export const TOC_KEYS = [
   "framework",
@@ -70,6 +71,7 @@ const FRAMEWORK_STRIP = [
 
 interface ReportDocumentProps {
   model: ReportModel;
+  theme: ReportTheme;
   logo: ReportLogo | null;
   images: readonly EvidenceImage[];
   draftNotice: string | null;
@@ -110,6 +112,7 @@ function reportYear(period: string): string | null {
 
 export function ReportDocument({
   model,
+  theme,
   logo,
   images,
   draftNotice,
@@ -119,6 +122,8 @@ export function ReportDocument({
   locale,
 }: ReportDocumentProps) {
   const { meta, summary, profile, environment, social, governance, improvement, evidence, appendix, confirmation, charts } = model;
+  const reportStyles = createReportStyles(theme);
+  const { COLORS, styles } = reportStyles;
   const track = (key: TocKey) => (pageNumber: number) => onPage(key, pageNumber);
   const envPillar = charts.pillarStatus.find((row) => row.label === "Môi trường" || row.label === t("Môi trường"));
   const fontFamily = reportFontFamily(locale);
@@ -194,6 +199,7 @@ export function ReportDocument({
 
   return (
     <ReportTextProvider t={t} locale={locale}>
+    <ReportThemeProvider value={reportStyles}>
     <Document
       title={t("Báo cáo ESG {name}", { name: meta.companyName })}
       author="ESG Report Online"
@@ -1163,6 +1169,7 @@ export function ReportDocument({
         ),
       })}
     </Document>
+    </ReportThemeProvider>
     </ReportTextProvider>
   );
 }

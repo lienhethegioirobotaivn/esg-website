@@ -94,3 +94,15 @@ Trạng thái: đã lập kế hoạch, chưa code. Các quyết định ở m�
 - Refactor `theme.ts` đụng nhiều chỗ nhất ở GĐ1: bắt buộc so sánh báo cáo mặc định trước và sau.
 - Body của route trên Vercel bị giới hạn khoảng 4,5 MB: thu nhỏ ảnh phía trình duyệt bắt buộc.
 - Tiếng Trung PDF: chỉ dùng Noto Sans SC; không dùng ký tự `-` ASCII ở chữ mới (xem `da-ngon-ngu.md` mục 5).
+
+## 7. Tiến độ
+
+### GĐ1 - Theme động cho PDF và Word (13/11/2026): đã làm, chờ Bình test trên máy thật
+- `@esg/shared`: `report-theme.ts` (schema zod `reportThemeInputSchema`, `DEFAULT_REPORT_THEME` đúng bằng màu cũ, `resolveReportTheme`, `contrastRatio`). Đầu vào tối thiểu `{ version: 1, colors: { primary, accent } }`; ink, muted, panel, panelSoft, line tự dẫn xuất nếu thiếu. Mã tự làm đậm màu chính và màu nhấn tới khi chữ trắng đạt tương phản 4,5; ink đạt 7 trên nền trắng; muted đạt 4,5 trên nền trắng và nền khung; panel, panelSoft, line quá tối thì bị thay bằng màu dẫn xuất. Đầu vào sai hoặc thiếu thì dùng giao diện mặc định.
+- PDF: `report/theme.ts` thành `createReportStyles(theme)`; `report-theme-context.tsx` (`ReportThemeProvider`, `useReportTheme`); `pdf-parts.tsx` và `report-document.tsx` lấy màu từ theme. Tên khóa màu giữ nguyên (`navy` = màu chính, `blue` = màu nhấn). Màu trạng thái Có / Một phần / Chưa có / Chưa rõ / Không áp dụng và màu SDG giữ cố định; màu trụ cột E cố định, S theo màu nhấn, G theo màu chính.
+- Word: `generate-docx.ts` đặt bảng màu theo theme ở đầu `generateReportDocx` (biến màu ở mức module, việc dựng tài liệu chạy đồng bộ nên không xung đột); bảng, tiêu đề, ô số liệu, biểu đồ canvas, ghi chú đều theo theme.
+- `lib/brand-theme-storage.ts`: `loadBrandTheme`, `saveBrandTheme`, `clearBrandTheme`, khóa localStorage `esg-brand-theme-v1`. `create-report.ts` đọc theme khi tạo PDF và Word; nút "Làm báo cáo mới" xóa theme.
+- Cố ý chưa làm: giao diện người dùng và AI (GĐ3, GĐ4); bìa, phông, kiểu bố cục (GĐ2). Bìa hiện vẫn nền trắng, chỉ đổi màu nhỏ; tiêu đề "BÁO CÁO ESG" trên bìa dùng màu ink.
+- Giới hạn đã biết: thương hiệu có màu rất sáng (vàng, cam nhạt) bị làm đậm thành màu ô-liu hoặc nâu để chữ trắng đọc được; GĐ2 có thể bổ sung kiểu chữ tối trên nền sáng.
+- Đã kiểm tra: `pnpm typecheck` (3 package), `pnpm --filter web lint` (0 lỗi, 4 cảnh báo cũ), 32 test của `@esg/shared` đạt (22 cũ, 10 mới). Dựng thử PDF và Word trong Chromium: với giao diện mặc định, 23 trang PDF **giống hệt từng điểm ảnh** bản trước khi sửa và `document.xml`, `styles.xml`, header, footer của Word **giống hệt**; với theme đỏ rượu và theme vàng sáng (kèm bản nháp), PDF và Word đổi màu đúng, không vỡ bố cục. Chưa kiểm tra: máy thật của Bình, `pnpm build`, bản en/fr/zh với theme thương hiệu.
+- Cách thử nhanh (trong DevTools của trang khảo sát): `localStorage.setItem("esg-brand-theme-v1", JSON.stringify({ version: 1, colors: { primary: "#7A1F2B", accent: "#C0392B" } }))`, rồi xuất PDF và Word. Xóa: `localStorage.removeItem("esg-brand-theme-v1")` hoặc bấm "Làm báo cáo mới".

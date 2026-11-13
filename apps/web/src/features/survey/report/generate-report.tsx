@@ -1,5 +1,5 @@
 import { pdf } from "@react-pdf/renderer";
-import type { ReportModel } from "@esg/shared";
+import type { ReportModel, ReportTheme } from "@esg/shared";
 
 import type { Locale } from "@/features/locale/constants";
 import type { TFunction } from "@/features/locale/lib/translate";
@@ -15,6 +15,7 @@ const DEFAULT_FONT_BASE_URL = "/fonts";
 
 interface GenerateInput {
   model: ReportModel;
+  theme: ReportTheme;
   logo: ReportLogo | null;
   images: readonly EvidenceImage[];
   draftNotice: string | null;
@@ -41,6 +42,7 @@ export async function generateReportBlob(
     pdf(
       <ReportDocument
         model={model}
+        theme={input.theme}
         logo={input.logo}
         images={input.images}
         draftNotice={draftNotice}

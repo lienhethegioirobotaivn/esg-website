@@ -31,6 +31,7 @@ import { useSurveyDraft } from "../hooks/use-survey-draft";
 import { useSurveyNavigation } from "../hooks/use-survey-navigation";
 import { clearDraft, getDraftRaw, parseDraft } from "../lib/draft-storage";
 import { restoreDraft } from "../lib/draft-state";
+import { clearBrandTheme } from "../lib/brand-theme-storage";
 import { clearPlan, loadPlan, savePlan } from "../lib/plan-storage";
 import { countCompleted } from "../lib/progress";
 import type { QuestionIssue } from "../lib/report-validation";
@@ -85,6 +86,7 @@ export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
     clearDraft();
     clearReportCode();
     clearPlan();
+    clearBrandTheme();
     setResetCount((count) => count + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);

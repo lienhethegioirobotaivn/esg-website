@@ -7,6 +7,7 @@ import type { Locale } from "@/features/locale/constants";
 import { msg } from "@/features/locale/lib/translate";
 import type { TFunction } from "@/features/locale/lib/translate";
 
+import { loadBrandTheme } from "../lib/brand-theme-storage";
 import { loadPlan } from "../lib/plan-storage";
 import { getDraft } from "../lib/progress";
 import { getReportDraftState } from "../lib/report-draft-state";
@@ -88,6 +89,7 @@ async function prepareReport(input: CreateReportInput) {
   const images = await collectEvidenceImages(entries, answers);
   return {
     model,
+    theme: loadBrandTheme(),
     logo,
     images,
     draftNotice: input.draftNotice ?? null,

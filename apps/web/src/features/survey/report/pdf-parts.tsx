@@ -11,7 +11,9 @@ import type {
 import { msg } from "@/features/locale/lib/translate";
 
 import { useReportT } from "./report-text-context";
-import { COLORS, styles } from "./theme";
+import { useReportTheme } from "./report-theme-context";
+import { STATUS_PALETTE } from "./theme";
+import type { ReportStyles } from "./theme";
 
 export function metricText(metric: ReportMetric | null): string | null {
   if (metric === null) {
@@ -38,6 +40,7 @@ export function SectionHead({
   onPage,
   breakBefore = false,
 }: SectionHeadProps) {
+  const { styles } = useReportTheme();
   return (
     <>
       <Text
@@ -61,6 +64,7 @@ export function SectionHead({
 }
 
 export function SubHead({ children }: { children: string }) {
+  const { styles } = useReportTheme();
   return (
     <Text style={styles.h2} minPresenceAhead={60}>
       {children}
@@ -69,6 +73,7 @@ export function SubHead({ children }: { children: string }) {
 }
 
 export function Note({ children }: { children: string }) {
+  const { styles } = useReportTheme();
   return <Text style={styles.note}>{children}</Text>;
 }
 
@@ -83,6 +88,7 @@ export function Panel({
   soft?: boolean;
   breakable?: boolean;
 }) {
+  const { styles } = useReportTheme();
   if (text === null || text === "") {
     return null;
   }
@@ -99,6 +105,7 @@ export function Kpis({
 }: {
   items: readonly { label: string; value: string | null }[];
 }) {
+  const { styles } = useReportTheme();
   const shown = items.filter(
     (item): item is { label: string; value: string } => item.value !== null,
   );
@@ -122,6 +129,7 @@ export function Facts({
 }: {
   items: readonly { label: string; value: string | null; full?: boolean }[];
 }) {
+  const { styles } = useReportTheme();
   const shown = items.filter(
     (item): item is { label: string; value: string; full?: boolean } =>
       item.value !== null && item.value !== "",
@@ -161,6 +169,7 @@ export function DataTable({
   repeatHeader?: boolean;
   splitRows?: boolean;
 }) {
+  const { styles } = useReportTheme();
   if (rows.length === 0) {
     return null;
   }
@@ -193,6 +202,7 @@ export function DataTable({
 }
 
 export function ItemList({ items }: { items: readonly ReportItem[] }) {
+  const { styles } = useReportTheme();
   const t = useReportT();
   if (items.length === 0) {
     return null;
@@ -220,14 +230,15 @@ export function Cols({ children }: { children: ReactNode }) {
 }
 
 const STATUS_COLORS: readonly (readonly [string, string])[] = [
-  [msg("Có"), COLORS.yes],
-  [msg("Có một phần"), COLORS.partial],
-  [msg("Chưa có"), COLORS.no],
-  [msg("Chưa rõ"), COLORS.unknown],
-  [msg("Không áp dụng"), COLORS.na],
+  [msg("Có"), STATUS_PALETTE.yes],
+  [msg("Có một phần"), STATUS_PALETTE.partial],
+  [msg("Chưa có"), STATUS_PALETTE.no],
+  [msg("Chưa rõ"), STATUS_PALETTE.unknown],
+  [msg("Không áp dụng"), STATUS_PALETTE.na],
 ];
 
 export function PracticeChart({ data }: { data: readonly ChartDatum[] }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   const statusColors: Record<string, string> = {};
   for (const [label, color] of STATUS_COLORS) {
@@ -282,6 +293,7 @@ export function PillarChart({
 }: {
   data: readonly { label: string; yes: number; partial: number; gap: number }[];
 }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   const shown = data.filter((row) => row.yes + row.partial + row.gap > 0);
   if (shown.length === 0) {
@@ -325,6 +337,7 @@ export function BarChart({
   data: readonly ChartDatum[];
   unit: string;
 }) {
+  const { COLORS, styles } = useReportTheme();
   if (data.length === 0) {
     return null;
   }
@@ -363,6 +376,7 @@ export function SupplyChainFlow({
   downstream: readonly string[];
   company: string;
 }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   const column = (title: string, entries: readonly string[]) => (
     <View style={{ flexGrow: 1, flexBasis: 0, backgroundColor: COLORS.panel, padding: 8 }}>
@@ -411,6 +425,7 @@ export interface EvidenceImage {
 }
 
 export function EvidenceGallery({ images }: { images: readonly EvidenceImage[] }) {
+  const { COLORS, styles } = useReportTheme();
   if (images.length === 0) {
     return null;
   }
@@ -443,19 +458,22 @@ export interface TimelineStep {
   readonly status: string;
 }
 
-const TIMELINE_COLORS: readonly (readonly [string, string])[] = [
-  [msg("Chưa bắt đầu"), COLORS.blue],
-  [msg("Đang thực hiện"), COLORS.partial],
-  [msg("Hoàn thành"), COLORS.yes],
-  [msg("Tạm hoãn"), COLORS.na],
-];
+function timelineEntries(accent: string): readonly (readonly [string, string])[] {
+  return [
+    [msg("Chưa bắt đầu"), accent],
+    [msg("Đang thực hiện"), STATUS_PALETTE.partial],
+    [msg("Hoàn thành"), STATUS_PALETTE.yes],
+    [msg("Tạm hoãn"), STATUS_PALETTE.na],
+  ];
+}
 
 const TIMELINE_PER_ROW = 5;
 
 export function PlanTimeline({ steps }: { steps: readonly TimelineStep[] }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   const timelineColors: Record<string, string> = {};
-  for (const [status, color] of TIMELINE_COLORS) {
+  for (const [status, color] of timelineEntries(COLORS.blue)) {
     timelineColors[status] = color;
     timelineColors[t(status)] = color;
   }
@@ -523,6 +541,7 @@ export function practiceTotal(counts: PracticeCounts): number {
 }
 
 export function Strip({ strip }: { strip: readonly string[] }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   const [title, ...steps] = strip.map((entry) => t(entry));
   return (
@@ -557,6 +576,7 @@ export function Strip({ strip }: { strip: readonly string[] }) {
 }
 
 export function QuestionCards({ items }: { items: readonly ReportItem[] }) {
+  const { COLORS, styles } = useReportTheme();
   if (items.length === 0) {
     return null;
   }
@@ -584,16 +604,19 @@ export function QuestionCards({ items }: { items: readonly ReportItem[] }) {
   );
 }
 
-const PILLAR_COLORS = { E: "#1E8E5A", S: "#164CFF", G: "#102642" } as const;
+function pillarColors(palette: ReportStyles["COLORS"]) {
+  return { E: STATUS_PALETTE.yes, S: palette.blue, G: palette.navy } as const;
+}
 
 export function PillarBadge({ code, label }: { code: "E" | "S" | "G"; label: string }) {
+  const { COLORS, styles } = useReportTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, marginBottom: 6 }}>
       <View
         style={{
           width: 22,
           height: 22,
-          backgroundColor: PILLAR_COLORS[code],
+          backgroundColor: pillarColors(COLORS)[code],
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -642,6 +665,7 @@ export function FrameworkRow({
   text: string;
   goals: readonly number[];
 }) {
+  const { COLORS, styles } = useReportTheme();
   const t = useReportT();
   return (
     <View style={{ marginTop: 14 }} wrap={false}>
@@ -650,7 +674,7 @@ export function FrameworkRow({
           style={{
             width: 30,
             height: 30,
-            backgroundColor: PILLAR_COLORS[code],
+            backgroundColor: pillarColors(COLORS)[code],
             alignItems: "center",
             justifyContent: "center",
           }}

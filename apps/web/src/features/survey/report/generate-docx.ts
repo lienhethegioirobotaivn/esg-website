@@ -17,7 +17,7 @@ import {
   TextRun,
   WidthType,
 } from "docx";
-import type { ChartDatum, ReportItem, ReportMetric, ReportModel } from "@esg/shared";
+import type { ChartDatum, ReportItem, ReportMetric, ReportModel, ReportTheme } from "@esg/shared";
 
 import type { Locale } from "@/features/locale/constants";
 import type { TFunction } from "@/features/locale/lib/translate";
@@ -30,6 +30,7 @@ type Block = Paragraph | Table;
 
 interface DocxInput {
   model: ReportModel;
+  theme: ReportTheme;
   logo: ReportLogo | null;
   images: readonly EvidenceImage[];
   draftNotice: string | null;
@@ -55,12 +56,25 @@ const DOCUMENT_LANGUAGE: Record<Locale, string> = {
   fr: "fr-FR",
   zh: "zh-CN",
 };
-const INK = "101820";
-const MUTED = "5B6677";
-const GREEN = "102642";
-const BLUE = "164CFF";
-const SOFT = "F1F5FB";
-const LINE = "DDE3EE";
+let INK = "101820";
+let MUTED = "5B6677";
+let GREEN = "102642";
+let BLUE = "164CFF";
+let SOFT = "F1F5FB";
+let LINE = "DDE3EE";
+
+function hexWithoutHash(color: string): string {
+  return color.replace("#", "");
+}
+
+function applyTheme(theme: ReportTheme): void {
+  INK = hexWithoutHash(theme.colors.ink);
+  MUTED = hexWithoutHash(theme.colors.muted);
+  GREEN = hexWithoutHash(theme.colors.primary);
+  BLUE = hexWithoutHash(theme.colors.accent);
+  SOFT = hexWithoutHash(theme.colors.panel);
+  LINE = hexWithoutHash(theme.colors.line);
+}
 const CONTENT_WIDTH = 9506;
 const MAX_IMAGE_WIDTH = 440;
 
@@ -164,8 +178,10 @@ function panel(label: string, text: string | null | undefined): Block[] {
   ];
 }
 
-const border = { style: BorderStyle.SINGLE, size: 4, color: LINE };
-const borders = { top: border, bottom: border, left: border, right: border };
+function cellBorders() {
+  const border = { style: BorderStyle.SINGLE, size: 4, color: LINE };
+  return { top: border, bottom: border, left: border, right: border };
+}
 
 function dxa(percent: number): number {
   return Math.round((CONTENT_WIDTH * percent) / 100);
@@ -174,7 +190,7 @@ function dxa(percent: number): number {
 function cell(text: string, width: number, options: { head?: boolean; bold?: boolean; fill?: string } = {}): TableCell {
   return new TableCell({
     width: { size: dxa(width), type: WidthType.DXA },
-    borders,
+    borders: cellBorders(),
     margins: { top: 60, bottom: 60, left: 100, right: 100 },
     shading: options.head
       ? { type: ShadingType.CLEAR, fill: GREEN, color: "auto" }
@@ -615,7 +631,8 @@ async function evidenceImages(
 }
 
 export async function generateReportDocx(input: DocxInput): Promise<Blob> {
-  const { model, logo, images, draftNotice, t, locale } = input;
+  const { model, theme, logo, images, draftNotice, t, locale } = input;
+  applyTheme(theme);
   const practiceChartT = (data: readonly ChartDatum[]) => practiceChart(data, t);
   const pillarChartT = (data: Parameters<typeof pillarChart>[0]) => pillarChart(data, t);
   const questionItemsT = (items: readonly (ReportItem | null)[]) => questionItems(items, t);

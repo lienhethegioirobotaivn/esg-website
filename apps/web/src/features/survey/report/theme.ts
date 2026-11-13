@@ -17,7 +17,22 @@ export const PAGE = {
   paddingHorizontal: 48,
 } as const;
 
+const RADIUS = { square: 0, soft: 4, round: 10 } as const;
+
+const DENSITY = {
+  compact: { space: 0.85, leading: -0.1 },
+  normal: { space: 1, leading: 0 },
+  airy: { space: 1.2, leading: 0.1 },
+} as const;
+
 export function createReportStyles(theme: ReportTheme) {
+  const radius = RADIUS[theme.layout.radius];
+  const density = DENSITY[theme.layout.density];
+  const gap = (value: number) => Math.round(value * density.space * 100) / 100;
+  const leading = (value: number) => Math.round((value + density.leading) * 100) / 100;
+  const outlineKpi = theme.layout.kpi === "outline";
+  const underlineHead = theme.layout.tableHead === "underline";
+
   const COLORS = {
     navy: theme.colors.primary,
     blue: theme.colors.accent,
@@ -96,13 +111,13 @@ export function createReportStyles(theme: ReportTheme) {
       fontWeight: 700,
       color: COLORS.navy,
       lineHeight: 1.3,
-      marginTop: 12,
+      marginTop: gap(12),
       marginBottom: 5,
     },
     h3: { fontSize: 9.5, fontWeight: 700, color: COLORS.navy, lineHeight: 1.35, marginBottom: 2 },
     answer: { fontSize: 9, fontWeight: 700, color: COLORS.blue, lineHeight: 1.4, marginBottom: 1 },
-    intro: { fontSize: 9, color: COLORS.muted, lineHeight: 1.5, marginBottom: 10 },
-    body: { fontSize: 9, lineHeight: 1.5 },
+    intro: { fontSize: 9, color: COLORS.muted, lineHeight: leading(1.5), marginBottom: gap(10) },
+    body: { fontSize: 9, lineHeight: leading(1.5) },
     note: { fontSize: 7.5, color: COLORS.muted, lineHeight: 1.45, marginTop: 6 },
     label: {
       fontSize: 7,
@@ -115,48 +130,69 @@ export function createReportStyles(theme: ReportTheme) {
     value: { fontSize: 9.5, lineHeight: 1.45 },
     panel: {
       backgroundColor: COLORS.panel,
-      padding: 10,
-      marginTop: 8,
+      borderRadius: radius,
+      padding: gap(10),
+      marginTop: gap(8),
     },
     panelSoft: {
       backgroundColor: COLORS.panelSoft,
-      borderLeftWidth: 2,
-      borderLeftColor: COLORS.blue,
-      padding: 10,
-      marginTop: 8,
+      ...(radius > 0
+        ? { borderWidth: 0.5, borderColor: COLORS.line, borderRadius: radius }
+        : { borderLeftWidth: 2, borderLeftColor: COLORS.blue }),
+      padding: gap(10),
+      marginTop: gap(8),
     },
     kpiRow: { flexDirection: "row", marginTop: 8 },
     kpi: {
       flexGrow: 1,
       flexBasis: 0,
-      backgroundColor: COLORS.navy,
-      padding: 10,
+      backgroundColor: outlineKpi ? COLORS.white : COLORS.navy,
+      ...(outlineKpi ? { borderWidth: 1, borderColor: COLORS.navy } : {}),
+      borderRadius: radius,
+      padding: gap(10),
       marginRight: 6,
     },
-    kpiLabel: { fontSize: 7, color: "#B8C4DA", lineHeight: 1.3, marginBottom: 3 },
-    kpiValue: { fontSize: 14, fontWeight: 700, color: COLORS.white, lineHeight: 1.25 },
+    kpiLabel: {
+      fontSize: 7,
+      color: outlineKpi ? COLORS.muted : "#B8C4DA",
+      lineHeight: 1.3,
+      marginBottom: 3,
+    },
+    kpiValue: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: outlineKpi ? COLORS.navy : COLORS.white,
+      lineHeight: 1.25,
+    },
     factsGrid: { flexDirection: "row", flexWrap: "wrap", marginTop: 8 },
     fact: { width: "50%", paddingRight: 10, marginBottom: 8 },
     factFull: { width: "100%", paddingRight: 10, marginBottom: 8 },
     tableHead: {
       flexDirection: "row",
-      backgroundColor: COLORS.navy,
-      paddingVertical: 4,
+      ...(underlineHead
+        ? { borderBottomWidth: 1.5, borderBottomColor: COLORS.navy }
+        : { backgroundColor: COLORS.navy }),
+      paddingVertical: gap(4),
       paddingHorizontal: 6,
     },
-    tableHeadText: { fontSize: 7.5, fontWeight: 700, color: COLORS.white, lineHeight: 1.3 },
+    tableHeadText: {
+      fontSize: 7.5,
+      fontWeight: 700,
+      color: underlineHead ? COLORS.navy : COLORS.white,
+      lineHeight: 1.3,
+    },
     tableRow: {
       flexDirection: "row",
       borderBottomWidth: 0.5,
       borderBottomColor: COLORS.line,
-      paddingVertical: 4,
+      paddingVertical: gap(4),
       paddingHorizontal: 6,
     },
-    tableCell: { fontSize: 8.5, lineHeight: 1.45 },
-    cellMuted: { fontSize: 7.5, color: COLORS.muted, lineHeight: 1.45 },
+    tableCell: { fontSize: 8.5, lineHeight: leading(1.45) },
+    cellMuted: { fontSize: 7.5, color: COLORS.muted, lineHeight: leading(1.45) },
   });
 
-  return { COLORS, styles };
+  return { COLORS, styles, radius };
 }
 
 export type ReportStyles = ReturnType<typeof createReportStyles>;

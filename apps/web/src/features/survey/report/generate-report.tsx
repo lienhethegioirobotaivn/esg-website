@@ -27,7 +27,7 @@ export async function generateReportBlob(
   input: GenerateInput,
   fontBaseUrl: string = DEFAULT_FONT_BASE_URL,
 ): Promise<Blob> {
-  registerReportFonts(fontBaseUrl, input.locale);
+  registerReportFonts(fontBaseUrl, input.locale, input.theme.font);
   const isChinese = input.locale === "zh";
   const model = isChinese ? mapStrings(input.model, softenHyphens) : input.model;
   const t: TFunction = isChinese

@@ -112,6 +112,66 @@ describe("resolveReportTheme", () => {
   });
 });
 
+describe("resolveReportTheme font and layout", () => {
+  const colors = { primary: "#7A1F2B", accent: "#C0392B" };
+
+  it("uses sans font and the plain layout when they are not given", () => {
+    const theme = resolveReportTheme({ version: 1, colors });
+    assert.equal(theme.font, "sans");
+    assert.deepEqual({ ...theme.layout }, { ...DEFAULT_REPORT_THEME.layout });
+  });
+
+  it("accepts a serif font and layout variants", () => {
+    const theme = resolveReportTheme({
+      version: 1,
+      colors,
+      font: "serif",
+      layout: { cover: "band", tableHead: "underline", kpi: "outline", radius: "round", density: "airy" },
+    });
+    assert.equal(theme.font, "serif");
+    assert.deepEqual(
+      { ...theme.layout },
+      { cover: "band", tableHead: "underline", kpi: "outline", radius: "round", density: "airy" },
+    );
+  });
+
+  it("keeps valid fields when another field is invalid", () => {
+    const theme = resolveReportTheme({
+      version: 1,
+      colors,
+      font: "comic",
+      layout: { cover: "diagonal", kpi: "outline" },
+    });
+    assert.equal(theme.font, "sans");
+    assert.equal(theme.layout.cover, "plain");
+    assert.equal(theme.layout.kpi, "outline");
+    assert.equal(theme.colors.primary, "#7A1F2B");
+  });
+
+  it("ignores a layout that is not an object", () => {
+    const theme = resolveReportTheme({ version: 1, colors, layout: "band" });
+    assert.deepEqual({ ...theme.layout }, { ...DEFAULT_REPORT_THEME.layout });
+  });
+
+  it("is the default theme only when colors, font and layout all match", () => {
+    const withDefaults = resolveReportTheme({
+      version: 1,
+      colors: DEFAULT_REPORT_THEME.colors,
+      font: "sans",
+      layout: DEFAULT_REPORT_THEME.layout,
+    });
+    assert.equal(withDefaults, DEFAULT_REPORT_THEME);
+    const serif = resolveReportTheme({ version: 1, colors: DEFAULT_REPORT_THEME.colors, font: "serif" });
+    assert.equal(serif.isDefault, false);
+    const band = resolveReportTheme({
+      version: 1,
+      colors: DEFAULT_REPORT_THEME.colors,
+      layout: { cover: "band" },
+    });
+    assert.equal(band.isDefault, false);
+  });
+});
+
 describe("contrastRatio", () => {
   it("is 21 for black on white and 1 for identical colors", () => {
     assert.equal(Math.round(contrastRatio("#000000", "#FFFFFF")), 21);

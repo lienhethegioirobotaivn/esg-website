@@ -10,13 +10,47 @@ export interface ReportThemeColors {
   readonly line: string;
 }
 
+export const REPORT_FONT_KINDS = ["sans", "serif"] as const;
+export const REPORT_COVER_KINDS = ["plain", "band", "sidebar", "solid"] as const;
+export const REPORT_TABLE_HEAD_KINDS = ["solid", "underline"] as const;
+export const REPORT_KPI_KINDS = ["solid", "outline"] as const;
+export const REPORT_RADIUS_KINDS = ["square", "soft", "round"] as const;
+export const REPORT_DENSITY_KINDS = ["compact", "normal", "airy"] as const;
+
+export type ReportFontKind = (typeof REPORT_FONT_KINDS)[number];
+export type ReportCoverKind = (typeof REPORT_COVER_KINDS)[number];
+export type ReportTableHeadKind = (typeof REPORT_TABLE_HEAD_KINDS)[number];
+export type ReportKpiKind = (typeof REPORT_KPI_KINDS)[number];
+export type ReportRadiusKind = (typeof REPORT_RADIUS_KINDS)[number];
+export type ReportDensityKind = (typeof REPORT_DENSITY_KINDS)[number];
+
+export interface ReportThemeLayout {
+  readonly cover: ReportCoverKind;
+  readonly tableHead: ReportTableHeadKind;
+  readonly kpi: ReportKpiKind;
+  readonly radius: ReportRadiusKind;
+  readonly density: ReportDensityKind;
+}
+
 export interface ReportTheme {
   readonly isDefault: boolean;
   readonly colors: ReportThemeColors;
+  readonly font: ReportFontKind;
+  readonly layout: ReportThemeLayout;
 }
+
+export const DEFAULT_REPORT_LAYOUT: ReportThemeLayout = {
+  cover: "plain",
+  tableHead: "solid",
+  kpi: "solid",
+  radius: "square",
+  density: "normal",
+};
 
 export const DEFAULT_REPORT_THEME: ReportTheme = {
   isDefault: true,
+  font: "sans",
+  layout: DEFAULT_REPORT_LAYOUT,
   colors: {
     primary: "#102642",
     accent: "#164CFF",
@@ -40,8 +74,18 @@ function normalizeHex(value: string): string {
 
 const hexColor = z.string().trim().regex(HEX_PATTERN).transform(normalizeHex);
 
+const layoutInputSchema = z.object({
+  cover: z.enum(REPORT_COVER_KINDS).optional().catch(undefined),
+  tableHead: z.enum(REPORT_TABLE_HEAD_KINDS).optional().catch(undefined),
+  kpi: z.enum(REPORT_KPI_KINDS).optional().catch(undefined),
+  radius: z.enum(REPORT_RADIUS_KINDS).optional().catch(undefined),
+  density: z.enum(REPORT_DENSITY_KINDS).optional().catch(undefined),
+});
+
 export const reportThemeInputSchema = z.object({
   version: z.literal(1),
+  font: z.enum(REPORT_FONT_KINDS).optional().catch(undefined),
+  layout: layoutInputSchema.optional().catch(undefined),
   colors: z.object({
     primary: hexColor,
     accent: hexColor,
@@ -126,15 +170,21 @@ function lightOr(
     : fallback;
 }
 
-function sameColors(first: ReportThemeColors, second: ReportThemeColors): boolean {
+function sameTheme(first: Omit<ReportTheme, "isDefault">, second: Omit<ReportTheme, "isDefault">): boolean {
   return (
-    first.primary === second.primary &&
-    first.accent === second.accent &&
-    first.ink === second.ink &&
-    first.muted === second.muted &&
-    first.panel === second.panel &&
-    first.panelSoft === second.panelSoft &&
-    first.line === second.line
+    first.font === second.font &&
+    first.layout.cover === second.layout.cover &&
+    first.layout.tableHead === second.layout.tableHead &&
+    first.layout.kpi === second.layout.kpi &&
+    first.layout.radius === second.layout.radius &&
+    first.layout.density === second.layout.density &&
+    first.colors.primary === second.colors.primary &&
+    first.colors.accent === second.colors.accent &&
+    first.colors.ink === second.colors.ink &&
+    first.colors.muted === second.colors.muted &&
+    first.colors.panel === second.colors.panel &&
+    first.colors.panelSoft === second.colors.panelSoft &&
+    first.colors.line === second.colors.line
   );
 }
 
@@ -166,8 +216,17 @@ export function resolveReportTheme(input: unknown): ReportTheme {
     panelSoft,
     line,
   };
-  if (sameColors(colors, DEFAULT_REPORT_THEME.colors)) {
+  const font = parsed.data.font ?? DEFAULT_REPORT_THEME.font;
+  const givenLayout = parsed.data.layout;
+  const layout: ReportThemeLayout = {
+    cover: givenLayout?.cover ?? DEFAULT_REPORT_LAYOUT.cover,
+    tableHead: givenLayout?.tableHead ?? DEFAULT_REPORT_LAYOUT.tableHead,
+    kpi: givenLayout?.kpi ?? DEFAULT_REPORT_LAYOUT.kpi,
+    radius: givenLayout?.radius ?? DEFAULT_REPORT_LAYOUT.radius,
+    density: givenLayout?.density ?? DEFAULT_REPORT_LAYOUT.density,
+  };
+  if (sameTheme({ colors, font, layout }, DEFAULT_REPORT_THEME)) {
     return DEFAULT_REPORT_THEME;
   }
-  return { isDefault: false, colors };
+  return { isDefault: false, colors, font, layout };
 }

@@ -126,7 +126,7 @@ export function ReportDocument({
   const { COLORS, styles } = reportStyles;
   const track = (key: TocKey) => (pageNumber: number) => onPage(key, pageNumber);
   const envPillar = charts.pillarStatus.find((row) => row.label === "Môi trường" || row.label === t("Môi trường"));
-  const fontFamily = reportFontFamily(locale);
+  const fontFamily = reportFontFamily(locale, theme.font);
   const brand = meta.tradingName ?? meta.companyName;
   const year = reportYear(meta.period);
   const strips = COPY.strips;
@@ -197,6 +197,33 @@ export function ReportDocument({
   const r07FirstKey = images.length > 0 ? "images" : "refs";
   const r07First = r07FirstKey;
 
+  const coverKind = theme.layout.cover;
+  const coverOnDark = coverKind === "solid";
+  const coverInk = coverOnDark ? COLORS.white : COLORS.ink;
+  const coverTitle = coverKind === "plain" ? COLORS.ink : coverOnDark ? COLORS.white : COLORS.navy;
+  const coverRule = coverKind === "plain" ? COLORS.ink : coverOnDark ? COLORS.white : COLORS.blue;
+  const coverMuted = coverOnDark ? { color: COLORS.white, opacity: 0.8 } : { color: COLORS.muted };
+  const coverLabelColor = coverOnDark || coverKind === "band" ? COLORS.white : COLORS.muted;
+  const coverLabel = (
+    <Text style={{ fontSize: 8, letterSpacing: 1.4, color: coverLabelColor, lineHeight: 1.3 }}>
+      {t("HỒ SƠ DOANH NGHIỆP")}
+    </Text>
+  );
+  const coverLogoImage = logo ? (
+    <Image
+      src={logo.src}
+      style={{ width: Math.min(130, (logo.width / logo.height) * 44), height: 44, objectFit: "contain" }}
+    />
+  ) : null;
+  const coverLogo =
+    logo && (coverOnDark || coverKind === "band") ? (
+      <View style={{ backgroundColor: COLORS.white, padding: 8, borderRadius: reportStyles.radius }}>
+        {coverLogoImage}
+      </View>
+    ) : (
+      coverLogoImage
+    );
+
   return (
     <ReportTextProvider t={t} locale={locale}>
     <ReportThemeProvider value={reportStyles}>
@@ -205,34 +232,41 @@ export function ReportDocument({
       author="ESG Report Online"
       language={HTML_LANG[locale]}
     >
-      <Page size="A4" style={[styles.page, { fontFamily, backgroundColor: COLORS.white, paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0 }]}>
-        <View style={{ height: 840, paddingHorizontal: 64 }}>
-          <View style={{ marginTop: 64, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <Text style={{ fontSize: 8, letterSpacing: 1.4, color: COLORS.muted, lineHeight: 1.3 }}>
-              {t("HỒ SƠ DOANH NGHIỆP")}
-            </Text>
-            {logo ? (
-              <Image
-                src={logo.src}
-                style={{ width: Math.min(130, (logo.width / logo.height) * 44), height: 44, objectFit: "contain" }}
-              />
-            ) : null}
+      <Page size="A4" style={[styles.page, { fontFamily, backgroundColor: coverOnDark ? COLORS.navy : COLORS.white, paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0 }]}>
+        {coverKind === "sidebar" ? (
+          <>
+            <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 26, backgroundColor: COLORS.navy }} />
+            <View style={{ position: "absolute", top: 0, bottom: 0, left: 26, width: 5, backgroundColor: COLORS.blue }} />
+          </>
+        ) : null}
+        {coverKind === "band" ? (
+          <View style={{ height: 112, paddingHorizontal: 64, backgroundColor: COLORS.navy, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            {coverLabel}
+            {coverLogo}
           </View>
-          <View style={{ marginTop: 150 }}>
-            <View style={{ width: 36, height: 3, backgroundColor: COLORS.ink }} />
-            <Text style={{ fontSize: 40, fontWeight: 700, color: COLORS.ink, lineHeight: 1.15, marginTop: 22 }}>
+        ) : null}
+        <View style={{ height: coverKind === "band" ? 728 : 840, paddingHorizontal: 64 }}>
+          {coverKind === "band" ? null : (
+            <View style={{ marginTop: 64, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              {coverLabel}
+              {coverLogo}
+            </View>
+          )}
+          <View style={{ marginTop: coverKind === "band" ? 146 : coverOnDark && logo ? 134 : 150 }}>
+            <View style={{ width: 36, height: 3, backgroundColor: coverRule }} />
+            <Text style={{ fontSize: 40, fontWeight: 700, color: coverTitle, lineHeight: 1.15, marginTop: 22 }}>
               {t("BÁO CÁO ESG")}
             </Text>
             {year ? (
-              <Text style={{ fontSize: 28, color: COLORS.muted, lineHeight: 1.2, marginTop: 4 }}>{year}</Text>
+              <Text style={{ fontSize: 28, lineHeight: 1.2, marginTop: 4, ...coverMuted }}>{year}</Text>
             ) : null}
-            <Text style={{ fontSize: 18, fontWeight: 700, color: COLORS.ink, lineHeight: 1.35, marginTop: 44 }}>
+            <Text style={{ fontSize: 18, fontWeight: 700, color: coverTitle, lineHeight: 1.35, marginTop: 44 }}>
               {meta.companyName}
             </Text>
-            <Text style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.4, marginTop: 10 }}>
+            <Text style={{ fontSize: 10, lineHeight: 1.4, marginTop: 10, ...coverMuted }}>
               {t("Môi trường")} • {t("Xã hội")} • {t("Quản trị")}
             </Text>
-            <Text style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.4, marginTop: 3 }}>
+            <Text style={{ fontSize: 10, lineHeight: 1.4, marginTop: 3, ...coverMuted }}>
               {t("Kỳ báo cáo {period}", { period: meta.period })}
             </Text>
           </View>
@@ -247,9 +281,9 @@ export function ReportDocument({
               paddingTop: 12,
             }}
           >
-            <Text style={{ fontSize: 10, color: COLORS.ink, lineHeight: 1.5 }}>{t(COPY.coverTagline)}</Text>
-            <Text style={{ fontSize: 8, color: COLORS.muted, lineHeight: 1.5, marginTop: 4 }}>{t(COPY.coverNote)}</Text>
-            <Text style={{ fontSize: 8, fontWeight: 700, color: COLORS.ink, letterSpacing: 1.2, marginTop: 12 }}>
+            <Text style={{ fontSize: 10, color: coverInk, lineHeight: 1.5 }}>{t(COPY.coverTagline)}</Text>
+            <Text style={{ fontSize: 8, lineHeight: 1.5, marginTop: 4, ...coverMuted }}>{t(COPY.coverNote)}</Text>
+            <Text style={{ fontSize: 8, fontWeight: 700, color: coverInk, letterSpacing: 1.2, marginTop: 12 }}>
               ESG REPORT ONLINE
             </Text>
           </View>

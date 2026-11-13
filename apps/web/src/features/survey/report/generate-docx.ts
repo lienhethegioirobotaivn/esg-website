@@ -5,6 +5,7 @@ import {
   Footer,
   Header,
   HeadingLevel,
+  HeightRule,
   ImageRun,
   Packer,
   PageNumber,
@@ -17,7 +18,16 @@ import {
   TextRun,
   WidthType,
 } from "docx";
-import type { ChartDatum, ReportItem, ReportMetric, ReportModel, ReportTheme } from "@esg/shared";
+import type {
+  ChartDatum,
+  ReportCoverKind,
+  ReportItem,
+  ReportKpiKind,
+  ReportMetric,
+  ReportModel,
+  ReportTableHeadKind,
+  ReportTheme,
+} from "@esg/shared";
 
 import type { Locale } from "@/features/locale/constants";
 import type { TFunction } from "@/features/locale/lib/translate";
@@ -48,7 +58,7 @@ interface Fact {
   readonly value: string | null;
 }
 
-const FONT = "Arial";
+let FONT = "Arial";
 const EAST_ASIA_FONT: Partial<Record<Locale, string>> = { zh: "Microsoft YaHei" };
 const DOCUMENT_LANGUAGE: Record<Locale, string> = {
   vi: "vi-VN",
@@ -62,6 +72,14 @@ let GREEN = "102642";
 let BLUE = "164CFF";
 let SOFT = "F1F5FB";
 let LINE = "DDE3EE";
+let COVER_KIND: ReportCoverKind = "plain";
+let TABLE_HEAD_KIND: ReportTableHeadKind = "solid";
+let KPI_KIND: ReportKpiKind = "solid";
+let SPACE_SCALE = 1;
+let LEADING_SHIFT = 0;
+
+const DENSITY_SPACE = { compact: 0.85, normal: 1, airy: 1.2 } as const;
+const DENSITY_LEADING = { compact: -20, normal: 0, airy: 30 } as const;
 
 function hexWithoutHash(color: string): string {
   return color.replace("#", "");
@@ -74,6 +92,20 @@ function applyTheme(theme: ReportTheme): void {
   BLUE = hexWithoutHash(theme.colors.accent);
   SOFT = hexWithoutHash(theme.colors.panel);
   LINE = hexWithoutHash(theme.colors.line);
+  FONT = theme.font === "serif" ? "Georgia" : "Arial";
+  COVER_KIND = theme.layout.cover;
+  TABLE_HEAD_KIND = theme.layout.tableHead;
+  KPI_KIND = theme.layout.kpi;
+  SPACE_SCALE = DENSITY_SPACE[theme.layout.density];
+  LEADING_SHIFT = DENSITY_LEADING[theme.layout.density];
+}
+
+function space(value: number): number {
+  return Math.round(value * SPACE_SCALE);
+}
+
+function leading(value: number): number {
+  return value + LEADING_SHIFT;
 }
 const CONTENT_WIDTH = 9506;
 const MAX_IMAGE_WIDTH = 440;
@@ -103,7 +135,7 @@ function run(text: string, options: { bold?: boolean; italics?: boolean; color?:
 }
 
 function body(text: string): Paragraph {
-  return new Paragraph({ spacing: { after: 120, line: 300 }, children: [run(text)] });
+  return new Paragraph({ spacing: { after: space(120), line: leading(300) }, children: [run(text)] });
 }
 
 function note(text: string): Paragraph {
@@ -158,7 +190,7 @@ function panel(label: string, text: string | null | undefined): Block[] {
               width: { size: CONTENT_WIDTH, type: WidthType.DXA },
               shading: { type: ShadingType.CLEAR, fill: SOFT, color: "auto" },
               borders: { top: none, bottom: none, right: none, left: side },
-              margins: { top: 120, bottom: 120, left: 200, right: 200 },
+              margins: { top: space(120), bottom: space(120), left: 200, right: 200 },
               children: [
                 new Paragraph({
                   spacing: { after: 60 },
@@ -166,7 +198,7 @@ function panel(label: string, text: string | null | undefined): Block[] {
                 }),
                 ...text.split("\n").map(
                   (line) =>
-                    new Paragraph({ spacing: { line: 290, after: 40 }, children: [run(line)] }),
+                    new Paragraph({ spacing: { line: leading(290), after: 40 }, children: [run(line)] }),
                 ),
               ],
             }),
@@ -187,24 +219,37 @@ function dxa(percent: number): number {
   return Math.round((CONTENT_WIDTH * percent) / 100);
 }
 
+function underlineBorders() {
+  const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  return {
+    top: none,
+    left: none,
+    right: none,
+    bottom: { style: BorderStyle.SINGLE, size: 12, color: GREEN },
+  };
+}
+
 function cell(text: string, width: number, options: { head?: boolean; bold?: boolean; fill?: string } = {}): TableCell {
+  const underlineHead = options.head === true && TABLE_HEAD_KIND === "underline";
   return new TableCell({
     width: { size: dxa(width), type: WidthType.DXA },
-    borders: cellBorders(),
-    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    borders: underlineHead ? underlineBorders() : cellBorders(),
+    margins: { top: space(60), bottom: space(60), left: 100, right: 100 },
     shading: options.head
-      ? { type: ShadingType.CLEAR, fill: GREEN, color: "auto" }
+      ? underlineHead
+        ? undefined
+        : { type: ShadingType.CLEAR, fill: GREEN, color: "auto" }
       : options.fill
         ? { type: ShadingType.CLEAR, fill: options.fill, color: "auto" }
         : undefined,
     children: text.split("\n").map(
       (line) =>
         new Paragraph({
-          spacing: { line: 270 },
+          spacing: { line: leading(270) },
           children: [
             run(line, {
               bold: options.head === true || options.bold === true,
-              color: options.head ? "FFFFFF" : INK,
+              color: options.head ? (underlineHead ? GREEN : "FFFFFF") : INK,
               size: 19,
             }),
           ],
@@ -271,6 +316,8 @@ function kpis(items: readonly Fact[]): Block[] {
   }
   const width = Math.floor(CONTENT_WIDTH / list.length);
   const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const outline = KPI_KIND === "outline";
+  const outlineEdge = { style: BorderStyle.SINGLE, size: 8, color: GREEN };
   return [
     new Table({
       width: { size: width * list.length, type: WidthType.DXA },
@@ -282,8 +329,10 @@ function kpis(items: readonly Fact[]): Block[] {
             (item) =>
               new TableCell({
                 width: { size: width, type: WidthType.DXA },
-                shading: { type: ShadingType.CLEAR, fill: SOFT, color: "auto" },
-                borders: { top: none, bottom: none, left: none, right: { style: BorderStyle.SINGLE, size: 24, color: "FFFFFF" } },
+                shading: outline ? undefined : { type: ShadingType.CLEAR, fill: SOFT, color: "auto" },
+                borders: outline
+                  ? { top: outlineEdge, bottom: outlineEdge, left: outlineEdge, right: outlineEdge }
+                  : { top: none, bottom: none, left: none, right: { style: BorderStyle.SINGLE, size: 24, color: "FFFFFF" } },
                 margins: { top: 140, bottom: 140, left: 160, right: 160 },
                 children: [
                   new Paragraph({ children: [run(item.value, { bold: true, color: GREEN, size: 36 })] }),
@@ -341,7 +390,7 @@ function newCanvas(rows: number): { canvas: HTMLCanvasElement; context: CanvasRe
   context.scale(CHART_SCALE, CHART_SCALE);
   context.fillStyle = "#FFFFFF";
   context.fillRect(0, 0, CHART_WIDTH, height);
-  context.font = "12px Arial, sans-serif";
+  context.font = `12px ${FONT}, sans-serif`;
   context.textBaseline = "middle";
   return { canvas, context, height };
 }
@@ -504,13 +553,82 @@ function reportYear(period: string): string | null {
   return match?.[1] ?? null;
 }
 
+function coverBand(label: string): Block[] {
+  const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  return [
+    new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: [CONTENT_WIDTH],
+      layout: TableLayoutType.FIXED,
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+              shading: { type: ShadingType.CLEAR, fill: GREEN, color: "auto" },
+              borders: { top: none, bottom: none, left: none, right: none },
+              margins: { top: 300, bottom: 300, left: 300, right: 300 },
+              children: [
+                new Paragraph({ children: [run(label, { bold: true, color: "FFFFFF", size: 18 })] }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({ spacing: { after: 120 }, children: [] }),
+  ];
+}
+
+function coverSolid(content: readonly Block[]): Block[] {
+  const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  return [
+    new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: [CONTENT_WIDTH],
+      layout: TableLayoutType.FIXED,
+      rows: [
+        new TableRow({
+          height: { value: 11800, rule: HeightRule.ATLEAST },
+          children: [
+            new TableCell({
+              width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+              shading: { type: ShadingType.CLEAR, fill: GREEN, color: "auto" },
+              borders: { top: none, bottom: none, left: none, right: none },
+              margins: { top: 400, bottom: 400, left: 500, right: 500 },
+              children: [...content],
+            }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({ children: [] }),
+  ];
+}
+
 function cover(model: ReportModel, logo: ReportLogo | null, t: TFunction): Block[] {
   const { meta } = model;
   const year = reportYear(meta.period);
-  const blocks: Block[] = [];
+  const band = COVER_KIND === "band";
+  const dark = COVER_KIND === "solid";
+  const inkColor = dark ? "FFFFFF" : INK;
+  const mutedColor = dark ? "E6EBF5" : MUTED;
+  const titleColor = dark ? "FFFFFF" : GREEN;
+  const draftColor = dark ? "FDE68A" : "B45309";
+  const edge =
+    COVER_KIND === "sidebar"
+      ? {
+          border: { left: { style: BorderStyle.SINGLE, size: 36, color: BLUE, space: 12 } },
+          indent: { left: 240 },
+        }
+      : {};
+  const lead: Block[] = [];
+  if (band) {
+    lead.push(...coverBand(t("HỒ SƠ DOANH NGHIỆP")));
+  }
   if (logo) {
     const size = scaled(logo, 160, 56);
-    blocks.push(
+    lead.push(
       new Paragraph({
         alignment: AlignmentType.RIGHT,
         children: [
@@ -523,55 +641,74 @@ function cover(model: ReportModel, logo: ReportLogo | null, t: TFunction): Block
       }),
     );
   }
-  blocks.push(
-    new Paragraph({
-      spacing: { before: logo ? 1800 : 2600, after: 120 },
-      children: [run(t("HỒ SƠ DOANH NGHIỆP"), { bold: true, color: MUTED, size: 18 })],
-    }),
-    new Paragraph({
-      spacing: { after: 60 },
-      children: [run(t("BÁO CÁO ESG"), { bold: true, color: GREEN, size: 80 })],
-    }),
-  );
-  if (year) {
+  const blocks: Block[] = [];
+  if (band) {
+    blocks.push(new Paragraph({ spacing: { before: logo ? 1400 : 2200 }, children: [] }));
+  } else {
     blocks.push(
-      new Paragraph({ spacing: { after: 400 }, children: [run(year, { color: MUTED, size: 56 })] }),
+      new Paragraph({
+        ...edge,
+        spacing: { before: logo ? 1800 : 2600, after: 120 },
+        children: [run(t("HỒ SƠ DOANH NGHIỆP"), { bold: true, color: mutedColor, size: 18 })],
+      }),
     );
   }
   blocks.push(
     new Paragraph({
+      ...edge,
+      spacing: { after: 60 },
+      children: [run(t("BÁO CÁO ESG"), { bold: true, color: titleColor, size: 80 })],
+    }),
+  );
+  if (year) {
+    blocks.push(
+      new Paragraph({
+        ...edge,
+        spacing: { after: 400 },
+        children: [run(year, { color: mutedColor, size: 56 })],
+      }),
+    );
+  }
+  blocks.push(
+    new Paragraph({
+      ...edge,
       spacing: { after: 120 },
-      children: [run(meta.companyName, { bold: true, size: 36 })],
+      children: [run(meta.companyName, { bold: true, color: inkColor, size: 36 })],
     }),
     new Paragraph({
+      ...edge,
       spacing: { after: 40 },
-      children: [run(t("Môi trường • Xã hội • Quản trị"), { color: MUTED })],
+      children: [run(t("Môi trường • Xã hội • Quản trị"), { color: mutedColor })],
     }),
     new Paragraph({
+      ...edge,
       spacing: { after: 600 },
-      children: [run(t("Kỳ báo cáo {period}", { period: meta.period }), { color: MUTED })],
+      children: [run(t("Kỳ báo cáo {period}", { period: meta.period }), { color: mutedColor })],
     }),
   );
   if (meta.isDraft) {
     blocks.push(
       new Paragraph({
         spacing: { after: 300 },
-        children: [run(t("BẢN NHÁP"), { bold: true, color: "B45309", size: 32 })],
+        children: [run(t("BẢN NHÁP"), { bold: true, color: draftColor, size: 32 })],
       }),
     );
   }
   blocks.push(
     new Paragraph({
       spacing: { before: 600, after: 60 },
-      children: [run(t(COPY.coverTagline))],
+      children: [run(t(COPY.coverTagline), { color: inkColor })],
     }),
-    note(t(COPY.coverNote)),
+    new Paragraph({
+      spacing: { before: 80, after: 120, line: 280 },
+      children: [run(t(COPY.coverNote), { italics: true, color: mutedColor, size: 18 })],
+    }),
     new Paragraph({
       spacing: { before: 200 },
-      children: [run("ESG REPORT ONLINE", { bold: true, size: 18 })],
+      children: [run("ESG REPORT ONLINE", { bold: true, color: inkColor, size: 18 })],
     }),
   );
-  return blocks;
+  return dark ? [...lead, ...coverSolid(blocks)] : [...lead, ...blocks];
 }
 
 async function evidenceImages(

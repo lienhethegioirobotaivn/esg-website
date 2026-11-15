@@ -23,14 +23,12 @@ import type { BrandThemeDraft } from "../lib/theme-draft";
 
 export interface BrandThemeState {
   files: readonly File[];
-  consent: boolean;
   isAnalyzing: boolean;
   result: BrandThemeResult | null;
   error: string | null;
   pickError: string | null;
   draft: BrandThemeDraft;
   theme: ReportTheme;
-  setConsent: (value: boolean) => void;
   addFiles: (incoming: readonly File[]) => void;
   removeFile: (index: number) => void;
   analyze: () => Promise<void>;
@@ -45,7 +43,6 @@ function fileKey(file: File): string {
 export function useBrandTheme(): BrandThemeState {
   const t = useT();
   const [files, setFiles] = useState<readonly File[]>([]);
-  const [consent, setConsent] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<BrandThemeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +109,7 @@ export function useBrandTheme(): BrandThemeState {
     setError(null);
     try {
       const prepared = await prepareBrandImages(files);
-      const analysis = await requestBrandAnalysis(prepared, consent, controller.signal);
+      const analysis = await requestBrandAnalysis(prepared, true, controller.signal);
       if (controller.signal.aborted) {
         return;
       }
@@ -143,14 +140,12 @@ export function useBrandTheme(): BrandThemeState {
 
   return {
     files,
-    consent,
     isAnalyzing,
     result,
     error,
     pickError,
     draft,
     theme,
-    setConsent,
     addFiles,
     removeFile,
     analyze,

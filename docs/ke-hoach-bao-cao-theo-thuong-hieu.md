@@ -146,3 +146,8 @@ Trạng thái: đã lập kế hoạch, chưa code. Các quyết định ở m�
 - Tài liệu: `docs/thuong-hieu-bao-cao.md` (bàn giao: cấu hình, luồng, tệp chính, quyền riêng tư, giới hạn, xử lý sự cố, việc làm sau), cập nhật README (trạng thái, lệnh test, cấu trúc, mục tài liệu), `da-ngon-ngu.md` (mục 5 phông, mục 7 kiểm thử tay, lệnh test web), `.env.example` và bảng biến môi trường (từ GĐ3).
 - Chạy lần cuối: `pnpm typecheck` (3 package) sạch, lint 0 lỗi (4 cảnh báo `alt` cũ), 59 test `@esg/shared` và 11 test web đạt, `i18n:check` đủ 3 ngôn ngữ.
 - Chưa kiểm tra được: Gemini thật, `pnpm build` và Vercel thật, toàn trang khảo sát với bộ câu hỏi từ Google Sheet, Word mở bằng Microsoft Word thật. Việc Bình cần làm trước khi bật cho khách: chạy `pnpm --filter web brand:try` với ảnh thật, thử luồng ở 4 ngôn ngữ theo mục 7 của `da-ngon-ngu.md`, mở Word bằng Word thật.
+
+### Điều chỉnh sau GĐ5 (15/11/2026): bỏ ô đồng ý và chữ nhắc tới AI trên giao diện
+- Theo yêu cầu của Bình, thẻ không còn ô "Tôi đồng ý gửi ảnh tới Google Gemini" và lời cảnh báo; khách chỉ thấy: tải ảnh, bấm "Thiết kế báo cáo từ ảnh", xem và chỉnh. Các câu mô tả, nút và thông báo không còn nhắc AI hay Gemini; khi dùng giao diện cơ bản từ bảng màu (thiếu khóa, hết hạn mức, lỗi) thẻ chỉ báo "Đã tạo giao diện cơ bản từ màu trong ảnh của bạn".
+- Hệ quả cần biết: ảnh luôn được gửi tới Gemini khi bật `ENABLE_BRAND_THEME`. Quyết định mặc định ở phần đầu kế hoạch (thông báo đồng ý) được thay bằng đề nghị ghi vào chính sách quyền riêng tư của website. API vẫn giữ tham số `useAi` để thử.
+- Đã thử trên Chromium (`next dev`, Gemini giả): vi, zh không có ô chọn và không có chữ AI, nút và thông báo mới đúng. Typecheck, lint, test web và `i18n:check` đạt.

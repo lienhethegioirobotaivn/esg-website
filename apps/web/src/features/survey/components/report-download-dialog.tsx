@@ -14,6 +14,7 @@ interface ReportDownloadDialogProps {
   onJump: (target: DraftJumpTarget) => void;
   exportingFormat: ReportFormat | null;
   error: string | null;
+  themeLabel?: string | null;
   onDownload: (format: ReportFormat) => void;
   onClose: () => void;
 }
@@ -24,6 +25,7 @@ export function ReportDownloadDialog({
   onJump,
   exportingFormat,
   error,
+  themeLabel = null,
   onDownload,
   onClose,
 }: ReportDownloadDialogProps) {
@@ -32,7 +34,10 @@ export function ReportDownloadDialog({
   return (
     <Modal title={t("Tải báo cáo")} onClose={onClose}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{t("Bạn có thể tải cả hai định dạng.")}</p>
+        <div>
+          <p className="text-sm text-muted">{t("Bạn có thể tải cả hai định dạng.")}</p>
+          {themeLabel ? <p className="mt-1 text-xs text-subtle">{themeLabel}</p> : null}
+        </div>
         {isDraft ? (
           <span className="rounded-full bg-warning-50 px-3 py-1 text-xs font-medium text-warning-600">
             {t("Bản nháp")}

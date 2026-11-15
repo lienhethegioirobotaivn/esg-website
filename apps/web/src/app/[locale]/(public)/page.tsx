@@ -15,6 +15,7 @@ import {
   SITE_TAGLINE,
   absoluteUrl,
 } from "@/lib/site";
+import { getServerEnv } from "@/server/env";
 import { translateSurvey } from "@/server/translation/translate-survey";
 import { getSurveyBank } from "@/server/survey-bank/get-survey-bank";
 
@@ -39,6 +40,14 @@ async function loadSurvey() {
   } catch (error) {
     console.error(error);
     return { survey: null, error: msg("Không tải được bộ câu hỏi.") };
+  }
+}
+
+function isBrandThemeEnabled(): boolean {
+  try {
+    return getServerEnv().ENABLE_BRAND_THEME;
+  } catch {
+    return false;
   }
 }
 
@@ -72,6 +81,7 @@ export default async function HomePage() {
           {survey ? (
             <SurveyWorkspace
               survey={survey}
+              brandThemeEnabled={isBrandThemeEnabled()}
               intro={
                 <>
                   <h1 className="text-2xl font-bold">

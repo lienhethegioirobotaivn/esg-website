@@ -9,11 +9,13 @@ import type { ReportPreview } from "../hooks/use-report-preview";
 
 interface ReportPreviewDialogProps {
   preview: ReportPreview;
+  themeLabel?: string | null;
   onClose: () => void;
 }
 
 export function ReportPreviewDialog({
   preview,
+  themeLabel = null,
   onClose,
 }: ReportPreviewDialogProps) {
   const t = useT();
@@ -42,6 +44,7 @@ export function ReportPreviewDialog({
           <ExternalLink aria-hidden className="size-4" />
           {t("Mở trong tab mới")}
         </a>
+        {themeLabel ? <span className="text-xs text-subtle">{themeLabel}</span> : null}
         <Button variant="secondary" onClick={onClose}>
           {t("Đóng")}
         </Button>

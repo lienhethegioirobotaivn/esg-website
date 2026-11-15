@@ -19,6 +19,7 @@ import {
   clearReportCode,
 } from "@/features/company";
 import type { CompanyField, CompanyFormValues } from "@/features/company";
+import { BrandThemeCard, useBrandTheme } from "@/features/brand-theme";
 import { FeedbackCard } from "@/features/contact";
 import { useT } from "@/features/locale";
 import { GuidancePanel } from "@/features/guidance";
@@ -63,6 +64,7 @@ function subscribeNothing(): () => void {
 interface SurveyWorkspaceProps {
   intro: ReactNode;
   survey: Survey;
+  brandThemeEnabled?: boolean;
 }
 
 function Hero({ intro, aside }: { intro: ReactNode; aside?: ReactNode }) {
@@ -74,7 +76,11 @@ function Hero({ intro, aside }: { intro: ReactNode; aside?: ReactNode }) {
   );
 }
 
-export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
+export function SurveyWorkspace({
+  intro,
+  survey,
+  brandThemeEnabled = false,
+}: SurveyWorkspaceProps) {
   const isClient = useSyncExternalStore(
     subscribeNothing,
     () => true,
@@ -115,6 +121,7 @@ export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
       key={resetCount}
       intro={intro}
       survey={survey}
+      brandThemeEnabled={brandThemeEnabled}
       onReset={handleReset}
     />
   );
@@ -123,9 +130,17 @@ export function SurveyWorkspace({ intro, survey }: SurveyWorkspaceProps) {
 function LoadedSurveyWorkspace({
   intro,
   survey: fullSurvey,
+  brandThemeEnabled = false,
   onReset,
 }: SurveyWorkspaceProps & { onReset: () => void }) {
   const t = useT();
+  const brand = useBrandTheme();
+  const themeLabel =
+    brandThemeEnabled || !brand.theme.isDefault
+      ? brand.theme.isDefault
+        ? t("Giao diện: mặc định")
+        : t("Giao diện: thương hiệu")
+      : null;
   const allEntries = useMemo(() => flattenGroups(fullSurvey), [fullSurvey]);
 
   const [initial] = useState(() =>
@@ -426,6 +441,7 @@ function LoadedSurveyWorkspace({
             }}
             exportingFormat={reportExport.exportingFormat}
             error={reportExport.error}
+            themeLabel={themeLabel}
             onDownload={(format) => void reportExport.downloadReport(format)}
             onClose={reportExport.closeDownload}
           />
@@ -434,6 +450,7 @@ function LoadedSurveyWorkspace({
         {reportPreview.preview ? (
           <ReportPreviewDialog
             preview={reportPreview.preview}
+            themeLabel={themeLabel}
             onClose={reportPreview.closePreview}
           />
         ) : null}
@@ -449,6 +466,8 @@ function LoadedSurveyWorkspace({
       </div>
 
       <ImprovementPlanCard plan={plan} suggestions={suggestions} onChange={changePlan} />
+
+      {brandThemeEnabled ? <BrandThemeCard brand={brand} /> : null}
 
       <ReportActions
         onPreview={() => void reportPreview.openPreview()}

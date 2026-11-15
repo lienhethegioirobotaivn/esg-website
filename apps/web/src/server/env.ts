@@ -34,6 +34,19 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().min(1).default("gemini-3.8-flash"),
   ),
+  ENABLE_BRAND_THEME: z
+    .preprocess(emptyToUndefined, z.enum(["true", "false"]).default("false"))
+    .transform((value) => value === "true"),
+  GEMINI_BRAND_MODEL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  GEMINI_API_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  BRAND_AI_DAILY_LIMIT: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(0).default(30),
+  ),
+  BRAND_AI_IP_LIMIT: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(0).default(5),
+  ),
   CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
   SURVEY_REVALIDATE_SECONDS: z.preprocess(
     emptyToUndefined,

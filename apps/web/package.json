@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*/*.test.ts",
+    "brand:try": "tsx --env-file=.env.local scripts/brand-theme/try.ts",
     "i18n:sync": "tsx scripts/i18n/sync.ts",
     "i18n:check": "tsx scripts/i18n/sync.ts --check"
   },

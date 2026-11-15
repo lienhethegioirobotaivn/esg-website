@@ -49,6 +49,10 @@ Mở `http://localhost:3000`.
 | `GOOGLE_APPS_SCRIPT_SECRET` | Mã bí mật, trùng với Script Properties trong Apps Script |
 | `SURVEY_REVALIDATE_SECONDS` | Thời gian cache bộ câu hỏi (mặc định 300 giây) |
 | `CRON_SECRET` | Khóa bí mật (từ 16 ký tự) cho endpoint tự động dịch `/api/cron/translations`, trùng `WEB_CRON_SECRET` trong Script Properties của Apps Script |
+| `ENABLE_BRAND_THEME` | `true` để bật phân tích bộ nhận diện thương hiệu bằng AI (`/api/brand-theme/analyze`). Mặc định tắt, dùng chung `GEMINI_API_KEY` |
+| `GEMINI_BRAND_MODEL` | Model Gemini riêng cho tính năng thương hiệu, bỏ trống thì dùng `GEMINI_MODEL` |
+| `BRAND_AI_DAILY_LIMIT` | Số lần gọi AI tối đa mỗi ngày cho cả hệ thống (mặc định 30), quá mức sẽ chuyển sang lấy màu từ ảnh |
+| `BRAND_AI_IP_LIMIT` | Số lần gọi AI tối đa mỗi 10 phút trên một địa chỉ IP (mặc định 5) |
 
 Biến tùy chọn để trống được xem như chưa đặt. Hướng dẫn cài Apps Script: [docs/huong-dan-cai-dat-apps-script.md](docs/huong-dan-cai-dat-apps-script.md).
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const responseSchema = z.object({
   candidates: z
@@ -47,43 +47,68 @@ function describeNetworkError(error: unknown): string {
   return String(error);
 }
 
-async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempts: number,
+  timeoutMs: number,
+): Promise<Response> {
   let lastError = "";
-  for (let attempt = 1; attempt <= NETWORK_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
     } catch (error) {
       lastError = describeNetworkError(error);
-      if (attempt < NETWORK_ATTEMPTS) {
+      if (attempt < attempts) {
         await new Promise((resolve) => setTimeout(resolve, 3000 * attempt));
       }
     }
   }
   throw new GeminiError(
-    `Không kết nối được tới Gemini sau ${NETWORK_ATTEMPTS} lần thử (${lastError}). Kiểm tra mạng, VPN hoặc tường lửa trên máy đang chạy web.`,
+    `Không kết nối được tới Gemini sau ${attempts} lần thử (${lastError}). Kiểm tra mạng, VPN hoặc tường lửa trên máy đang chạy web.`,
     0,
   );
+}
+
+export interface GeminiImage {
+  readonly mimeType: string;
+  readonly data: string;
 }
 
 export async function generateJson(input: {
   readonly apiKey: string;
   readonly model: string;
   readonly prompt: string;
+  readonly images?: readonly GeminiImage[];
+  readonly responseSchema?: unknown;
+  readonly maxOutputTokens?: number;
+  readonly timeoutMs?: number;
+  readonly attempts?: number;
+  readonly baseUrl?: string;
 }): Promise<JsonAnswer> {
-  const response = await fetchWithRetry(`${ENDPOINT}/${input.model}:generateContent`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": input.apiKey,
-    },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: input.prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        maxOutputTokens: 32768,
+  const imageParts = (input.images ?? []).map((image) => ({
+    inlineData: { mimeType: image.mimeType, data: image.data },
+  }));
+  const response = await fetchWithRetry(
+    `${input.baseUrl ?? DEFAULT_BASE_URL}/${input.model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": input.apiKey,
       },
-    }),
-  });
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [...imageParts, { text: input.prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          ...(input.responseSchema === undefined ? {} : { responseSchema: input.responseSchema }),
+          maxOutputTokens: input.maxOutputTokens ?? 32768,
+        },
+      }),
+    },
+    input.attempts ?? NETWORK_ATTEMPTS,
+    input.timeoutMs ?? REQUEST_TIMEOUT_MS,
+  );
 
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 1500);

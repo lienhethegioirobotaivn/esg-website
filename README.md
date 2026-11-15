@@ -12,6 +12,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Bản nháp | Lưu trong trình duyệt (`localStorage`): câu trả lời, ghi chú, thông tin doanh nghiệp; tệp bằng chứng chưa lưu |
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
+| Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
 | `apps/api` | Không dùng (đã thay bằng Sheet và Apps Script) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
@@ -65,7 +66,7 @@ Biến tùy chọn để trống được xem như chưa đặt. Hướng dẫn 
 | `pnpm typecheck` | Kiểm tra kiểu ở mọi package |
 | `pnpm lint` | Chạy ESLint ở mọi package |
 
-Test của `@esg/shared`: chạy trong `packages/shared` bằng `tsx --test`.
+Test của `@esg/shared`: chạy trong `packages/shared` bằng `tsx --test` (hoặc `pnpm --filter @esg/shared test`). Test của `apps/web`: `pnpm --filter web test`. Thử đọc ảnh thương hiệu với Gemini thật: `pnpm --filter web brand:try <thư mục ảnh>`.
 
 ## Cấu trúc thư mục
 
@@ -76,6 +77,7 @@ Test của `@esg/shared`: chạy trong `packages/shared` bằng `tsx --test`.
 │   ├── components/     ui (thành phần cơ bản) và layout
 │   ├── features/
 │   │   ├── survey/     Tab ESG, câu hỏi, tiến độ, bản nháp, kế hoạch cải thiện, báo cáo PDF
+│   │   ├── brand-theme/ Thẻ tải ảnh thương hiệu, xem trước và chỉnh giao diện báo cáo
 │   │   ├── company/    Form thông tin doanh nghiệp
 │   │   ├── evidence/   Tải bằng chứng
 │   │   ├── guidance/   Cột hướng dẫn bên phải
@@ -109,6 +111,8 @@ Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo t
 
 - [Bối cảnh dự án](docs/boi-canh-du-an.md)
 - [Đa ngôn ngữ (vi, en, fr, zh): kiến trúc, vận hành, kiểm thử](docs/da-ngon-ngu.md)
+- [Giao diện báo cáo theo thương hiệu: kiến trúc, vận hành, giới hạn](docs/thuong-hieu-bao-cao.md)
+- [Kế hoạch và nhật ký triển khai giao diện theo thương hiệu](docs/ke-hoach-bao-cao-theo-thuong-hieu.md)
 - [Kế hoạch và nhật ký triển khai đa ngôn ngữ](docs/ke-hoach-da-ngon-ngu.md)
 - [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
 - [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)

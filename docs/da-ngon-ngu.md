@@ -46,6 +46,7 @@ Tài liệu bàn giao cho người phát triển và người quản trị. Nh�
 - Tiếng Trung PDF dùng Noto Sans SC (`public/fonts`, giấy phép OFL, cắt còn khoảng 7.500 chữ thông dụng, chỉ tải khi xuất bản tiếng Trung). Ngắt dòng theo từng chữ Hán (`report/cjk-break.ts`); vì react-pdf chèn `-` khi ngắt giữa từ, ký tự `-` ASCII trong phông này hiển thị trống và dấu `-` thật trong báo cáo được đổi thành `‐` (U+2010). Nếu thay bằng phông đầy đủ phải sửa lại cách này.
 - Word tiếng Trung đặt phông Đông Á Microsoft YaHei và ngôn ngữ zh-CN; cần máy có phông này để xem đúng.
 - Số vẫn theo định dạng `vi-VN`; dấu phân cách `, ` và `; ` giữ dạng ASCII.
+- Giao diện theo thương hiệu (xem [thuong-hieu-bao-cao.md](thuong-hieu-bao-cao.md)): phông có chân dùng DejaVu Serif cho vi, en, fr; tiếng Trung luôn dùng Noto Sans SC trong PDF dù chọn phông nào, và Word tiếng Trung giữ Microsoft YaHei cho chữ Hán (Georgia chỉ áp dụng cho chữ Latin). Mọi chữ mới của thẻ thương hiệu và lỗi của API `/api/brand-theme/analyze` đi qua `t()`/`msg()` như quy định ở mục 9.
 
 ## 6. Thêm hoặc sửa chữ
 
@@ -66,7 +67,8 @@ Tài liệu bàn giao cho người phát triển và người quản trị. Nh�
 5. Xem nguồn trang: canonical, hreflang, `og:locale`, không `noindex` ở ngôn ngữ đã mở; `/sitemap.xml` có đủ 4 ngôn ngữ.
 6. Lưu một bài mới, vài chục giây sau mở bản `/fr`; sửa một câu hỏi trong Sheet và kiểm tra sau tối đa 10 phút.
 7. Xóa một bài: dòng bản dịch của bài biến mất, dòng có sửa tay còn lại.
-8. `pnpm typecheck`, `pnpm lint`, `pnpm --filter @esg/shared test`, `pnpm --filter web i18n:check`.
+8. `pnpm typecheck`, `pnpm lint`, `pnpm --filter @esg/shared test`, `pnpm --filter web test`, `pnpm --filter web i18n:check`.
+9. Bật `ENABLE_BRAND_THEME=true`, ở từng ngôn ngữ chọn ảnh thương hiệu, phân tích, xuất PDF và Word: thẻ và thông báo đúng ngôn ngữ, bìa và màu theo thương hiệu, tiếng Trung không có ô trống.
 
 ## 8. Giới hạn đã biết
 

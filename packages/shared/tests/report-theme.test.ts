@@ -172,6 +172,49 @@ describe("resolveReportTheme font and layout", () => {
   });
 });
 
+describe("resolveReportTheme invariants", () => {
+  function seeded(seed: number): () => number {
+    let state = seed;
+    return () => {
+      state = (state * 1664525 + 1013904223) % 4294967296;
+      return state / 4294967296;
+    };
+  }
+
+  function randomHex(next: () => number): string {
+    const part = () =>
+      Math.floor(next() * 256)
+        .toString(16)
+        .padStart(2, "0");
+    return `#${part()}${part()}${part()}`.toUpperCase();
+  }
+
+  it("keeps every text color readable for any primary and accent", () => {
+    const next = seeded(20261115);
+    for (let index = 0; index < 400; index += 1) {
+      const theme = resolveReportTheme({
+        version: 1,
+        colors: { primary: randomHex(next), accent: randomHex(next) },
+      });
+      const { colors } = theme;
+      assert.ok(contrastRatio(colors.primary, "#FFFFFF") >= 4.5, `primary ${colors.primary}`);
+      assert.ok(contrastRatio(colors.accent, "#FFFFFF") >= 4.5, `accent ${colors.accent}`);
+      assert.ok(contrastRatio(colors.accent, colors.panel) >= 4.5, `accent on panel ${colors.accent}`);
+      assert.ok(contrastRatio(colors.ink, "#FFFFFF") >= 7, `ink ${colors.ink}`);
+      assert.ok(contrastRatio(colors.muted, "#FFFFFF") >= 4.5, `muted ${colors.muted}`);
+      assert.ok(contrastRatio(colors.muted, colors.panel) >= 4.5, `muted on panel ${colors.muted}`);
+    }
+  });
+
+  it("handles extreme colors", () => {
+    for (const color of ["#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF", "#FFFF00"]) {
+      const theme = resolveReportTheme({ version: 1, colors: { primary: color, accent: color } });
+      assert.ok(contrastRatio(theme.colors.primary, "#FFFFFF") >= 4.5, color);
+      assert.ok(contrastRatio(theme.colors.accent, theme.colors.panel) >= 4.5, color);
+    }
+  });
+});
+
 describe("contrastRatio", () => {
   it("is 21 for black on white and 1 for identical colors", () => {
     assert.equal(Math.round(contrastRatio("#000000", "#FFFFFF")), 21);

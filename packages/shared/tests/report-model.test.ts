@@ -268,7 +268,7 @@ describe("buildReportModel", () => {
     const energy = rows.find((row) => row.title === "Năng lượng");
     assert.equal(
       energy?.reason,
-      "Có một phần: Giảm tiêu thụ năng lượng\nChưa có dữ liệu: Nước",
+      "Có một phần: Giảm tiêu thụ năng lượng\nChưa có dữ liệu: Lượng nước sử dụng",
     );
     assert.equal(energy?.priority, "Trung bình");
     const clarify = build({ "C-004": a("yes"), "C-009": a("unknown") }).improvement.gaps.find(

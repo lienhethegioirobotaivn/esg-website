@@ -1,6 +1,7 @@
 import {
   AlignmentType,
   TabStopType,
+  VerticalAlign,
   BorderStyle,
   Document,
   Footer,
@@ -157,9 +158,11 @@ function subHead(text: string): Paragraph {
 }
 
 function sectionHead(kicker: string, title: string, intro: string | undefined): Block[] {
+  const badge = pillarBadge(kicker);
   const blocks: Block[] = [
+    ...badge,
     new Paragraph({
-      pageBreakBefore: true,
+      pageBreakBefore: badge.length === 0,
       spacing: { after: 40 },
       children: [run(kicker, { bold: true, color: MUTED, size: 17 })],
     }),
@@ -508,6 +511,171 @@ function assessment(text: string | null | undefined, t: TFunction): Block[] {
   return panel(t("Nhận định theo hồ sơ"), text);
 }
 
+const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+const NO_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
+
+function flowCell(
+  width: number,
+  lines: readonly TextRun[][],
+  options: { fill?: string; center?: boolean } = {},
+): TableCell {
+  return new TableCell({
+    width: { size: dxa(width), type: WidthType.DXA },
+    borders: NO_BORDERS,
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top: 80, bottom: 80, left: 100, right: 100 },
+    shading: options.fill ? { type: ShadingType.CLEAR, fill: options.fill, color: "auto" } : undefined,
+    children: lines.map(
+      (children) =>
+        new Paragraph({
+          alignment: options.center ? AlignmentType.CENTER : AlignmentType.LEFT,
+          spacing: { line: 260 },
+          children,
+        }),
+    ),
+  });
+}
+
+function supplyChain(
+  chain: { readonly suppliers: readonly string[]; readonly downstream: readonly string[] } | null,
+  company: string,
+  t: TFunction,
+): Block[] {
+  if (chain === null) {
+    return [];
+  }
+  const column = (title: string, entries: readonly string[]) => [
+    [run(title.toUpperCase(), { bold: true, color: MUTED, size: 16 })],
+    ...(entries.length === 0
+      ? [[run(t("Chưa khai báo"), { color: MUTED, size: 18 })]]
+      : entries.map((entry) => [run(`• ${entry}`, { size: 19 })])),
+  ];
+  const arrow = [[run("›", { bold: true, color: BLUE, size: 28 })]];
+  return [
+    new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: [dxa(31), dxa(4), dxa(30), dxa(4), dxa(31)],
+      layout: TableLayoutType.FIXED,
+      rows: [
+        new TableRow({
+          cantSplit: true,
+          children: [
+            flowCell(31, column(t("Nhà cung cấp"), chain.suppliers), { fill: SOFT }),
+            flowCell(4, arrow, { center: true }),
+            flowCell(30, [[run(company, { bold: true, color: "FFFFFF", size: 20 })]], { fill: GREEN, center: true }),
+            flowCell(4, arrow, { center: true }),
+            flowCell(31, column(t("Đối tác đầu ra"), chain.downstream), { fill: SOFT }),
+          ],
+        }),
+      ],
+    }),
+    new Paragraph({ spacing: { after: 120 }, children: [] }),
+  ];
+}
+
+const TIMELINE_PER_ROW = 5;
+
+function planTimeline(
+  actions: readonly { readonly description: string; readonly status: string }[],
+  t: TFunction,
+): Block[] {
+  if (actions.length === 0) {
+    return [];
+  }
+  const colors: Record<string, string> = {
+    [t("Chưa bắt đầu")]: BLUE,
+    [t("Đang thực hiện")]: "E0A100",
+    [t("Hoàn thành")]: "1E8E5A",
+    [t("Tạm hoãn")]: "8A94A6",
+  };
+  const rows: { label: string; status: string; number: number }[][] = [];
+  actions.forEach((action, index) => {
+    const rowIndex = Math.floor(index / TIMELINE_PER_ROW);
+    rows[rowIndex] = [
+      ...(rows[rowIndex] ?? []),
+      { label: action.description, status: t(action.status), number: index + 1 },
+    ];
+  });
+  const width = 100 / TIMELINE_PER_ROW;
+  return [
+    new Paragraph({
+      spacing: { before: 160, after: 60 },
+      children: [run(t("TIẾN ĐỘ KẾ HOẠCH HÀNH ĐỘNG"), { bold: true, color: MUTED, size: 17 })],
+    }),
+    new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: Array.from({ length: TIMELINE_PER_ROW }, () => dxa(width)),
+      layout: TableLayoutType.FIXED,
+      rows: rows.map(
+        (row) =>
+          new TableRow({
+            cantSplit: true,
+            children: Array.from({ length: TIMELINE_PER_ROW }, (_, index) => {
+              const step = row[index];
+              if (!step) {
+                return flowCell(width, [[run("")]]);
+              }
+              return flowCell(
+                width,
+                [
+                  [
+                    new TextRun({
+                      text: ` ${step.number} `,
+                      bold: true,
+                      color: "FFFFFF",
+                      size: 20,
+                      shading: { type: ShadingType.CLEAR, fill: colors[step.status] ?? BLUE, color: "auto" },
+                    }),
+                  ],
+                  [run(step.label, { color: MUTED, size: 17 })],
+                ],
+                { center: true },
+              );
+            }),
+          }),
+      ),
+    }),
+    note(
+      t(
+        "Màu vòng số: xanh dương là Chưa bắt đầu, vàng là Đang thực hiện, xanh lá là Hoàn thành, xám là Tạm hoãn.",
+      ),
+    ),
+  ];
+}
+
+const PILLAR_BY_KICKER: Record<string, { code: string; color: () => string }> = {
+  "R02": { code: "E", color: () => "1E8E5A" },
+  "R03": { code: "S", color: () => BLUE },
+  "R04": { code: "G", color: () => GREEN },
+};
+let PILLAR_LABELS: Record<string, string> = {};
+const PILLAR_SHOWN = new Set<string>();
+
+function pillarBadge(kicker: string): Block[] {
+  const key = kicker.slice(0, 3);
+  const pillar = PILLAR_BY_KICKER[key];
+  if (!pillar || PILLAR_SHOWN.has(key)) {
+    return [];
+  }
+  PILLAR_SHOWN.add(key);
+  return [
+    new Paragraph({
+      pageBreakBefore: true,
+      spacing: { after: 60 },
+      children: [
+        new TextRun({
+          text: ` ${pillar.code} `,
+          bold: true,
+          color: "FFFFFF",
+          size: 22,
+          shading: { type: ShadingType.CLEAR, fill: pillar.color(), color: "auto" },
+        }),
+        run(`  ${(PILLAR_LABELS[pillar.code] ?? "").toUpperCase()}`, { bold: true, color: MUTED, size: 17 }),
+      ],
+    }),
+  ];
+}
+
 function section(
   kicker: string,
   title: string,
@@ -773,6 +941,8 @@ async function evidenceImages(
 export async function generateReportDocx(input: DocxInput): Promise<Blob> {
   const { model, theme, logo, images, draftNotice, t, locale } = input;
   applyTheme(theme);
+  PILLAR_SHOWN.clear();
+  PILLAR_LABELS = { E: t("Môi trường"), S: t("Xã hội"), G: t("Quản trị") };
   const practiceChartT = (data: readonly ChartDatum[]) => practiceChart(data, t);
   const pillarChartT = (data: Parameters<typeof pillarChart>[0]) => pillarChart(data, t);
   const questionItemsT = (items: readonly (ReportItem | null)[]) => questionItems(items, t);
@@ -946,6 +1116,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
         { label: t("Nhóm đối tác đầu ra"), value: profile.downstreamGroupsText },
         { label: t("Khoảng doanh thu tự nguyện"), value: profile.revenueBand },
       ]),
+      ...supplyChain(charts.supplyChain, meta.companyName, t),
       ...panel(t("Nhận định theo hồ sơ"), profile.valueChainContext),
     ])),
 
@@ -1149,6 +1320,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
         ? [
             ...(improvement.actions.length > 0
               ? [
+                  ...planTimeline(improvement.actions, t),
                   ...dataTable(
                     [
                       { title: t("Công việc"), width: 46 },

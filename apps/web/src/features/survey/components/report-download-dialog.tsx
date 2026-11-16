@@ -87,7 +87,7 @@ export function ReportDownloadDialog({
           </Button>
           <p className="mt-1.5 text-xs text-muted">
             {t(
-              "Định dạng .docx để tiếp tục chỉnh sửa. Bố cục đơn giản hơn bản PDF và không có biểu đồ.",
+              "Định dạng .docx để tiếp tục chỉnh sửa. Nội dung giống bản PDF, nhưng cách trình bày đơn giản hơn (một cột, mục lục không có số trang) và có thể lệch nhẹ tùy phần mềm mở file. Cần gửi đúng bố cục thì dùng PDF.",
             )}
           </p>
         </div>

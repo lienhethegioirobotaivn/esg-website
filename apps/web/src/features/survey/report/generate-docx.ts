@@ -1,5 +1,6 @@
 import {
   AlignmentType,
+  TabStopType,
   BorderStyle,
   Document,
   Footer,
@@ -33,6 +34,8 @@ import type { Locale } from "@/features/locale/constants";
 import type { TFunction } from "@/features/locale/lib/translate";
 
 import { COPY } from "./copy";
+import { sectionFlags } from "./section-flags";
+import { TOC_ROWS } from "./toc";
 import type { EvidenceImage } from "./pdf-parts";
 import type { ReportLogo } from "./report-logo";
 
@@ -782,6 +785,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
     return intro === undefined ? undefined : t(intro);
   };
   const brand = meta.tradingName ?? meta.companyName;
+  const flags = sectionFlags(model);
 
   const practiceRows = (
     [
@@ -808,6 +812,59 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
         COPY.statusLegend.map((row) => [t(row[0]), t(row[1])]),
       ),
       note(t(COPY.aboutNote)),
+      subHead(t("Thông tin phiên bản")),
+      ...facts([
+        { label: t("Mức khai báo"), value: meta.disclosureLevel },
+        { label: t("Phiên bản bộ câu hỏi"), value: meta.contentVersion },
+        { label: t("Phiên bản dữ liệu"), value: meta.answerVersion },
+        { label: t("Tình trạng rà soát"), value: meta.reviewStatus },
+      ]),
+      body(
+        t("Trạng thái {status}   |   Mã hồ sơ {reportId}   |   Phát hành {issuedAt}", {
+          status: meta.status,
+          reportId: meta.reportId,
+          issuedAt: meta.issuedAt,
+        }),
+      ),
+    ]),
+
+    ...section(t("BẢN ĐỒ NỘI DUNG"), t("Nội dung báo cáo"), t(COPY.tocIntro), [
+      ...dataTable(
+        [
+          { title: t("Phần"), width: 30 },
+          { title: t("Nội dung"), width: 70 },
+        ],
+        (Object.keys(TOC_ROWS) as (keyof typeof TOC_ROWS)[])
+          .filter((key) => key !== "R05" || model.modules.length > 0)
+          .map((key) => [t(TOC_ROWS[key].tag), t(TOC_ROWS[key].title)]),
+      ),
+      subHead(t("Thông tin kiểm soát tài liệu")),
+      ...facts([
+        { label: t("Đơn vị báo cáo"), value: meta.companyName },
+        { label: t("Phạm vi địa lý"), value: meta.countries },
+        { label: t("Kỳ dữ liệu"), value: meta.period },
+        { label: t("Phiên bản báo cáo"), value: meta.reportVersion },
+      ]),
+      note(t(COPY.tocNote)),
+    ]),
+
+    ...section(t("KHUNG THAM CHIẾU"), t("Khung ESG và các mục tiêu SDG"), t(COPY.frameworkIntro), [
+      ...dataTable(
+        [
+          { title: t("Trụ cột"), width: 22 },
+          { title: t("Nội dung"), width: 52 },
+          { title: t("Mục tiêu SDG"), width: 26 },
+        ],
+        [
+          ["E", t("Môi trường"), t("Tài nguyên, vật liệu và tác động khí hậu."), "SDG 6, 7, 12, 13"],
+          ["S", t("Xã hội"), t("Điều kiện làm việc, sức khỏe và phát triển con người."), "SDG 3, 4, 5, 8"],
+          ["G", t("Quản trị"), t("Liêm chính, trách nhiệm và quan hệ hợp tác."), "SDG 16, 17"],
+        ].map(([code, title, text, goals]) => [`${code} • ${title}`, text ?? "", goals ?? ""]),
+      ),
+      note(t(COPY.frameworkPillars)),
+      note(t(COPY.frameworkNote)),
+      note(t(COPY.frameworkSource)),
+      note(t(COPY.frameworkDisclaimer)),
     ]),
 
     ...section(t("TỔNG QUAN TRONG KỲ"), t("Tóm tắt điều hành"), t(COPY.summaryIntro), [
@@ -881,7 +938,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       note(t(COPY.scopeNote)),
     ]),
 
-    ...section(t("R01 / BỐI CẢNH KINH DOANH"), t("Hoạt động và chuỗi giá trị"), t(COPY.valueChainIntro), [
+    ...(!flags.hasValueChain ? [] : section(t("R01 / BỐI CẢNH KINH DOANH"), t("Hoạt động và chuỗi giá trị"), t(COPY.valueChainIntro), [
       ...facts([
         { label: t("Sản phẩm, dịch vụ chính"), value: profile.products },
         { label: t("Nhóm nhà cung cấp quan trọng"), value: profile.supplierGroupsText },
@@ -890,7 +947,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
         { label: t("Khoảng doanh thu tự nguyện"), value: profile.revenueBand },
       ]),
       ...panel(t("Nhận định theo hồ sơ"), profile.valueChainContext),
-    ]),
+    ])),
 
     ...section(t("R02 / MÔI TRƯỜNG"), t("Tổng quan môi trường"), t(COPY.envIntro), [
       ...kpis([
@@ -902,7 +959,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...panel(t("Những nội dung cần làm rõ"), environment.overviewGaps),
     ]),
 
-    ...section(t("R02 / NĂNG LƯỢNG"), t("Năng lượng và sử dụng hiệu quả"), t(COPY.energyIntro), [
+    ...(!flags.hasEnergy ? [] : section(t("R02 / NĂNG LƯỢNG"), t("Năng lượng và sử dụng hiệu quả"), t(COPY.energyIntro), [
       ...facts([
         { label: t("Điện tiêu thụ trong kỳ"), value: metricTextT(environment.electricity) },
         { label: t("Nguồn, cách tổng hợp"), value: environment.electricity?.source ?? null },
@@ -911,9 +968,9 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ]),
       ...questionItemsT(environment.energy.items),
       ...assessmentT(environment.energy.assessment),
-    ]),
+    ])),
 
-    ...section(t("R02 / PHẦN KHAI BÁO MỞ RỘNG"), t("Khí nhà kính và rủi ro khí hậu"), t(COPY.ghgIntro), [
+    ...(!flags.hasGhg ? [] : section(t("R02 / PHẦN KHAI BÁO MỞ RỘNG"), t("Khí nhà kính và rủi ro khí hậu"), t(COPY.ghgIntro), [
       ...dataTable(
         [
           { title: t("Chỉ số"), width: 34 },
@@ -937,9 +994,9 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...barChart(t("Phát thải trong phạm vi"), charts.ghg, "tCO₂e"),
       ...questionItemsT(environment.climate.items),
       note(t(COPY.ghgNote)),
-    ]),
+    ])),
 
-    ...section(t("R02 / TÀI NGUYÊN NƯỚC"), t("Nước và nước thải"), t(COPY.waterIntro), [
+    ...(!flags.hasWater ? [] : section(t("R02 / TÀI NGUYÊN NƯỚC"), t("Nước và nước thải"), t(COPY.waterIntro), [
       ...facts([
         { label: t("Nước sử dụng"), value: metricTextT(environment.water) },
         { label: t("Phạm vi và nguồn số liệu"), value: environment.water?.source ?? null },
@@ -947,9 +1004,9 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ]),
       ...assessmentT(environment.waterSection.assessment),
       ...questionItemsT(environment.waterSection.items),
-    ]),
+    ])),
 
-    ...section(t("R02 / CHẤT THẢI"), t("Chất thải và quản lý dòng thải"), t(COPY.wasteIntro), [
+    ...(!flags.hasWaste ? [] : section(t("R02 / CHẤT THẢI"), t("Chất thải và quản lý dòng thải"), t(COPY.wasteIntro), [
       ...facts([
         { label: t("Không nguy hại"), value: metricTextT(environment.wasteNonHazardous) },
         { label: t("Nguy hại"), value: metricTextT(environment.wasteHazardous) },
@@ -959,21 +1016,21 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...barChart(t("Chất thải"), charts.waste, t("tấn")),
       ...questionItemsT(environment.waste.items),
       ...assessmentT(environment.waste.assessment),
-    ]),
+    ])),
 
-    ...section(t("R02 / CÁC TÁC ĐỘNG LIÊN QUAN"), t("Vật liệu và tác động tại cơ sở"), t(COPY.materialsIntro), [
+    ...(!flags.hasMaterials ? [] : section(t("R02 / CÁC TÁC ĐỘNG LIÊN QUAN"), t("Vật liệu và tác động tại cơ sở"), t(COPY.materialsIntro), [
       ...questionItemsT(environment.materials.items),
       ...(environment.materials.items.length > 0 ? assessmentT(environment.materials.assessment) : []),
-    ]),
+    ])),
 
-    ...section(t("R02 / THEO DÕI VÀ CẢI THIỆN"), t("Sự cố và mục tiêu môi trường"), t(COPY.incidentIntro), [
+    ...(!flags.hasIncident ? [] : section(t("R02 / THEO DÕI VÀ CẢI THIỆN"), t("Sự cố và mục tiêu môi trường"), t(COPY.incidentIntro), [
       ...questionItemsT([environment.incident]),
       ...(environment.targets.items.length > 0 ? [subHead(t("Mục tiêu môi trường"))] : []),
       ...questionItemsT(environment.targets.items),
       ...assessmentT(environment.targets.assessment),
-    ]),
+    ])),
 
-    ...section(t("R03 / NGƯỜI LAO ĐỘNG VÀ XÃ HỘI"), t("Con người và điều kiện làm việc"), t(COPY.workforceIntro), [
+    ...(!flags.hasWorkforce ? [] : section(t("R03 / NGƯỜI LAO ĐỘNG VÀ XÃ HỘI"), t("Con người và điều kiện làm việc"), t(COPY.workforceIntro), [
       ...kpis([{ label: t("Người lao động cuối kỳ"), value: metricTextT(social.headcount) }]),
       ...facts([
         { label: t("Phạm vi người lao động"), value: social.workerScope },
@@ -981,35 +1038,35 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ]),
       ...questionItemsT(social.workforce.items),
       ...assessmentT(social.workforce.assessment),
-    ]),
+    ])),
 
-    ...section(t("R03 / MÔI TRƯỜNG LÀM VIỆC"), t("An toàn và sức khỏe nghề nghiệp"), t(COPY.safetyIntro), [
+    ...(!flags.hasSafety ? [] : section(t("R03 / MÔI TRƯỜNG LÀM VIỆC"), t("An toàn và sức khỏe nghề nghiệp"), t(COPY.safetyIntro), [
       ...kpis([
         { label: t("Tai nạn lao động trong kỳ"), value: metricTextT(social.accidents) },
         { label: t("Tử vong liên quan công việc"), value: metricTextT(social.fatalities) },
       ]),
       ...questionItemsT(social.safety.items),
       ...assessmentT(social.safety.assessment),
-    ]),
+    ])),
 
-    ...section(t("R03 / ĐỐI XỬ CÓ TRÁCH NHIỆM"), t("Quyền lao động và đối thoại"), t(COPY.labourIntro), [
+    ...(!flags.hasLabour ? [] : section(t("R03 / ĐỐI XỬ CÓ TRÁCH NHIỆM"), t("Quyền lao động và đối thoại"), t(COPY.labourIntro), [
       ...questionItemsT(social.labour.items),
       ...assessmentT(social.labour.assessment),
       ...(social.labour.items.length > 0 || filled(social.labour.assessment)
         ? [note(t(COPY.labourNote))]
         : []),
-    ]),
+    ])),
 
-    ...section(t("R03 / ĐÀO TẠO VÀ QUAN HỆ XÃ HỘI"), t("Năng lực và quan hệ với các bên"), t(COPY.communityIntro), [
+    ...(!flags.hasCommunity ? [] : section(t("R03 / ĐÀO TẠO VÀ QUAN HỆ XÃ HỘI"), t("Năng lực và quan hệ với các bên"), t(COPY.communityIntro), [
       ...facts([
         { label: t("Tổng thời lượng đào tạo"), value: metricTextT(social.trainingHours) },
         { label: t("Nguồn tổng hợp"), value: social.trainingHours?.source ?? null },
       ]),
       ...assessmentT(social.community.assessment),
       ...questionItemsT(social.community.items),
-    ]),
+    ])),
 
-    ...section(t("R04 / QUẢN TRỊ"), t("Trách nhiệm và điều phối ESG"), t(COPY.governanceIntro), [
+    ...(!flags.hasGovernance ? [] : section(t("R04 / QUẢN TRỊ"), t("Trách nhiệm và điều phối ESG"), t(COPY.governanceIntro), [
       ...facts([
         { label: t("Vai trò điều phối ESG"), value: governance.esgRole },
         { label: t("Cơ chế xem xét của lãnh đạo"), value: governance.leadershipReview },
@@ -1019,18 +1076,18 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...facts([
         { label: t("Các vấn đề được doanh nghiệp lựa chọn ưu tiên"), value: governance.priorities },
       ]),
-    ]),
+    ])),
 
-    ...section(t("R04 / ĐẠO ĐỨC VÀ MINH BẠCH"), t("Liêm chính và cơ chế phản ánh"), t(COPY.integrityIntro), [
+    ...(!flags.hasIntegrity ? [] : section(t("R04 / ĐẠO ĐỨC VÀ MINH BẠCH"), t("Liêm chính và cơ chế phản ánh"), t(COPY.integrityIntro), [
       ...questionItemsT(governance.integrity.items),
       ...questionItemsT([governance.integrityIncident]),
       ...assessmentT(governance.integrity.assessment),
       ...(governance.integrity.items.length > 0 || governance.integrityIncident !== null
         ? [note(t(COPY.integrityNote))]
         : []),
-    ]),
+    ])),
 
-    ...section(t("R04 / QUAN HỆ KINH DOANH"), t("Mua sắm và chuỗi cung ứng"), t(COPY.supplyIntro), [
+    ...(!flags.hasSupply ? [] : section(t("R04 / QUAN HỆ KINH DOANH"), t("Mua sắm và chuỗi cung ứng"), t(COPY.supplyIntro), [
       ...facts([{ label: t("Phạm vi theo dõi"), value: profile.supplierGroupsText }]),
       ...assessmentT(governance.supply.assessment),
       ...questionItemsT(governance.supply.items),
@@ -1045,13 +1102,13 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...(governance.supply.items.length > 0 || profile.supplierGroups.length > 0
         ? [note(t(COPY.supplyNote))]
         : []),
-    ]),
+    ])),
 
-    ...section(t("R04 / KIỂM SOÁT VÀ TÍNH LIÊN TỤC"), t("Dữ liệu và chất lượng thông tin"), t(COPY.dataIntro), [
+    ...(!flags.hasData ? [] : section(t("R04 / KIỂM SOÁT VÀ TÍNH LIÊN TỤC"), t("Dữ liệu và chất lượng thông tin"), t(COPY.dataIntro), [
       ...questionItemsT(governance.data.items),
       ...assessmentT(governance.data.assessment),
       ...(governance.data.items.length > 0 ? [note(t(COPY.dataNote))] : []),
-    ]),
+    ])),
 
     ...model.modules.flatMap((module) =>
       section(t("R05 / NỘI DUNG THEO NGÀNH"), module.title, translatedIntro(module.source), [
@@ -1066,7 +1123,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ]),
     ),
 
-    ...section(t("R06 / TỪ DỮ LIỆU ĐẾN HÀNH ĐỘNG"), t("Khoảng trống và ưu tiên cải thiện"), t(COPY.gapsIntro), [
+    ...(!flags.hasGaps ? [] : section(t("R06 / TỪ DỮ LIỆU ĐẾN HÀNH ĐỘNG"), t("Khoảng trống và ưu tiên cải thiện"), t(COPY.gapsIntro), [
       ...dataTable(
         [
           { title: t("Vấn đề"), width: 24 },
@@ -1079,7 +1136,7 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
       ...panel(t("Trọng tâm cho kỳ tiếp theo"), improvement.focus),
       ...panel(t("Những việc cần xác minh thêm"), improvement.followups),
       ...(improvement.gaps.length > 0 ? [note(t(COPY.gapsNote))] : []),
-    ]),
+    ])),
 
     ...section(t("R06 / LỘ TRÌNH CẢI THIỆN"),
       t("Kế hoạch hành động"),
@@ -1214,9 +1271,11 @@ export async function generateReportDocx(input: DocxInput): Promise<Blob> {
           default: new Header({
             children: [
               new Paragraph({
+                tabStops: [{ type: TabStopType.RIGHT, position: CONTENT_WIDTH }],
                 children: [
                   run(brand, { bold: true, color: MUTED, size: 16 }),
                   run(meta.isDraft ? `    ${t("BẢN NHÁP")}` : "", { bold: true, color: "B45309", size: 16 }),
+                  run("\tESG REPORT ONLINE", { color: MUTED, size: 16 }),
                 ],
               }),
             ],

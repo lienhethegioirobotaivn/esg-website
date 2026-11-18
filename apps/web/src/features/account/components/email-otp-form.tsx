@@ -142,6 +142,7 @@ export function EmailOtpForm({
             type="submit"
             variant="secondary"
             className="shrink-0"
+            loading={otp.busy === "send"}
             disabled={otp.busy !== null || otp.cooldown > 0}
           >
             {otp.busy === "send"
@@ -177,6 +178,7 @@ export function EmailOtpForm({
             <Button
               type="submit"
               className="shrink-0"
+              loading={otp.busy === "verify"}
               disabled={otp.busy !== null || otp.code.length !== 6}
             >
               {otp.busy === "verify" ? t("Đang xác nhận...") : t("Xác nhận")}

@@ -1436,12 +1436,14 @@ function fillReportLinks_(sheet) {
     }
     table.rows.forEach(function (record) {
       var id = cellText_(record[target.idColumn]);
-      if (id === '' || cellText_(record[target.linkColumn]) !== '') {
+      if (id === '' || cellText_(record[target.linkColumn]) === target.label) {
         return;
       }
-      sheet.getRange(record._row, column)
-        .setNumberFormat('0')
-        .setFormula('=HYPERLINK("https://drive.google.com/file/d/' + id + '/view","' + target.label + '")');
+      var richText = SpreadsheetApp.newRichTextValue()
+        .setText(target.label)
+        .setLinkUrl('https://drive.google.com/file/d/' + id + '/view')
+        .build();
+      sheet.getRange(record._row, column).setNumberFormat('@').setRichTextValue(richText);
     });
   });
 }

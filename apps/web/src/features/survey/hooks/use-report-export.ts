@@ -10,6 +10,7 @@ import { buildArchiveKey } from "../lib/archive-key";
 import { loadBrandTheme } from "../lib/brand-theme-storage";
 import { toDraftAnswers } from "../lib/draft-state";
 import { loadPlan } from "../lib/plan-storage";
+import { linkReportOwner } from "../lib/link-owner";
 import { archiveReport } from "../lib/report-archive";
 import { getReportDraftState } from "../lib/report-draft-state";
 import { buildReportFileName } from "../lib/report-file-name";
@@ -133,17 +134,18 @@ export function useReportExport({
 
   async function linkEmail() {
     const current = archived.current;
-    if (current !== null && current.result.attachToken !== null) {
-      await postReportAttach({
-        exportId: current.result.exportId,
-        attachToken: current.result.attachToken,
-      });
-      return;
-    }
-    const result = await archive(true);
-    if (result === null) {
-      throw new Error("Chưa lưu được báo cáo.");
-    }
+    const token = current?.result.attachToken ?? null;
+    await linkReportOwner({
+      attach:
+        current !== null && token !== null
+          ? () =>
+              postReportAttach({
+                exportId: current.result.exportId,
+                attachToken: token,
+              })
+          : null,
+      rearchive: () => archive(true),
+    });
   }
 
   async function exportReport() {

@@ -220,7 +220,7 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** (Triển khai → Qu
 
 Dữ liệu được tạo tự động:
 
-- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, **link file PDF và link file Word**, email đã xác thực). Bấm "Mở PDF" hoặc "Mở Word" ở dòng tương ứng để mở file trong Drive (chỉ tài khoản chủ Drive mở được, file không chia sẻ công khai). Nếu tab này có từ bản cũ chưa có cột link, các cột link tự được thêm ở cuối và các dòng cũ được ghi bù ở lần xuất kế tiếp; muốn ghi bù ngay thì chọn hàm `backfillReportLinks` rồi bấm **Run**.
+- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, **link file PDF và link file Word**, email đã xác thực). Bấm chữ "Mở PDF" hoặc "Mở Word" (chữ có gắn liên kết) ở dòng tương ứng để mở file trong Drive (chỉ tài khoản chủ Drive mở được, file không chia sẻ công khai). Nếu tab này có từ bản cũ chưa có cột link, các cột link tự được thêm ở cuối và các dòng cũ được ghi bù ở lần xuất kế tiếp; muốn ghi bù ngay thì chọn hàm `backfillReportLinks` rồi bấm **Run**. Ô nào đang hiện `#ERROR!` (từ bản dùng công thức `HYPERLINK`) cũng được ghi đè đúng khi chạy hàm này.
 - Tab **Nội dung khảo sát**: câu trả lời, hồ sơ doanh nghiệp, kế hoạch cải thiện của từng lần xuất (cắt thành các ô 40.000 ký tự).
 - Thư mục Drive theo mã báo cáo chứa file PDF và Word; thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
 - Mỗi mã báo cáo giữ 5 lần xuất mới nhất; bản cũ bị xóa cả file Drive lẫn hàng trong Sheet. Mã báo cáo phải có sẵn trong tab Data khách hàng.
@@ -255,3 +255,4 @@ Lưu ý quan trọng:
 - Email gửi đi có tên người gửi "ESG Report Online", nội dung theo ngôn ngữ trang đang xem (vi, en, fr, zh) và nằm trong `apps/web/src/server/auth/otp-mail.ts`.
 - Một email chỉ gắn được vào lần xuất khi ô `Email đã xác thực` của lần xuất đó còn trống; muốn đổi chủ sở hữu thì sửa tay ô này trong Sheet.
 - Dữ liệu cá nhân (email, thông tin doanh nghiệp, câu trả lời) được lưu lâu dài. Cần có dòng giải thích trong chính sách quyền riêng tư (việc của GĐ4); hiện trong hộp thoại có câu "Email chỉ dùng để xác nhận và để bạn xem lại báo cáo."
+- **Đổi email:** nút "Dùng email khác" trên web chỉ đăng xuất trình duyệt đó. Dữ liệu đã gắn email cũ (cột `Email đã xác thực`, báo cáo trong Drive) **không bị xóa hay đổi**. Xác nhận email khác thì từ đó các lần xuất mới thuộc email mới; lần xuất đang mở (đã thuộc email cũ) được xuất lại thành một dòng mới cho email mới. Cột `Email đã xác thực` ở `Data khách hàng` lưu email gần nhất của mã báo cáo.

@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
@@ -10,6 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   leadingIcon?: ReactNode;
   trailingIcon?: ReactNode;
+  loading?: boolean;
 }
 
 const variantClassNames: Record<ButtonVariant, string> = {
@@ -30,6 +32,8 @@ export function Button({
   size = "md",
   leadingIcon,
   trailingIcon,
+  loading = false,
+  disabled,
   className,
   type = "button",
   children,
@@ -44,9 +48,16 @@ export function Button({
         sizeClassNames[size],
         className,
       )}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {leadingIcon ? (
+      {loading ? (
+        <LoaderCircle
+          aria-hidden
+          className="size-4 shrink-0 animate-spin"
+        />
+      ) : leadingIcon ? (
         <span className="inline-flex shrink-0">{leadingIcon}</span>
       ) : null}
       {children}

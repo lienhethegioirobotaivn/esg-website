@@ -16,10 +16,10 @@ import { buildReportFileName } from "../lib/report-file-name";
 import type { ReportFormat } from "../lib/report-file-name";
 import { validateReport } from "../lib/report-validation";
 import type { ReportValidation } from "../lib/report-validation";
+import { postReportAttach } from "../services/report-archive.service";
+import type { ReportFinishResult } from "../services/report-archive.service";
 import { createReportBlob, createReportDocxBlob } from "../report/create-report";
 import type { AnswerMap, GroupEntry } from "../types";
-
-export type ReportArchiveStatus = "idle" | "saving" | "saved" | "failed";
 
 interface UseReportExportInput {
   company: CompanyFormValues;
@@ -35,8 +35,7 @@ interface ReportExport {
   exportingFormat: ReportFormat | null;
   isDownloadOpen: boolean;
   closeDownload: () => void;
-  archiveStatus: ReportArchiveStatus;
-  retryArchive: () => void;
+  linkEmail: () => Promise<void>;
   error: string | null;
   validation: ReportValidation | null;
   closeValidation: () => void;
@@ -53,13 +52,11 @@ export function useReportExport({
   const [isExporting, setIsExporting] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ReportFormat | null>(null);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
-  const [archiveStatus, setArchiveStatus] = useState<ReportArchiveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ReportValidation | null>(null);
   const blobs = useRef<Partial<Record<ReportFormat, Promise<Blob>>>>({});
   const blobsKey = useRef<string | null>(null);
-  const archivedKey = useRef<string | null>(null);
-  const archiving = useRef(false);
+  const archived = useRef<{ key: string; result: ReportFinishResult } | null>(null);
 
   function currentKey(): string {
     return buildArchiveKey({
@@ -94,17 +91,11 @@ export function useReportExport({
     return created;
   }
 
-  async function archive(force: boolean) {
-    if (archiving.current) {
-      return;
-    }
+  async function archive(force: boolean): Promise<ReportFinishResult | null> {
     const key = currentKey();
-    if (!force && archivedKey.current === key) {
-      setArchiveStatus("saved");
-      return;
+    if (!force && archived.current !== null && archived.current.key === key) {
+      return archived.current.result;
     }
-    archiving.current = true;
-    setArchiveStatus("saving");
     try {
       const reportCode = getReportCode();
       if (reportCode === null) {
@@ -114,7 +105,7 @@ export function useReportExport({
       const docx = await getBlob("docx");
       const draftState = getReportDraftState({ company, entries, answers }, t);
       const theme = loadBrandTheme();
-      await archiveReport({
+      const result = await archiveReport({
         reportCode,
         files: [
           { format: "pdf", name: buildReportFileName(company, "pdf"), blob: pdf },
@@ -133,12 +124,25 @@ export function useReportExport({
           savedAt: new Date().toISOString(),
         }),
       });
-      archivedKey.current = key;
-      setArchiveStatus("saved");
+      archived.current = { key, result };
+      return result;
     } catch {
-      setArchiveStatus("failed");
-    } finally {
-      archiving.current = false;
+      return null;
+    }
+  }
+
+  async function linkEmail() {
+    const current = archived.current;
+    if (current !== null && current.result.attachToken !== null) {
+      await postReportAttach({
+        exportId: current.result.exportId,
+        attachToken: current.result.attachToken,
+      });
+      return;
+    }
+    const result = await archive(true);
+    if (result === null) {
+      throw new Error("Chưa lưu được báo cáo.");
     }
   }
 
@@ -173,8 +177,8 @@ export function useReportExport({
         return;
       }
 
+      await archive(false);
       setIsDownloadOpen(true);
-      void archive(false);
       if (saveFailed) {
         setError(
           t(
@@ -215,8 +219,7 @@ export function useReportExport({
     exportingFormat,
     isDownloadOpen,
     closeDownload: () => setIsDownloadOpen(false),
-    archiveStatus,
-    retryArchive: () => void archive(true),
+    linkEmail,
     isExporting,
     error,
     validation,

@@ -11,6 +11,7 @@ import {
   postReportChunk,
   postReportFinish,
 } from "../services/report-archive.service";
+import type { ReportFinishResult } from "../services/report-archive.service";
 
 const CHUNK_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 800;
@@ -68,7 +69,7 @@ async function sendChunk(
 export async function archiveReport(
   input: ArchiveInput,
   retryDelayMs: number = RETRY_DELAY_MS,
-): Promise<string> {
+): Promise<ReportFinishResult> {
   const uploadId = crypto.randomUUID();
   const files: ReportFinishInput["files"] = [];
 

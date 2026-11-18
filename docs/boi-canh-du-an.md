@@ -187,3 +187,12 @@ Phần này do các phiên làm giao diện (frontend) bổ sung. Quy trình là
 - Bài viết và số liệu trên Sheet chưa có cột ngôn ngữ; slug và canonical chưa có tiền tố ngôn ngữ; sitemap và robots chưa có `hreflang`.
 - Phông: layout gốc nạp Noto Sans (latin, vietnamese) và Noto Sans SC chỉ bộ `latin`, nên tiếng Trung cần nạp thêm bộ chữ phù hợp; phông DejaVu Sans của báo cáo PDF **không có chữ Hán**.
 - Ba trang trong `app/(public)/` (trang chủ, các trang Về) đều là `force-dynamic`; chọn cách chia tuyến (tiền tố `/en`) hay cookie sẽ ảnh hưởng SEO và sitemap.
+
+## 13. Cập nhật 18/11/2026: lưu báo cáo đã xuất và xác nhận email OTP
+
+Kế hoạch chi tiết, nhật ký từng giai đoạn và bản đồ mã nguồn: [docs/ke-hoach-luu-bao-cao-va-xac-thuc-email.md](ke-hoach-luu-bao-cao-va-xac-thuc-email.md). Cài đặt Apps Script: mục 12 và 13 của [docs/huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Tình trạng: GĐ1 và GĐ2 xong, GĐ3 (trang "Báo cáo của tôi" ở `/bao-cao-cua-toi`) và GĐ4 (hoàn thiện, chính sách quyền riêng tư) chưa làm.
+
+- Mỗi lần bấm "Tạo báo cáo" (đã qua kiểm tra), trình duyệt dựng PDF và Word, chia mảnh 2.499.999 byte gửi qua `/api/reports/upload`, rồi `/api/reports/finish` ghép và lưu vào Drive (thư mục theo mã báo cáo) và Sheet (tab `Báo cáo đã xuất`, `Nội dung khảo sát`). Chạy trong lúc loading của nút; người dùng **không** thấy thông báo "đã lưu", lưu lỗi thì im lặng. Mỗi mã báo cáo giữ 5 lần xuất mới nhất. Không lưu ảnh minh chứng.
+- Email OTP là tùy chọn, nằm trong hộp thoại tải. Gmail thường chỉ gửi khoảng 100 người nhận mỗi ngày (dùng chung với Tư vấn, Góp ý), nên trần 60 mã OTP mỗi ngày. Mã nằm ở `CacheService`, phiên ở cookie `esg-user` ký bằng `USER_SESSION_SECRET`. Email chủ sở hữu chỉ lấy từ cookie phía máy chủ, không bao giờ từ client.
+- Quy ước đã chốt: SMS bỏ (tốn phí); email đã xác thực xem được mọi báo cáo gắn email đó từ bất kỳ thiết bị nào; báo cáo xuất trước khi xác thực chỉ gắn được cho lần xuất đang mở.
+- Bẫy đã gặp: base64 của các mảnh chỉ nối được khi kích thước mảnh chia hết cho 3; `next/headers` và `server-only` được giả trong `apps/web/tests/setup/`; thứ tự khóa i18n sắp theo `localeCompare(..., "vi")`; file `Code.gs` có thể là CRLF trên máy Windows.

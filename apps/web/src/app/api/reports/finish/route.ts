@@ -8,6 +8,7 @@ import {
   hasIpCapacity,
   recordUse,
 } from "@/server/brand-theme/limits";
+import { issueAttachToken, readSessionEmail } from "@/server/auth/user-session";
 import {
   finishReportUpload,
   reportErrorResponse,
@@ -53,8 +54,13 @@ export async function POST(request: Request) {
 
   try {
     recordUse(window, key);
-    const result = await finishReportUpload(parsed.data);
-    return NextResponse.json({ exportId: result.exportId });
+    const email = await readSessionEmail();
+    const result = await finishReportUpload(parsed.data, email);
+    return NextResponse.json({
+      exportId: result.exportId,
+      attachToken: issueAttachToken(result.exportId),
+      linked: email !== null,
+    });
   } catch (error) {
     return reportErrorResponse(error);
   }

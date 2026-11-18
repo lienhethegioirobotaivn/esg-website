@@ -112,7 +112,7 @@ describe("splitBlob", () => {
 
 describe("archiveReport through the real routes", () => {
   it("uploads every chunk then finishes with consistent metadata", async () => {
-    const exportId = await archiveReport(
+    const { exportId } = await archiveReport(
       input([
         { format: "pdf", name: "bao-cao.pdf", blob: pdf(CHUNK * 2 + 100) },
         { format: "docx", name: "bao-cao.docx", blob: docx(500) },
@@ -142,8 +142,8 @@ describe("archiveReport through the real routes", () => {
 
   it("retries a failed chunk and succeeds", async () => {
     failChunkAttempts = 2;
-    const exportId = await archiveReport(input([{ format: "pdf", name: "a.pdf", blob: pdf(1000) }]), 0);
-    assert.equal(exportId, "RX-20261117-ABCDEF");
+    const result = await archiveReport(input([{ format: "pdf", name: "a.pdf", blob: pdf(1000) }]), 0);
+    assert.equal(result.exportId, "RX-20261117-ABCDEF");
     assert.equal(appsCalls.filter((call) => call.action === "uploadReportChunk").length, 3);
   });
 

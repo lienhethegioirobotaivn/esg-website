@@ -66,11 +66,12 @@ export function assertValidSnapshot(snapshot: string): void {
 
 export async function finishReportUpload(
   input: ReportFinishInput,
+  ownerEmail: string | null = null,
 ): Promise<{ exportId: string }> {
   assertValidSnapshot(input.snapshot);
   const result = await callAbout(
     "finishReport",
-    { ...input },
+    ownerEmail === null ? { ...input } : { ...input, email: ownerEmail },
     FINISH_TIMEOUT_MS,
   );
   const exportId = result["exportId"];

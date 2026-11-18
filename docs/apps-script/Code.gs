@@ -55,7 +55,22 @@ var TRANSLATION_SYNC_MAX_MS = 270000;
 var TRANSLATION_SYNC_INTERVAL_MINUTES = 10;
 var TRANSLATION_SYNC_FULL_EVERY_MS = 24 * 60 * 60 * 1000;
 var EXPORT_SHEET_NAME = 'Báo cáo đã xuất';
-var EXPORT_HEADERS = ['Mã lần xuất', 'Mã báo cáo', 'Thời gian', 'Ngôn ngữ', 'Trạng thái', 'Doanh nghiệp', 'Giao diện', 'Id file PDF', 'Id file Word', 'Tên file PDF', 'Tên file Word', 'Email đã xác thực'];
+var EXPORT_HEADERS = ['Mã lần xuất', 'Mã báo cáo', 'Thời gian', 'Ngôn ngữ', 'Trạng thái', 'Doanh nghiệp', 'Giao diện', 'Id file PDF', 'Id file Word', 'Tên file PDF', 'Tên file Word', 'Link file PDF', 'Link file Word', 'Email đã xác thực'];
+var EXPORT_LINKS = [
+  { idColumn: 'Id file PDF', linkColumn: 'Link file PDF', label: 'Mở PDF' },
+  { idColumn: 'Id file Word', linkColumn: 'Link file Word', label: 'Mở Word' }
+];
+var OWNER_COLUMN = 'Email đã xác thực';
+var EXPORT_ID_PATTERN = /^RX-\d{8}-[A-Z0-9]{6}$/;
+var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+var OTP_CODE_PATTERN = /^\d{6}$/;
+var OTP_TTL_SECONDS = 600;
+var OTP_MAX_TRIES = 5;
+var OTP_RESEND_SECONDS = 60;
+var OTP_PER_EMAIL_PER_HOUR = 3;
+var OTP_DAILY_LIMIT = 60;
+var OTP_MIN_MAIL_QUOTA = 10;
+var OTP_SENDER_NAME = 'ESG Report Online';
 var EXPORT_KEY = 'Mã lần xuất';
 var SNAPSHOT_SHEET_NAME = 'Nội dung khảo sát';
 var SNAPSHOT_HEADERS = ['Mã lần xuất', 'Phần', 'Nội dung'];
@@ -114,6 +129,15 @@ function doPost(e) {
     }
     if (body.action === 'finishReport') {
       return json_(finishReport_(body, props));
+    }
+    if (body.action === 'otpRequest') {
+      return json_(otpRequest_(body, props));
+    }
+    if (body.action === 'otpVerify') {
+      return json_(otpVerify_(body, props));
+    }
+    if (body.action === 'setReportOwner') {
+      return json_(setReportOwner_(body));
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -1403,6 +1427,31 @@ function discardReportChunks_(folder, uploadId, specs) {
   });
 }
 
+function fillReportLinks_(sheet) {
+  var table = readTable_(sheet);
+  EXPORT_LINKS.forEach(function (target) {
+    var column = table.columns[target.linkColumn];
+    if (!column || !table.columns[target.idColumn]) {
+      return;
+    }
+    table.rows.forEach(function (record) {
+      var id = cellText_(record[target.idColumn]);
+      if (id === '' || cellText_(record[target.linkColumn]) !== '') {
+        return;
+      }
+      sheet.getRange(record._row, column)
+        .setNumberFormat('0')
+        .setFormula('=HYPERLINK("https://drive.google.com/file/d/' + id + '/view","' + target.label + '")');
+    });
+  });
+}
+
+function backfillReportLinks() {
+  var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+  fillReportLinks_(sheet);
+  Logger.log('Đã ghi link file báo cáo cho các dòng còn thiếu.');
+}
+
 function commitReportExport_(exportId, body, record) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -1422,6 +1471,11 @@ function commitReportExport_(exportId, body, record) {
         values[name] = record[name];
       });
       appendColumns_(sheet, Math.max(sheet.getLastRow(), 1) + 1, [values]);
+      try {
+        fillReportLinks_(sheet);
+      } catch (linkError) {
+        console.log('Không ghi được link file báo cáo: ' + linkError);
+      }
     } catch (err) {
       removeSnapshotRows_(exportId);
       throw err;
@@ -1474,11 +1528,15 @@ function finishReport_(body, props) {
     throw new Error('Chưa có hồ sơ doanh nghiệp cho mã báo cáo này.');
   }
 
+  var ownerEmail = body.email ? normalizeEmail_(body.email) : '';
   var tempFolder = reportTempFolder_(props);
   var folder = reportFolder_(reportCode, props);
   var exportId = createExportId_();
   var created = [];
   var record = {};
+  if (ownerEmail !== '') {
+    record[OWNER_COLUMN] = ownerEmail;
+  }
   var pruned = 0;
   try {
     specs.forEach(function (spec) {
@@ -1507,11 +1565,219 @@ function finishReport_(body, props) {
   } catch (err) {
     console.log('Không dọn được tệp tạm: ' + err);
   }
+  if (ownerEmail !== '') {
+    try {
+      writeCustomerEmail_(reportCode, ownerEmail);
+    } catch (err) {
+      console.log('Không ghi được email vào Data khách hàng: ' + err);
+    }
+  }
   var fileIds = {};
   specs.forEach(function (spec) {
     fileIds[spec.format] = record[REPORT_FORMATS[spec.format].idColumn];
   });
   return { ok: true, exportId: exportId, fileIds: fileIds, pruned: pruned };
+}
+
+function normalizeEmail_(value) {
+  var email = String(value || '').trim().toLowerCase();
+  if (email.length < 3 || email.length > 254 || !EMAIL_PATTERN.test(email)) {
+    throw new Error('Email không hợp lệ.');
+  }
+  return email;
+}
+
+function bytesToHex_(bytes) {
+  return bytes
+    .map(function (value) {
+      var hex = (value < 0 ? value + 256 : value).toString(16);
+      return hex.length < 2 ? '0' + hex : hex;
+    })
+    .join('');
+}
+
+function hmacHex_(value, props) {
+  return bytesToHex_(Utilities.computeHmacSha256Signature(value, props.getProperty('SECRET')));
+}
+
+function readJsonCache_(cache, key) {
+  var raw = cache.get(key);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    cache.remove(key);
+    return null;
+  }
+}
+
+function generateOtpCode_() {
+  var hex = Utilities.getUuid().replace(/-/g, '').substring(0, 12);
+  var number = parseInt(hex, 16) % 1000000;
+  return ('000000' + number).slice(-6);
+}
+
+function otpRequest_(body, props) {
+  var email = normalizeEmail_(body.email);
+  var subject = String(body.subject || '').trim();
+  var text = String(body.text || '');
+  if (subject === '' || subject.length > 200 || text.length < 10 || text.length > 3000 || text.indexOf('{code}') === -1) {
+    throw new Error('Nội dung email xác nhận không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var cache = CacheService.getScriptCache();
+    var emailKey = hmacHex_(email, props);
+    var now = Date.now();
+    var state = readJsonCache_(cache, 'otp:' + emailKey);
+    if (state && now - state.sentAt < OTP_RESEND_SECONDS * 1000) {
+      return { ok: true, status: 'wait', retryAfter: Math.ceil((OTP_RESEND_SECONDS * 1000 - (now - state.sentAt)) / 1000) };
+    }
+    var hourly = readJsonCache_(cache, 'otph:' + emailKey);
+    var hourlyActive = hourly && now - hourly.start < 3600000;
+    if (hourlyActive && hourly.count >= OTP_PER_EMAIL_PER_HOUR) {
+      return { ok: true, status: 'hourly-limit', retryAfter: Math.ceil((3600000 - (now - hourly.start)) / 1000) };
+    }
+    var today = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd');
+    var day = String(props.getProperty('OTP_DAY') || '').split(':');
+    var used = day[0] === today ? Number(day[1]) || 0 : 0;
+    if (used >= OTP_DAILY_LIMIT || MailApp.getRemainingDailyQuota() < OTP_MIN_MAIL_QUOTA) {
+      return { ok: true, status: 'daily-limit' };
+    }
+    var code = generateOtpCode_();
+    MailApp.sendEmail(email, subject, text.split('{code}').join(code), { name: OTP_SENDER_NAME });
+    cache.put(
+      'otp:' + emailKey,
+      JSON.stringify({ h: hmacHex_(code + ':' + emailKey, props), tries: 0, sentAt: now }),
+      OTP_TTL_SECONDS
+    );
+    cache.put(
+      'otph:' + emailKey,
+      JSON.stringify(hourlyActive ? { start: hourly.start, count: hourly.count + 1 } : { start: now, count: 1 }),
+      3600
+    );
+    props.setProperty('OTP_DAY', today + ':' + (used + 1));
+    return { ok: true, status: 'sent', expiresIn: OTP_TTL_SECONDS, resendAfter: OTP_RESEND_SECONDS };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function otpVerify_(body, props) {
+  var email = normalizeEmail_(body.email);
+  var code = String(body.code || '');
+  if (!OTP_CODE_PATTERN.test(code)) {
+    throw new Error('Mã xác nhận không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var cache = CacheService.getScriptCache();
+    var emailKey = hmacHex_(email, props);
+    var key = 'otp:' + emailKey;
+    var state = readJsonCache_(cache, key);
+    if (!state) {
+      return { ok: true, status: 'expired' };
+    }
+    if (state.tries >= OTP_MAX_TRIES) {
+      cache.remove(key);
+      return { ok: true, status: 'locked' };
+    }
+    if (hmacHex_(code + ':' + emailKey, props) === state.h) {
+      cache.remove(key);
+      return { ok: true, status: 'verified' };
+    }
+    state.tries += 1;
+    if (state.tries >= OTP_MAX_TRIES) {
+      cache.remove(key);
+      return { ok: true, status: 'locked' };
+    }
+    var remaining = Math.max(1, OTP_TTL_SECONDS - Math.floor((Date.now() - state.sentAt) / 1000));
+    cache.put(key, JSON.stringify(state), remaining);
+    return { ok: true, status: 'invalid', triesLeft: OTP_MAX_TRIES - state.tries };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function writeCustomerEmail_(reportCode, email) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return;
+  }
+  var layout = findLayout_(sheet);
+  var column = layout.columns[OWNER_COLUMN];
+  if (!column) {
+    return;
+  }
+  var rowCount = sheet.getLastRow() - layout.headerRow;
+  if (rowCount <= 0) {
+    return;
+  }
+  var keys = sheet.getRange(layout.headerRow + 1, layout.columns[KEY_COLUMN], rowCount, 1).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]).trim() === reportCode) {
+      sheet.getRange(layout.headerRow + 1 + i, column).setNumberFormat('@').setValue(email);
+      return;
+    }
+  }
+}
+
+function setReportOwner_(body) {
+  var exportId = String(body.exportId || '');
+  var email = normalizeEmail_(body.email);
+  if (!EXPORT_ID_PATTERN.test(exportId)) {
+    throw new Error('Mã lần xuất không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  var reportCode = '';
+  var status = 'missing';
+  try {
+    if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME)) {
+      return { ok: true, status: 'missing' };
+    }
+    var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+    var table = readTable_(sheet);
+    var column = table.columns[OWNER_COLUMN];
+    var record = null;
+    table.rows.forEach(function (candidate) {
+      if (cellText_(candidate[EXPORT_KEY]) === exportId) {
+        record = candidate;
+      }
+    });
+    if (!record || !column) {
+      return { ok: true, status: 'missing' };
+    }
+    reportCode = cellText_(record['Mã báo cáo']);
+    var current = cellText_(record[OWNER_COLUMN]).toLowerCase();
+    if (current === email) {
+      status = 'already';
+    } else if (current !== '') {
+      return { ok: true, status: 'conflict' };
+    } else {
+      sheet.getRange(record._row, column).setNumberFormat('@').setValue(email);
+      status = 'attached';
+    }
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+  try {
+    writeCustomerEmail_(reportCode, email);
+  } catch (err) {
+    console.log('Không ghi được email vào Data khách hàng: ' + err);
+  }
+  return { ok: true, status: status };
+}
+
+function logMailQuota() {
+  var props = PropertiesService.getScriptProperties();
+  Logger.log('Hạn mức email còn lại hôm nay: ' + MailApp.getRemainingDailyQuota());
+  Logger.log('Số mã OTP đã gửi (ngày:số lượng): ' + (props.getProperty('OTP_DAY') || 'chưa có'));
 }
 
 function cleanupReportUploads_(props) {

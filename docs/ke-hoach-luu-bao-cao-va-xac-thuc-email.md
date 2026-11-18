@@ -1,6 +1,6 @@
 # Kế hoạch tính năng: lưu báo cáo đã xuất và xem lại bằng email OTP (16/11/2026)
 
-Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm mặc định đề xuất, chờ Bình chốt. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
+Trạng thái (18/11/2026): GĐ1 (lưu báo cáo) và GĐ2 (email OTP) đã làm xong; GĐ3 (trang "Báo cáo của tôi") và GĐ4 (hoàn thiện) chưa làm. Mục 4 đã được Bình chốt ngày 17/11. Mục 7 là bản đồ mã nguồn để làm tiếp. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
 
 ## 1. Yêu cầu đã chốt
 
@@ -22,7 +22,7 @@ Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm m�
 ## 3. Thiết kế
 
 ### 3.1 Lưu báo cáo (không phụ thuộc email)
-- Khi hộp thoại tải mở ra (đã qua kiểm tra), trình duyệt tự dựng **cả PDF và Word** ở nền và gửi lên, song song với việc user bấm tải. Dùng đúng dữ liệu và ngôn ngữ hiện tại. Lỗi lưu không chặn việc tải; hộp thoại hiện trạng thái "Đã lưu / Đang lưu / Chưa lưu được, thử lại".
+- Khi user bấm "Tạo báo cáo" và đã qua kiểm tra, trình duyệt dựng **cả PDF và Word** rồi gửi lên **trong lúc nút đang ở trạng thái loading** ("Đang tạo báo cáo..."), sau đó mới mở hộp thoại tải. File vừa dựng được giữ trong bộ nhớ nên bấm tải là có ngay. Dùng đúng dữ liệu và ngôn ngữ hiện tại. **Người dùng không được thấy chữ "đã lưu vào hệ thống"** (quyết định 18/11): lưu lỗi thì im lặng, hộp thoại vẫn mở và vẫn tải được; lần bấm "Tạo báo cáo" sau sẽ lưu lại.
 - Vì body route Vercel giới hạn khoảng 4,5 MB mà PDF có ảnh minh chứng có thể lớn hơn, file được **chia mảnh** (khoảng 2,5 MB nhị phân mỗi mảnh) gửi qua `POST /api/reports/upload`. Apps Script ghép lại và ghi vào Drive. Cơ chế ghép: mỗi mảnh là một tệp tạm trong thư mục tạm của Drive, bước kết thúc ghép base64 và tạo file; tệp tạm bị xóa ngay, và có trigger dọn tệp tạm quá 24 giờ.
 - Drive: file vào **thư mục con theo mã báo cáo** đã có (cùng nơi lưu logo). Tên file như `buildReportFileName`.
 - Sheet (cùng bảng tính đang dùng), tab tự tạo:
@@ -53,17 +53,17 @@ Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm m�
 - Cần thêm dòng giải thích ngắn trong hộp thoại và ghi vào chính sách quyền riêng tư: báo cáo và dữ liệu được lưu để xem lại; email dùng để xác thực và liên hệ.
 - Hạn mức email: `MailApp` giới hạn khoảng 100 người nhận mỗi ngày với Gmail thường, khoảng 1.500 với Google Workspace; hạn mức này dùng chung với email Tư vấn và Góp ý.
 
-## 4. Điểm mặc định chờ Bình chốt
+## 4. Điểm mặc định (Bình đã chốt ngày 17/11/2026: chấp nhận toàn bộ)
 
 | # | Câu hỏi | Mặc định đề xuất |
 | --- | --- | --- |
-| 1 | Lưu lúc nào | Tự lưu ngay khi hộp thoại tải mở, không cần bấm tải |
+| 1 | Lưu lúc nào | Tự lưu trong lúc loading của nút "Tạo báo cáo" (trước khi hộp thoại mở), không cần bấm tải |
 | 2 | Số lần xuất giữ lại cho mỗi mã báo cáo | 5 lần gần nhất, cũ hơn tự xóa |
 | 3 | Báo cáo "Bản nháp" (thiếu dữ liệu) | Vẫn lưu, ghi trạng thái "Bản nháp" |
 | 4 | OTP | 6 số, hiệu lực 10 phút, 5 lần thử, gửi lại sau 60 giây, phiên 30 ngày |
-| 5 | Tài khoản gửi mail | Tài khoản Google đang chạy Apps Script (cần biết là Gmail thường hay Workspace) |
+| 5 | Tài khoản gửi mail | Tài khoản Google đang chạy Apps Script. **Đã chốt: Gmail thường** (khoảng 100 người nhận mỗi ngày, dùng chung với Tư vấn, Góp ý, email mời đánh giá), nên đặt trần 60 mã OTP mỗi ngày cho cả hệ thống |
 | 6 | Captcha | Chưa dùng, thêm nếu bị lạm dụng |
-| 7 | Email đã xác thực ở thiết bị khác | Xem được **mọi** báo cáo gắn email đó; báo cáo tạo trước khi xác thực chỉ gắn cho mã báo cáo hiện tại |
+| 7 | Email đã xác thực ở thiết bị khác | Ở thiết bị nào cũng nhập email, nhận mã, điền mã là xem được **mọi** báo cáo gắn email đó. Báo cáo xuất trước khi xác thực chỉ gắn được cho lần xuất đang mở trong hộp thoại |
 
 ## 5. Các giai đoạn
 
@@ -75,7 +75,8 @@ Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm m�
 **Nhật ký GĐ1 (đã làm xong, đã kiểm thử bằng bridge giả)**:
 - Hai route thay vì một: `POST /api/reports/upload` (multipart, từng mảnh) và `POST /api/reports/finish` (JSON, ghép và ghi Sheet/Drive). Mảnh 2.499.999 byte (chia hết cho 3 nên base64 từng mảnh nối được), tối đa 12 mảnh, mỗi file tối đa 25 MB, snapshot tối đa 600.000 ký tự.
 - Apps Script: hành động `uploadReportChunk`, `finishReport`; tab `Báo cáo đã xuất`, `Nội dung khảo sát`; thư mục Drive `Tải lên tạm`; giữ 5 lần xuất mới nhất cho mỗi mã báo cáo, bản cũ bị xóa cả file Drive lẫn hàng snapshot; lỗi ghi Sheet thì hoàn tác (xóa snapshot, bỏ file vừa tạo); trigger hằng ngày `installReportCleanupTrigger` dọn mảnh tạm quá 24 giờ.
-- Web: `useReportExport` lưu tự động khi mở dialog (chống lưu trùng theo khóa nội dung), hiện trạng thái đang lưu, đã lưu, lỗi kèm nút Thử lại; lỗi lưu không chặn tải file.
+- Web: `useReportExport` lưu tự động trong lúc loading của nút "Tạo báo cáo" (chống lưu trùng theo khóa nội dung). Bản đầu có dòng trạng thái "Đang lưu / Đã lưu / Thử lại" trong hộp thoại; ngày 18/11 đã **bỏ** theo yêu cầu của Bình, lưu lỗi thì im lặng và vẫn tải được file.
+- Sửa 18/11: tab `Báo cáo đã xuất` có thêm hai cột `Link file PDF` và `Link file Word` (công thức `=HYPERLINK(...)` mở file trong Drive, chỉ chủ Drive mở được). Dòng cũ chưa có link được tự ghi bù ở lần xuất sau, hoặc chạy hàm `backfillReportLinks` trong Apps Script.
 - `callAbout` thêm tham số timeout; test web dùng shim `tests/setup/server-only.cjs`.
 - Kiểm thử: shared 70 pass, web 26 pass, bridge Apps Script giả 16/16, typecheck và `i18n:check` sạch. Chưa thử được Google/Vercel thật và `pnpm build`.
 
@@ -83,6 +84,33 @@ Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm m�
 **Việc**: Apps Script `otpRequest`, `otpVerify`, `attachOwner` (gắn email vào các lần xuất của mã báo cáo, và vào cột "Email đã xác thực" ở Data khách hàng); Next `server/auth/*` (cookie phiên ký HMAC theo mẫu `server/admin/session.ts`, giới hạn theo IP, dựng email theo ngôn ngữ), 3 route auth, biến `USER_SESSION_SECRET`; mục OTP trong hộp thoại tải; trạng thái liên kết lưu cho phiên.
 **Đầu ra**: nhập email, nhận mã, xác nhận, hàng của báo cáo hiện tại có email chủ sở hữu.
 **Test**: test đơn vị cho ký và kiểm tra cookie, quy tắc hạn mức, hết hạn, sai quá 5 lần, gửi lại; bridge giả; email thật trên máy Bình (kiểm tra hộp thư rác, 4 ngôn ngữ, hạn mức `getRemainingDailyQuota`).
+
+**Nhật ký GĐ2 (đã làm xong 18/11/2026, kiểm thử bằng bridge giả; chưa thử email thật)**
+
+Luồng người dùng:
+1. Bấm "Tạo báo cáo": loading, báo cáo được lưu ẩn danh, hộp thoại mở.
+2. Trong hộp thoại có khung "Xem lại báo cáo sau (không bắt buộc)": nhập email, "Gửi mã", nhập 6 số, "Xác nhận". Khung này không chặn việc tải.
+3. Xác nhận xong, web đặt cookie phiên và **liên kết lần xuất đang mở** với email (cột `Email đã xác thực` của tab `Báo cáo đã xuất`, và cột cùng tên ở `Data khách hàng` nếu bảng có cột đó).
+4. Từ lúc có cookie, mọi lần xuất mới tự mang email chủ sở hữu ngay khi lưu. Nút "Dùng email khác" đăng xuất.
+
+Quy tắc OTP (hằng số `EMAIL_OTP_RULES` trong `packages/shared/src/auth.ts` và các biến `OTP_*` đầu `Code.gs`, phải giữ khớp nhau): mã 6 số, hiệu lực 10 phút, tối đa 5 lần nhập sai (sai lần 5 thì hủy mã), gửi lại sau 60 giây, tối đa 3 mã mỗi giờ cho mỗi email, tối đa 60 mã mỗi ngày cho cả hệ thống (đếm trong Script Property `OTP_DAY`, giờ Việt Nam) và dừng nếu hạn mức Gmail còn dưới 10 (`OTP_MIN_MAIL_QUOTA`); ở Next có thêm trần theo IP (6 lần xin mã và 20 lần xác nhận mỗi 10 phút, tính trong bộ nhớ từng instance).
+
+Thiết kế đã chọn và lý do:
+- **Trạng thái OTP nằm ở `CacheService` của Apps Script** (tự hết hạn, không để dữ liệu mồ côi). Khóa là HMAC của email, giá trị là HMAC của `mã:khóa` (không lưu mã gốc, không lưu email gốc). Hạn chế: CacheService là best-effort, nếu bị đẩy khỏi bộ nhớ thì mã báo "hết hạn" và user xin mã mới.
+- **Apps Script sinh mã và gửi mail**; Next chỉ gửi tiêu đề và nội dung mẫu có chỗ `{code}` theo ngôn ngữ (4 ngôn ngữ nằm cứng trong `server/auth/otp-mail.ts`, không qua `t()`, vì là email do máy chủ dựng). Email chỉ chứa mã, không có đường dẫn.
+- Kết quả bình thường (hết hạn, sai mã, vượt hạn mức) trả về `ok: true` kèm `status` để Next ánh xạ sang mã HTTP và thông báo; chỉ lỗi thật mới `ok: false`.
+- **Cookie `esg-user`**: httpOnly, `sameSite=lax`, `secure` ở production, 30 ngày, nội dung `{email, hạn}` ký HMAC-SHA256 bằng `USER_SESSION_SECRET` (tối thiểu 32 ký tự). Thiếu biến này thì mọi route OTP trả 503 và giao diện báo chưa bật; lưu báo cáo ẩn danh vẫn chạy.
+- **Liên kết lần xuất đã lưu bằng `attachToken`**: vì lúc lưu chưa biết email, route `finish` trả thêm `attachToken` = HMAC(`attach:mãLầnXuất:thờiĐiểm`), hiệu lực 6 giờ. Route `POST /api/reports/attach` cần **cả** cookie phiên và token đúng của lần xuất đó, email lấy từ cookie (không bao giờ lấy từ body). Nhờ vậy không ai gắn được báo cáo của người khác chỉ bằng cách đoán mã lần xuất. Apps Script `setReportOwner` chỉ ghi khi ô email còn trống; email khác thì trả `conflict` (409), không ghi đè.
+- Email chủ sở hữu lúc `finishReport` do **Next** truyền (đọc từ cookie), client không gửi được.
+- `Data khách hàng`: cột `Email đã xác thực` là tùy chọn, thiếu cột thì bỏ qua; có nhiều email cho một mã báo cáo thì giữ email mới nhất.
+
+Tệp chính (xem mục 7): `packages/shared/src/auth.ts`; `server/auth/*`; `app/api/auth/{email/request,email/verify,me,logout}`; `app/api/reports/attach`; `features/account/*`; sửa `report-download-dialog.tsx`, `use-report-export.ts`, `server/reports/archive.ts`, `app/api/reports/finish/route.ts`, `server/env.ts`, `Code.gs`.
+
+Kiểm thử đã chạy: `@esg/shared` 76 pass; web 47 pass (ký và kiểm tra cookie, token liên kết, 7 route, giới hạn IP, ánh xạ trạng thái, chống cookie giả); bridge Apps Script giả 18 + 16 pass (OTP 12 ca, link, email chủ sở hữu); một lượt end-to-end route Next tới `Code.gs` thật qua bridge giả (xin mã, sai mã, xác nhận, liên kết, lần xuất sau tự mang email, đăng xuất); xem giao diện bằng trình duyệt thật (5 trạng thái, thu hẹp 520 px); `typecheck` ba package, `eslint` 0 lỗi, `i18n:check` đủ 3 ngôn ngữ.
+
+Chưa kiểm thử được (cần Bình làm trên máy mình): gửi email thật qua `MailApp`, hộp thư rác, 4 ngôn ngữ của email, `CacheService` thật, cookie `secure` trên Vercel, `pnpm build`.
+
+Việc cần làm khi triển khai: đặt `USER_SESSION_SECRET` ở web (Vercel và `.env.local`); dán lại `Code.gs` và tạo Phiên bản mới (lần đầu có `MailApp` thì có thể phải cấp lại quyền); tùy chọn thêm cột `Email đã xác thực` vào tab `Data khách hàng`.
 
 ### GĐ3 - Trang "Báo cáo của tôi"
 **Việc**: tuyến `/bao-cao-cua-toi` kèm `loading.tsx`, form đăng nhập OTP dùng lại thành phần của GĐ2, danh sách, `GET /api/my-reports`, `GET /api/my-reports/[id]/file` (stream, kiểm tra chủ sở hữu), "Mở lại để chỉnh sửa" (ghi localStorage rồi chuyển về `/`), "Xóa" và "Đăng xuất"; link ở header và menu di động; `noindex`, `robots.ts`; chữ giao diện qua `t(...)`.
@@ -101,3 +129,24 @@ Trạng thái: đã lập kế hoạch, chưa code. Mục 4 là các điểm m�
 - Phản hồi tải file trên Vercel phải là stream để vượt giới hạn 4,5 MB; cần kiểm tra trên Vercel thật.
 - Môi trường cloud của Claude không truy cập được Google: phần Drive, Sheet, MailApp chỉ thử được bằng bridge giả; Bình cần thử thật sau mỗi giai đoạn.
 - Dữ liệu cá nhân (email, thông tin doanh nghiệp) lưu lâu dài: cần cập nhật chính sách quyền riêng tư và có đường xóa (nút "Xóa").
+
+## 7. Bản đồ mã nguồn (để làm GĐ3 và GĐ4)
+
+| Việc | Nơi |
+| --- | --- |
+| Schema ảnh chụp, giới hạn lưu, chia mảnh | `packages/shared/src/report-archive.ts` |
+| Schema email, OTP, liên kết; `EMAIL_OTP_RULES`; `maskEmail` | `packages/shared/src/auth.ts` |
+| Chia mảnh và gửi báo cáo (client) | `features/survey/lib/report-archive.ts`, `features/survey/services/report-archive.service.ts` |
+| Khóa nội dung để không lưu trùng | `features/survey/lib/archive-key.ts` |
+| Dựng PDF/Word, lưu, liên kết email (hook) | `features/survey/hooks/use-report-export.ts` (`archive`, `linkEmail`) |
+| Khung email trong hộp thoại, form OTP dùng lại được | `features/account/components/email-otp-form.tsx`, `features/account/hooks/use-email-otp.ts` (prop `onVerified` tùy chọn nên trang "Báo cáo của tôi" dùng lại được) |
+| Gọi API auth từ client | `features/account/services/account.service.ts` (`fetchSessionEmail`, `requestEmailCode`, `verifyEmailCode`, `logoutEmail`) |
+| Cookie phiên, token | `server/auth/session-token.ts` (thuần, có test), `server/auth/user-session.ts` (cookie; `readSessionEmail()` là cách GĐ3 biết ai đang đăng nhập) |
+| Mẫu email OTP 4 ngôn ngữ | `server/auth/otp-mail.ts` |
+| Xin mã, kiểm mã, liên kết (server) | `server/auth/email-otp.ts`, `app/api/auth/*`, `app/api/reports/attach/route.ts` |
+| Giới hạn tốc độ | `server/auth/limits.ts`, `server/reports/limits.ts`, `server/brand-theme/limits.ts` (hàm chung) |
+| Lưu báo cáo (server) | `server/reports/archive.ts`, `app/api/reports/{upload,finish}/route.ts` |
+| Apps Script | `docs/apps-script/Code.gs`: nhóm hàm `*Report*_` (lưu, dọn, giữ 5 lần xuất, link), `otpRequest_`, `otpVerify_`, `setReportOwner_` |
+| Test | `packages/shared/tests/{report-archive,auth}.test.ts`, `apps/web/tests/{reports,auth}/*.test.ts`; `tests/setup/` có shim cho `server-only` và `next/headers` |
+
+Gợi ý cho GĐ3: tạo thêm hành động Apps Script `listOwnerReports` (đọc theo cột `Email đã xác thực`, không lộ id file Drive ra client), `getOwnerReportFile` (trả base64 từng mảnh để route stream, kiểm chủ sở hữu ở **cả** Next và Apps Script), `getOwnerSnapshot`, `deleteOwnerReport`. Mọi route đọc dữ liệu phải lấy email từ `readSessionEmail()`, không nhận email từ client. Cẩn thận: `pruneReportExports_` xóa theo mã báo cáo, nên khi "Mở lại để chỉnh sửa" rồi xuất tiếp thì lần xuất mới nhất đẩy lần cũ nhất ra khỏi mức giữ 5.

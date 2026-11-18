@@ -220,8 +220,38 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** (Triển khai → Qu
 
 Dữ liệu được tạo tự động:
 
-- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, email đã xác thực).
+- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, **link file PDF và link file Word**, email đã xác thực). Bấm "Mở PDF" hoặc "Mở Word" ở dòng tương ứng để mở file trong Drive (chỉ tài khoản chủ Drive mở được, file không chia sẻ công khai). Nếu tab này có từ bản cũ chưa có cột link, các cột link tự được thêm ở cuối và các dòng cũ được ghi bù ở lần xuất kế tiếp; muốn ghi bù ngay thì chọn hàm `backfillReportLinks` rồi bấm **Run**.
 - Tab **Nội dung khảo sát**: câu trả lời, hồ sơ doanh nghiệp, kế hoạch cải thiện của từng lần xuất (cắt thành các ô 40.000 ký tự).
 - Thư mục Drive theo mã báo cáo chứa file PDF và Word; thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
 - Mỗi mã báo cáo giữ 5 lần xuất mới nhất; bản cũ bị xóa cả file Drive lẫn hàng trong Sheet. Mã báo cáo phải có sẵn trong tab Data khách hàng.
 - Ảnh minh chứng không được lưu.
+
+## 13. Xác nhận email bằng mã OTP
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm các hành động `otpRequest`, `otpVerify`, `setReportOwner`. Không cần trigger mới.
+
+1. Trên web (Vercel và `apps/web/.env.local`) đặt `USER_SESSION_SECRET` là chuỗi ngẫu nhiên từ 32 ký tự trở lên rồi deploy lại. Thiếu biến này thì khung nhập email không dùng được (web báo chưa bật); việc lưu báo cáo vẫn chạy bình thường. Đổi giá trị biến này sẽ làm mọi người dùng bị đăng xuất.
+2. Dán lại `Code.gs`, tạo Phiên bản mới. Lần đầu gửi mã, Google có thể yêu cầu cấp lại quyền gửi email (đã cấp từ trước cho form Tư vấn thì thường không hỏi lại).
+3. Tùy chọn: thêm cột `Email đã xác thực` vào dòng tiêu đề của tab **Data khách hàng** để người quản lý thấy email liên hệ ngay ở bảng đang dùng. Thiếu cột thì bỏ qua, không lỗi.
+4. Thử: trên web làm khảo sát, bấm **Tạo báo cáo**, nhập email của bạn ở khung "Xem lại báo cáo sau", bấm **Gửi mã**, mở email (xem cả thư rác), nhập mã. Kiểm tra tab **Báo cáo đã xuất**: cột `Email đã xác thực` của lần xuất vừa tạo có email.
+
+Quy tắc và nơi đổi:
+
+| Quy tắc | Giá trị | Nơi đổi |
+| --- | --- | --- |
+| Độ dài và hiệu lực mã | 6 số, 10 phút | `OTP_TTL_SECONDS` trong `Code.gs`; `EMAIL_OTP_RULES` trong `packages/shared/src/auth.ts` |
+| Số lần nhập sai | 5, sai lần 5 thì hủy mã | `OTP_MAX_TRIES` |
+| Chờ giữa hai lần gửi | 60 giây | `OTP_RESEND_SECONDS` |
+| Số mã mỗi email mỗi giờ | 3 | `OTP_PER_EMAIL_PER_HOUR` |
+| Số mã mỗi ngày cho cả hệ thống | 60 | `OTP_DAILY_LIMIT` |
+| Dừng khi hạn mức email Google còn dưới | 10 | `OTP_MIN_MAIL_QUOTA` |
+
+Khi đổi một quy tắc, đổi cả hai nơi (Apps Script và `EMAIL_OTP_RULES`) để thông báo trên web khớp.
+
+Lưu ý quan trọng:
+
+- Tài khoản Google chạy Apps Script là Gmail thường nên chỉ gửi được khoảng 100 người nhận mỗi ngày, **dùng chung** với email Tư vấn, Kiểm định, Góp ý và email mời đánh giá. Vì vậy mới đặt trần 60 mã mỗi ngày. Chạm trần thì web báo "Hệ thống tạm thời chưa gửi thêm được mã xác nhận, vui lòng thử lại vào ngày mai" và việc lưu báo cáo vẫn chạy. Xem hạn mức còn lại và số mã đã gửi hôm nay: chọn hàm `logMailQuota`, bấm **Run**, xem **Execution log**. Lưu lượng lớn thì chuyển sang Google Workspace (khoảng 1.500 mỗi ngày) hoặc dịch vụ gửi mail riêng.
+- Mã OTP được giữ trong `CacheService` (chỉ dạng băm, tự hết hạn sau 10 phút) nên không có tab hay dữ liệu OTP nào trong Sheet. Số mã đã gửi trong ngày nằm ở Script Property `OTP_DAY` (dạng `yyyyMMdd:số lượng`); không cần sửa tay.
+- Email gửi đi có tên người gửi "ESG Report Online", nội dung theo ngôn ngữ trang đang xem (vi, en, fr, zh) và nằm trong `apps/web/src/server/auth/otp-mail.ts`.
+- Một email chỉ gắn được vào lần xuất khi ô `Email đã xác thực` của lần xuất đó còn trống; muốn đổi chủ sở hữu thì sửa tay ô này trong Sheet.
+- Dữ liệu cá nhân (email, thông tin doanh nghiệp, câu trả lời) được lưu lâu dài. Cần có dòng giải thích trong chính sách quyền riêng tư (việc của GĐ4); hiện trong hộp thoại có câu "Email chỉ dùng để xác nhận và để bạn xem lại báo cáo."

@@ -51,9 +51,14 @@ export async function postReportChunk(input: {
   }
 }
 
+export interface ReportFinishResult {
+  readonly exportId: string;
+  readonly attachToken: string | null;
+}
+
 export async function postReportFinish(
   payload: ReportFinishInput,
-): Promise<string> {
+): Promise<ReportFinishResult> {
   let response: Response;
   try {
     response = await fetch("/api/reports/finish", {
@@ -72,5 +77,28 @@ export async function postReportFinish(
   if (typeof exportId !== "string") {
     throw new ReportArchiveError(GENERIC_ERROR, false);
   }
-  return exportId;
+  const attachToken = isRecord(result) ? result["attachToken"] : null;
+  return {
+    exportId,
+    attachToken: typeof attachToken === "string" ? attachToken : null,
+  };
+}
+
+export async function postReportAttach(input: {
+  exportId: string;
+  attachToken: string;
+}): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch("/api/reports/attach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    throw new ReportArchiveError(GENERIC_ERROR, true);
+  }
+  if (!response.ok) {
+    throw await readFailure(response);
+  }
 }

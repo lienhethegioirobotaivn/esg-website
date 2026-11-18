@@ -1,5 +1,6 @@
 export * from "./answer";
 export * from "./answer-rules";
+export * from "./auth";
 export * from "./brand-theme";
 export * from "./build-survey";
 export * from "./company";

@@ -54,6 +54,28 @@ var TRANSLATION_SYNC_MAX_ROUNDS = 6;
 var TRANSLATION_SYNC_MAX_MS = 270000;
 var TRANSLATION_SYNC_INTERVAL_MINUTES = 10;
 var TRANSLATION_SYNC_FULL_EVERY_MS = 24 * 60 * 60 * 1000;
+var EXPORT_SHEET_NAME = 'Báo cáo đã xuất';
+var EXPORT_HEADERS = ['Mã lần xuất', 'Mã báo cáo', 'Thời gian', 'Ngôn ngữ', 'Trạng thái', 'Doanh nghiệp', 'Giao diện', 'Id file PDF', 'Id file Word', 'Tên file PDF', 'Tên file Word', 'Email đã xác thực'];
+var EXPORT_KEY = 'Mã lần xuất';
+var SNAPSHOT_SHEET_NAME = 'Nội dung khảo sát';
+var SNAPSHOT_HEADERS = ['Mã lần xuất', 'Phần', 'Nội dung'];
+var SNAPSHOT_CHUNK_SIZE = 40000;
+var REPORT_TEMP_FOLDER_NAME = 'Tải lên tạm';
+var REPORT_FORMATS = {
+  pdf: { mime: 'application/pdf', signature: [37, 80, 68, 70, 45], idColumn: 'Id file PDF', nameColumn: 'Tên file PDF' },
+  docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', signature: [80, 75, 3, 4], idColumn: 'Id file Word', nameColumn: 'Tên file Word' }
+};
+var REPORT_LOCALES = { vi: true, en: true, fr: true, zh: true };
+var REPORT_STATUS_LABELS = { draft: 'Bản nháp', complete: 'Đầy đủ' };
+var REPORT_THEME_LABELS = { 'default': 'Mặc định', brand: 'Thương hiệu' };
+var UPLOAD_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var REPORT_MAX_FILE_BYTES = 25 * 1024 * 1024;
+var REPORT_MAX_CHUNKS = 12;
+var REPORT_MAX_CHUNK_CHARS = 4 * 1024 * 1024;
+var REPORT_MAX_SNAPSHOT_CHARS = 600000;
+var REPORT_KEEP_EXPORTS = 5;
+var REPORT_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+var REPORT_CLEANUP_TRIGGER_HOUR = 3;
 
 function doPost(e) {
   try {
@@ -86,6 +108,12 @@ function doPost(e) {
       } finally {
         pruneLock.releaseLock();
       }
+    }
+    if (body.action === 'uploadReportChunk') {
+      return json_(uploadReportChunk_(body, props));
+    }
+    if (body.action === 'finishReport') {
+      return json_(finishReport_(body, props));
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -1152,6 +1180,371 @@ function runTranslationSync() {
   } finally {
     lock.releaseLock();
   }
+}
+
+function reportTempFolder_(props) {
+  var folderId = props.getProperty('FOLDER_ID');
+  if (!folderId) {
+    throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
+  }
+  var root = DriveApp.getFolderById(folderId);
+  var existing = root.getFoldersByName(REPORT_TEMP_FOLDER_NAME);
+  return existing.hasNext() ? existing.next() : root.createFolder(REPORT_TEMP_FOLDER_NAME);
+}
+
+function reportFolder_(reportCode, props) {
+  var folderId = props.getProperty('FOLDER_ID');
+  if (!folderId) {
+    throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
+  }
+  var root = DriveApp.getFolderById(folderId);
+  var existing = root.getFoldersByName(reportCode);
+  return existing.hasNext() ? existing.next() : root.createFolder(reportCode);
+}
+
+function reportCodeExists_(reportCode) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return false;
+  }
+  var layout = findLayout_(sheet);
+  var rowCount = sheet.getLastRow() - layout.headerRow;
+  if (rowCount <= 0) {
+    return false;
+  }
+  var keys = sheet.getRange(layout.headerRow + 1, layout.columns[KEY_COLUMN], rowCount, 1).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]).trim() === reportCode) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function chunkFileName_(uploadId, format, index) {
+  return uploadId + '.' + format + '.' + index;
+}
+
+function uploadReportChunk_(body, props) {
+  var uploadId = String(body.uploadId || '');
+  var format = String(body.format || '');
+  var index = Number(body.index);
+  var data = String(body.data || '');
+  if (!UPLOAD_ID_PATTERN.test(uploadId)) {
+    throw new Error('Mã tải lên không hợp lệ.');
+  }
+  if (!REPORT_FORMATS[format]) {
+    throw new Error('Định dạng báo cáo không được hỗ trợ.');
+  }
+  if (!(index >= 0 && index < REPORT_MAX_CHUNKS) || Math.floor(index) !== index) {
+    throw new Error('Số thứ tự mảnh không hợp lệ.');
+  }
+  if (data.length === 0 || data.length > REPORT_MAX_CHUNK_CHARS) {
+    throw new Error('Mảnh dữ liệu rỗng hoặc quá lớn.');
+  }
+  var folder = reportTempFolder_(props);
+  var name = chunkFileName_(uploadId, format, index);
+  var existing = folder.getFilesByName(name);
+  if (existing.hasNext()) {
+    existing.next().setContent(data);
+  } else {
+    folder.createFile(name, data, MimeType.PLAIN_TEXT);
+  }
+  return { ok: true };
+}
+
+function assembleReportFile_(folder, uploadId, spec) {
+  var base64 = '';
+  for (var i = 0; i < spec.chunks; i++) {
+    var files = folder.getFilesByName(chunkFileName_(uploadId, spec.format, i));
+    if (!files.hasNext()) {
+      throw new Error('Thiếu mảnh ' + (i + 1) + '/' + spec.chunks + ' của file ' + spec.format + '.');
+    }
+    var part = files.next().getBlob().getDataAsString();
+    if (i < spec.chunks - 1 && (part.length % 4 !== 0 || part.indexOf('=') !== -1)) {
+      throw new Error('Mảnh ' + (i + 1) + ' của file ' + spec.format + ' có độ dài không hợp lệ.');
+    }
+    base64 += part;
+  }
+  var bytes = Utilities.base64Decode(base64);
+  if (bytes.length !== spec.bytes || bytes.length > REPORT_MAX_FILE_BYTES) {
+    throw new Error('Kích thước file ' + spec.format + ' không khớp.');
+  }
+  var signature = REPORT_FORMATS[spec.format].signature;
+  for (var j = 0; j < signature.length; j++) {
+    if ((bytes[j] & 255) !== signature[j]) {
+      throw new Error('File ' + spec.format + ' không đúng định dạng.');
+    }
+  }
+  return bytes;
+}
+
+function safeReportFileName_(name, format) {
+  var cleaned = String(name || '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
+    .substring(0, 120);
+  var suffix = '.' + format;
+  if (cleaned === '') {
+    return 'bao-cao-esg' + suffix;
+  }
+  return cleaned.toLowerCase().slice(-suffix.length) === suffix ? cleaned : cleaned + suffix;
+}
+
+function createExportId_() {
+  var date = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd');
+  return 'RX-' + date + '-' + randomCode_(6);
+}
+
+function appendColumns_(sheet, startRow, records) {
+  if (!records.length) {
+    return;
+  }
+  var table = readTable_(sheet);
+  var needed = startRow + records.length - 1;
+  var missing = needed - sheet.getMaxRows();
+  if (missing > 0) {
+    sheet.insertRowsAfter(sheet.getMaxRows(), missing);
+  }
+  Object.keys(records[0]).forEach(function (name) {
+    var column = table.columns[name];
+    if (!column) {
+      throw new Error('Thiếu cột "' + name + '" trong tab "' + sheet.getName() + '".');
+    }
+    sheet.getRange(startRow, column, records.length, 1)
+      .setNumberFormat('@')
+      .setValues(records.map(function (record) {
+        return [record[name]];
+      }));
+  });
+}
+
+function writeSnapshotRows_(exportId, snapshot) {
+  var sheet = ensureTable_(SNAPSHOT_SHEET_NAME, SNAPSHOT_HEADERS);
+  var records = [];
+  for (var start = 0; start < snapshot.length; start += SNAPSHOT_CHUNK_SIZE) {
+    records.push({
+      'Mã lần xuất': exportId,
+      'Phần': records.length + 1,
+      'Nội dung': snapshot.substring(start, start + SNAPSHOT_CHUNK_SIZE)
+    });
+  }
+  appendColumns_(sheet, Math.max(sheet.getLastRow(), 1) + 1, records);
+}
+
+function removeSnapshotRows_(exportId) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!sheet) {
+    return;
+  }
+  var rows = readTable_(sheet).rows;
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (cellText_(rows[i][EXPORT_KEY]) === exportId) {
+      sheet.deleteRow(rows[i]._row);
+    }
+  }
+}
+
+function pruneReportExports_(reportCode) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+  if (!sheet) {
+    return 0;
+  }
+  var mine = readTable_(sheet).rows.filter(function (record) {
+    return cellText_(record['Mã báo cáo']) === reportCode && cellText_(record[EXPORT_KEY]) !== '';
+  });
+  if (mine.length <= REPORT_KEEP_EXPORTS) {
+    return 0;
+  }
+  mine.sort(function (a, b) {
+    var left = cellText_(a['Thời gian']);
+    var right = cellText_(b['Thời gian']);
+    if (left !== right) {
+      return left < right ? -1 : 1;
+    }
+    return a._row - b._row;
+  });
+  var dropped = mine.slice(0, mine.length - REPORT_KEEP_EXPORTS);
+  dropped.forEach(function (record) {
+    ['Id file PDF', 'Id file Word'].forEach(function (column) {
+      var id = cellText_(record[column]);
+      if (id === '') {
+        return;
+      }
+      try {
+        DriveApp.getFileById(id).setTrashed(true);
+      } catch (err) {
+        console.log('Không xóa được file báo cáo ' + id + ': ' + err);
+      }
+    });
+    removeSnapshotRows_(cellText_(record[EXPORT_KEY]));
+  });
+  dropped
+    .map(function (record) {
+      return record._row;
+    })
+    .sort(function (a, b) {
+      return b - a;
+    })
+    .forEach(function (row) {
+      sheet.deleteRow(row);
+    });
+  return dropped.length;
+}
+
+function discardReportChunks_(folder, uploadId, specs) {
+  specs.forEach(function (spec) {
+    for (var i = 0; i < spec.chunks; i++) {
+      var files = folder.getFilesByName(chunkFileName_(uploadId, spec.format, i));
+      while (files.hasNext()) {
+        files.next().setTrashed(true);
+      }
+    }
+  });
+}
+
+function commitReportExport_(exportId, body, record) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    writeSnapshotRows_(exportId, String(body.snapshot));
+    try {
+      var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+      var values = {};
+      values[EXPORT_KEY] = exportId;
+      values['Mã báo cáo'] = String(body.reportCode);
+      values['Thời gian'] = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm:ss');
+      values['Ngôn ngữ'] = String(body.locale);
+      values['Trạng thái'] = REPORT_STATUS_LABELS[body.status];
+      values['Doanh nghiệp'] = String(body.companyName || '').substring(0, 200);
+      values['Giao diện'] = REPORT_THEME_LABELS[body.theme];
+      Object.keys(record).forEach(function (name) {
+        values[name] = record[name];
+      });
+      appendColumns_(sheet, Math.max(sheet.getLastRow(), 1) + 1, [values]);
+    } catch (err) {
+      removeSnapshotRows_(exportId);
+      throw err;
+    }
+    var pruned = 0;
+    try {
+      pruned = pruneReportExports_(String(body.reportCode));
+    } catch (err) {
+      console.log('Không dọn được lần xuất cũ: ' + err);
+    }
+    SpreadsheetApp.flush();
+    return pruned;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function finishReport_(body, props) {
+  var reportCode = String(body.reportCode || '');
+  var uploadId = String(body.uploadId || '');
+  if (!REPORT_CODE_PATTERN.test(reportCode)) {
+    throw new Error('Mã báo cáo không hợp lệ.');
+  }
+  if (!UPLOAD_ID_PATTERN.test(uploadId)) {
+    throw new Error('Mã tải lên không hợp lệ.');
+  }
+  if (!REPORT_LOCALES[body.locale] || !REPORT_STATUS_LABELS[body.status] || !REPORT_THEME_LABELS[body.theme]) {
+    throw new Error('Thông tin báo cáo không hợp lệ.');
+  }
+  var snapshot = String(body.snapshot || '');
+  if (snapshot.length < 2 || snapshot.length > REPORT_MAX_SNAPSHOT_CHARS) {
+    throw new Error('Dữ liệu khảo sát rỗng hoặc quá lớn.');
+  }
+  JSON.parse(snapshot);
+  var specs = body.files;
+  if (!Array.isArray(specs) || specs.length < 1 || specs.length > 2) {
+    throw new Error('Thiếu danh sách file báo cáo.');
+  }
+  var seen = {};
+  specs.forEach(function (spec) {
+    var valid = spec && REPORT_FORMATS[spec.format] && !seen[spec.format] &&
+      spec.bytes > 0 && spec.bytes <= REPORT_MAX_FILE_BYTES &&
+      spec.chunks >= 1 && spec.chunks <= REPORT_MAX_CHUNKS;
+    if (!valid) {
+      throw new Error('Thông tin file báo cáo không hợp lệ.');
+    }
+    seen[spec.format] = true;
+  });
+  if (!reportCodeExists_(reportCode)) {
+    throw new Error('Chưa có hồ sơ doanh nghiệp cho mã báo cáo này.');
+  }
+
+  var tempFolder = reportTempFolder_(props);
+  var folder = reportFolder_(reportCode, props);
+  var exportId = createExportId_();
+  var created = [];
+  var record = {};
+  var pruned = 0;
+  try {
+    specs.forEach(function (spec) {
+      var format = REPORT_FORMATS[spec.format];
+      var bytes = assembleReportFile_(tempFolder, uploadId, spec);
+      var fileName = exportId + '_' + safeReportFileName_(spec.name, spec.format);
+      var file = folder.createFile(Utilities.newBlob(bytes, format.mime, fileName));
+      created.push(file);
+      record[format.idColumn] = file.getId();
+      record[format.nameColumn] = fileName;
+    });
+    pruned = commitReportExport_(exportId, body, record);
+  } catch (err) {
+    created.forEach(function (file) {
+      try {
+        file.setTrashed(true);
+      } catch (trashError) {
+        console.log('Không xóa được file dở dang: ' + trashError);
+      }
+    });
+    throw err;
+  }
+  try {
+    discardReportChunks_(tempFolder, uploadId, specs);
+    cleanupReportUploads_(props);
+  } catch (err) {
+    console.log('Không dọn được tệp tạm: ' + err);
+  }
+  var fileIds = {};
+  specs.forEach(function (spec) {
+    fileIds[spec.format] = record[REPORT_FORMATS[spec.format].idColumn];
+  });
+  return { ok: true, exportId: exportId, fileIds: fileIds, pruned: pruned };
+}
+
+function cleanupReportUploads_(props) {
+  var folder = reportTempFolder_(props);
+  var files = folder.getFiles();
+  var cutoff = new Date().getTime() - REPORT_TEMP_MAX_AGE_MS;
+  var removed = 0;
+  while (files.hasNext()) {
+    var file = files.next();
+    if (file.getDateCreated().getTime() < cutoff) {
+      file.setTrashed(true);
+      removed++;
+    }
+  }
+  return removed;
+}
+
+function cleanupReportUploads() {
+  var removed = cleanupReportUploads_(PropertiesService.getScriptProperties());
+  Logger.log('Đã xóa ' + removed + ' tệp tải lên tạm quá hạn.');
+}
+
+function installReportCleanupTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'cleanupReportUploads') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  ScriptApp.newTrigger('cleanupReportUploads')
+    .timeBased()
+    .everyDays(1)
+    .atHour(REPORT_CLEANUP_TRIGGER_HOUR)
+    .create();
 }
 
 function parseBody_(e) {

@@ -1,10 +1,11 @@
 "use client";
 
-import { FileDown, FileText, Info, LoaderCircle } from "lucide-react";
+import { CheckCircle2, FileDown, FileText, Info, LoaderCircle, TriangleAlert } from "lucide-react";
 
 import { Button, Modal } from "@/components/ui";
 import { useT } from "@/features/locale";
 
+import type { ReportArchiveStatus } from "../hooks/use-report-export";
 import type { DraftJumpTarget, DraftReason } from "../lib/report-draft-state";
 import type { ReportFormat } from "../lib/report-file-name";
 
@@ -15,6 +16,8 @@ interface ReportDownloadDialogProps {
   exportingFormat: ReportFormat | null;
   error: string | null;
   themeLabel?: string | null;
+  archiveStatus?: ReportArchiveStatus;
+  onRetryArchive?: () => void;
   onDownload: (format: ReportFormat) => void;
   onClose: () => void;
 }
@@ -26,6 +29,8 @@ export function ReportDownloadDialog({
   exportingFormat,
   error,
   themeLabel = null,
+  archiveStatus = "idle",
+  onRetryArchive,
   onDownload,
   onClose,
 }: ReportDownloadDialogProps) {
@@ -126,6 +131,37 @@ export function ReportDownloadDialog({
               ))}
             </ul>
           </div>
+        </div>
+      ) : null}
+
+      {archiveStatus !== "idle" ? (
+        <div
+          role="status"
+          className="mt-5 flex items-start gap-2 text-xs text-muted"
+        >
+          {archiveStatus === "saving" ? (
+            <LoaderCircle aria-hidden className="mt-0.5 size-4 shrink-0 animate-spin" />
+          ) : archiveStatus === "saved" ? (
+            <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0 text-primary-700" />
+          ) : (
+            <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning-600" />
+          )}
+          <p>
+            {archiveStatus === "saving"
+              ? t("Đang lưu báo cáo vào hệ thống...")
+              : archiveStatus === "saved"
+                ? t("Đã lưu báo cáo vào hệ thống.")
+                : t("Chưa lưu được báo cáo vào hệ thống. Bạn vẫn tải được file.")}{" "}
+            {archiveStatus === "failed" && onRetryArchive ? (
+              <button
+                type="button"
+                onClick={onRetryArchive}
+                className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-900"
+              >
+                {t("Thử lại")}
+              </button>
+            ) : null}
+          </p>
         </div>
       ) : null}
 

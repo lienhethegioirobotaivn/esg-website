@@ -1,16 +1,25 @@
-import { useState } from "react";
+import { buildReportSnapshot } from "@esg/shared";
+import { useRef, useState } from "react";
 
 import { getReportCode, saveCompany, saveReportCode } from "@/features/company";
 import type { CompanyFormValues } from "@/features/company";
 import { useLocale, useT } from "@/features/locale";
 import { downloadBlob } from "@/lib/download-blob";
 
+import { buildArchiveKey } from "../lib/archive-key";
+import { loadBrandTheme } from "../lib/brand-theme-storage";
+import { toDraftAnswers } from "../lib/draft-state";
+import { loadPlan } from "../lib/plan-storage";
+import { archiveReport } from "../lib/report-archive";
+import { getReportDraftState } from "../lib/report-draft-state";
 import { buildReportFileName } from "../lib/report-file-name";
 import type { ReportFormat } from "../lib/report-file-name";
 import { validateReport } from "../lib/report-validation";
 import type { ReportValidation } from "../lib/report-validation";
 import { createReportBlob, createReportDocxBlob } from "../report/create-report";
 import type { AnswerMap, GroupEntry } from "../types";
+
+export type ReportArchiveStatus = "idle" | "saving" | "saved" | "failed";
 
 interface UseReportExportInput {
   company: CompanyFormValues;
@@ -26,6 +35,8 @@ interface ReportExport {
   exportingFormat: ReportFormat | null;
   isDownloadOpen: boolean;
   closeDownload: () => void;
+  archiveStatus: ReportArchiveStatus;
+  retryArchive: () => void;
   error: string | null;
   validation: ReportValidation | null;
   closeValidation: () => void;
@@ -42,8 +53,94 @@ export function useReportExport({
   const [isExporting, setIsExporting] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ReportFormat | null>(null);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const [archiveStatus, setArchiveStatus] = useState<ReportArchiveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ReportValidation | null>(null);
+  const blobs = useRef<Partial<Record<ReportFormat, Promise<Blob>>>>({});
+  const blobsKey = useRef<string | null>(null);
+  const archivedKey = useRef<string | null>(null);
+  const archiving = useRef(false);
+
+  function currentKey(): string {
+    return buildArchiveKey({
+      company,
+      answers,
+      plan: loadPlan(),
+      theme: loadBrandTheme(),
+      locale,
+      logo,
+    });
+  }
+
+  function getBlob(format: ReportFormat): Promise<Blob> {
+    const key = currentKey();
+    if (blobsKey.current !== key) {
+      blobs.current = {};
+      blobsKey.current = key;
+    }
+    const cached = blobs.current[format];
+    if (cached) {
+      return cached;
+    }
+    const input = { company, entries, answers, logo, t, locale };
+    const created =
+      format === "docx" ? createReportDocxBlob(input) : createReportBlob(input);
+    blobs.current[format] = created;
+    created.catch(() => {
+      if (blobs.current[format] === created) {
+        delete blobs.current[format];
+      }
+    });
+    return created;
+  }
+
+  async function archive(force: boolean) {
+    if (archiving.current) {
+      return;
+    }
+    const key = currentKey();
+    if (!force && archivedKey.current === key) {
+      setArchiveStatus("saved");
+      return;
+    }
+    archiving.current = true;
+    setArchiveStatus("saving");
+    try {
+      const reportCode = getReportCode();
+      if (reportCode === null) {
+        throw new Error("Chưa có mã báo cáo.");
+      }
+      const pdf = await getBlob("pdf");
+      const docx = await getBlob("docx");
+      const draftState = getReportDraftState({ company, entries, answers }, t);
+      const theme = loadBrandTheme();
+      await archiveReport({
+        reportCode,
+        files: [
+          { format: "pdf", name: buildReportFileName(company, "pdf"), blob: pdf },
+          { format: "docx", name: buildReportFileName(company, "docx"), blob: docx },
+        ],
+        locale,
+        isDraft: draftState.isDraft,
+        isBrandTheme: !theme.isDefault,
+        companyName: company.name,
+        snapshot: buildReportSnapshot({
+          company,
+          answers: toDraftAnswers(answers),
+          plan: loadPlan(),
+          theme,
+          locale,
+          savedAt: new Date().toISOString(),
+        }),
+      });
+      archivedKey.current = key;
+      setArchiveStatus("saved");
+    } catch {
+      setArchiveStatus("failed");
+    } finally {
+      archiving.current = false;
+    }
+  }
 
   async function exportReport() {
     if (isExporting) {
@@ -77,6 +174,7 @@ export function useReportExport({
       }
 
       setIsDownloadOpen(true);
+      void archive(false);
       if (saveFailed) {
         setError(
           t(
@@ -98,11 +196,7 @@ export function useReportExport({
     setExportingFormat(format);
     setError(null);
     try {
-      const input = { company, entries, answers, logo, t, locale };
-      const blob =
-        format === "docx"
-          ? await createReportDocxBlob(input)
-          : await createReportBlob(input);
+      const blob = await getBlob(format);
       downloadBlob(blob, buildReportFileName(company, format));
     } catch {
       setError(
@@ -121,6 +215,8 @@ export function useReportExport({
     exportingFormat,
     isDownloadOpen,
     closeDownload: () => setIsDownloadOpen(false),
+    archiveStatus,
+    retryArchive: () => void archive(true),
     isExporting,
     error,
     validation,

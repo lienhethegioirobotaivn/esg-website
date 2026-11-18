@@ -210,3 +210,18 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm hành 
 
 Cách hoạt động: lưu hoặc xóa bài và lưu số liệu trên trang quản trị tự dịch ngay. Sửa Sheet câu hỏi đặt một cờ, trong tối đa 10 phút trigger gọi web dịch phần mới và dọn dòng mồ côi (không dọn dòng có chữ sửa tay). Ngoài ra mỗi 24 giờ chạy một lượt đầy đủ. Nếu Apps Script báo "Web trả về mã 401", `WEB_CRON_SECRET` đang khác `CRON_SECRET`; mã 503 nghĩa là web chưa đặt `CRON_SECRET`.
 
+## 12. Lưu báo cáo đã xuất
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** (Triển khai → Quản lý bản triển khai → biểu tượng bút → Phiên bản mới → Triển khai) vì có thêm hành động `uploadReportChunk` và `finishReport`.
+
+1. Dán lại toàn bộ `Code.gs`, lưu.
+2. Chọn hàm `installReportCleanupTrigger`, bấm **Run** một lần và cấp quyền Drive. Kiểm tra mục **Triggers** có `cleanupReportUploads` chạy mỗi ngày.
+3. Thử: trên web làm khảo sát, bấm **Tạo báo cáo**; dialog hiện "Đã lưu báo cáo vào hệ thống."
+
+Dữ liệu được tạo tự động:
+
+- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, email đã xác thực).
+- Tab **Nội dung khảo sát**: câu trả lời, hồ sơ doanh nghiệp, kế hoạch cải thiện của từng lần xuất (cắt thành các ô 40.000 ký tự).
+- Thư mục Drive theo mã báo cáo chứa file PDF và Word; thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
+- Mỗi mã báo cáo giữ 5 lần xuất mới nhất; bản cũ bị xóa cả file Drive lẫn hàng trong Sheet. Mã báo cáo phải có sẵn trong tab Data khách hàng.
+- Ảnh minh chứng không được lưu.

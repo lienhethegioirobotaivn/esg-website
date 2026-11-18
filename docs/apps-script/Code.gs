@@ -1390,18 +1390,35 @@ function pruneReportExports_(reportCode) {
   });
   var dropped = mine.slice(0, mine.length - REPORT_KEEP_EXPORTS);
   dropped.forEach(function (record) {
+    var exportId = cellText_(record[EXPORT_KEY]);
+    var exportFolder = null;
     ['Id file PDF', 'Id file Word'].forEach(function (column) {
       var id = cellText_(record[column]);
       if (id === '') {
         return;
       }
       try {
-        DriveApp.getFileById(id).setTrashed(true);
+        var file = DriveApp.getFileById(id);
+        var parents = file.getParents();
+        if (parents.hasNext()) {
+          var parent = parents.next();
+          if (parent.getName() === exportId) {
+            exportFolder = parent;
+          }
+        }
+        file.setTrashed(true);
       } catch (err) {
         console.log('Không xóa được file báo cáo ' + id + ': ' + err);
       }
     });
-    removeSnapshotRows_(cellText_(record[EXPORT_KEY]));
+    if (exportFolder !== null) {
+      try {
+        exportFolder.setTrashed(true);
+      } catch (err) {
+        console.log('Không xóa được thư mục báo cáo ' + exportId + ': ' + err);
+      }
+    }
+    removeSnapshotRows_(exportId);
   });
   dropped
     .map(function (record) {
@@ -1534,7 +1551,7 @@ function finishReport_(body, props) {
   var tempFolder = reportTempFolder_(props);
   var folder = reportFolder_(reportCode, props);
   var exportId = createExportId_();
-  var created = [];
+  var exportFolder = null;
   var record = {};
   if (ownerEmail !== '') {
     record[OWNER_COLUMN] = ownerEmail;
@@ -1544,21 +1561,23 @@ function finishReport_(body, props) {
     specs.forEach(function (spec) {
       var format = REPORT_FORMATS[spec.format];
       var bytes = assembleReportFile_(tempFolder, uploadId, spec);
+      if (exportFolder === null) {
+        exportFolder = folder.createFolder(exportId);
+      }
       var fileName = exportId + '_' + safeReportFileName_(spec.name, spec.format);
-      var file = folder.createFile(Utilities.newBlob(bytes, format.mime, fileName));
-      created.push(file);
+      var file = exportFolder.createFile(Utilities.newBlob(bytes, format.mime, fileName));
       record[format.idColumn] = file.getId();
       record[format.nameColumn] = fileName;
     });
     pruned = commitReportExport_(exportId, body, record);
   } catch (err) {
-    created.forEach(function (file) {
+    if (exportFolder !== null) {
       try {
-        file.setTrashed(true);
+        exportFolder.setTrashed(true);
       } catch (trashError) {
-        console.log('Không xóa được file dở dang: ' + trashError);
+        console.log('Không xóa được thư mục dở dang: ' + trashError);
       }
-    });
+    }
     throw err;
   }
   try {

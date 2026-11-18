@@ -222,7 +222,7 @@ Dữ liệu được tạo tự động:
 
 - Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, **link file PDF và link file Word**, email đã xác thực). Bấm chữ "Mở PDF" hoặc "Mở Word" (chữ có gắn liên kết) ở dòng tương ứng để mở file trong Drive (chỉ tài khoản chủ Drive mở được, file không chia sẻ công khai). Nếu tab này có từ bản cũ chưa có cột link, các cột link tự được thêm ở cuối và các dòng cũ được ghi bù ở lần xuất kế tiếp; muốn ghi bù ngay thì chọn hàm `backfillReportLinks` rồi bấm **Run**. Ô nào đang hiện `#ERROR!` (từ bản dùng công thức `HYPERLINK`) cũng được ghi đè đúng khi chạy hàm này.
 - Tab **Nội dung khảo sát**: câu trả lời, hồ sơ doanh nghiệp, kế hoạch cải thiện của từng lần xuất (cắt thành các ô 40.000 ký tự).
-- Thư mục Drive theo mã báo cáo chứa file PDF và Word; thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
+- Cấu trúc Drive: `ESG Report Online / <mã báo cáo> / <mã lần xuất RX-…> /` chứa đúng một file PDF và một file Word. Mỗi lần xuất có một thư mục riêng; khi bản cũ bị dọn (giữ 5 lần mới nhất), cả thư mục lần xuất đó vào Thùng rác. File của các lần xuất cũ (trước khi đổi cấu trúc) nằm thẳng trong thư mục mã báo cáo, không được di chuyển, và khi bị dọn chỉ file bị xóa. Thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
 - Mỗi mã báo cáo giữ 5 lần xuất mới nhất; bản cũ bị xóa cả file Drive lẫn hàng trong Sheet. Mã báo cáo phải có sẵn trong tab Data khách hàng.
 - Ảnh minh chứng không được lưu.
 

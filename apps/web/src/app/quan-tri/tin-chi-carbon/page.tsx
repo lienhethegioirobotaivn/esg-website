@@ -331,15 +331,17 @@ export default function CarbonCreditsAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Mã lô">
+                <Field label="Mã lô" htmlFor="carbon-code">
                   <Input
+                    id="carbon-code"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                   />
                 </Field>
                 <div className="sm:col-span-2">
-                  <Field label="Tên dự án">
+                  <Field label="Tên dự án" htmlFor="carbon-title">
                     <Input
+                      id="carbon-title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                     />
@@ -348,21 +350,25 @@ export default function CarbonCreditsAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Quốc gia">
+                <Field label="Quốc gia" htmlFor="carbon-country">
                   <Input
+                    id="carbon-country"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                   />
                 </Field>
-                <Field label="Kỳ ghi nhận">
+                <Field label="Kỳ ghi nhận" htmlFor="carbon-vintage">
                   <Select
+                    id="carbon-vintage"
                     value={vintage}
                     onChange={(e) => setVintage(e.target.value)}
                     options={VINTAGE_OPTIONS}
+                    placeholder="Chọn kỳ ghi nhận"
                   />
                 </Field>
-                <Field label="Chương trình cấp">
+                <Field label="Chương trình cấp" htmlFor="carbon-standard">
                   <Select
+                    id="carbon-standard"
                     value={standard}
                     onChange={(e) =>
                       setStandard(
@@ -370,13 +376,15 @@ export default function CarbonCreditsAdminPage() {
                       )
                     }
                     options={STANDARD_OPTIONS}
+                    placeholder="Chọn chương trình cấp"
                   />
                 </Field>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Loại dự án">
+                <Field label="Loại dự án" htmlFor="carbon-category">
                   <Select
+                    id="carbon-category"
                     value={category}
                     onChange={(e) =>
                       setCategory(
@@ -387,10 +395,12 @@ export default function CarbonCreditsAdminPage() {
                       )
                     }
                     options={CATEGORY_OPTIONS}
+                    placeholder="Chọn loại dự án"
                   />
                 </Field>
-                <Field label="Còn bán (tín chỉ)">
+                <Field label="Còn bán (tín chỉ)" htmlFor="carbon-available">
                   <Input
+                    id="carbon-available"
                     type="number"
                     value={availableCredits}
                     onChange={(e) =>
@@ -398,8 +408,9 @@ export default function CarbonCreditsAdminPage() {
                     }
                   />
                 </Field>
-                <Field label="Đơn giá (đ / tín chỉ)">
+                <Field label="Đơn giá (đ / tín chỉ)" htmlFor="carbon-price">
                   <Input
+                    id="carbon-price"
                     type="number"
                     value={pricePerCredit}
                     onChange={(e) => setPricePerCredit(Number(e.target.value))}
@@ -408,22 +419,25 @@ export default function CarbonCreditsAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Ghi chú CORSIA">
+                <Field label="Ghi chú CORSIA" htmlFor="carbon-corsia">
                   <Input
+                    id="carbon-corsia"
                     value={corsiaNote}
                     onChange={(e) => setCorsiaNote(e.target.value)}
                   />
                 </Field>
-                <Field label="Ghi chú VN ETS">
+                <Field label="Ghi chú VN ETS" htmlFor="carbon-vnets">
                   <Input
+                    id="carbon-vnets"
                     value={vnEtsNote}
                     onChange={(e) => setVnEtsNote(e.target.value)}
                   />
                 </Field>
               </div>
 
-              <Field label="URL ảnh">
+              <Field label="URL ảnh" htmlFor="carbon-image">
                 <Input
+                  id="carbon-image"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                 />
@@ -431,6 +445,7 @@ export default function CarbonCreditsAdminPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
                 <Switch
+                  id="carbon-published-editor"
                   checked={published}
                   onChange={setPublished}
                   label="Hiển thị lô tín chỉ"
@@ -556,6 +571,7 @@ export default function CarbonCreditsAdminPage() {
                       />
                       <div className="absolute top-2 right-2 rounded bg-white/95 px-2 py-0.5">
                         <Switch
+                          id={`carbon-published-${batch.id}`}
                           checked={batch.published}
                           onChange={() =>
                             setBatches((prev) =>
@@ -566,6 +582,7 @@ export default function CarbonCreditsAdminPage() {
                               ),
                             )
                           }
+                          label={batch.published ? "Hiện" : "Ẩn"}
                         />
                       </div>
                     </div>

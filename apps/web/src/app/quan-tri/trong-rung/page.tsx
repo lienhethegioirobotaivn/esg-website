@@ -315,16 +315,18 @@ export default function ForestryAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Mã dự án">
+                <Field label="Mã dự án" htmlFor="forestry-code">
                   <Input
+                    id="forestry-code"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="LD-01"
                   />
                 </Field>
                 <div className="sm:col-span-2">
-                  <Field label="Tên dự án">
+                  <Field label="Tên dự án" htmlFor="forestry-title">
                     <Input
+                      id="forestry-title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Phục hồi rừng bản địa"
@@ -334,34 +336,40 @@ export default function ForestryAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Địa phương">
+                <Field label="Địa phương" htmlFor="forestry-location">
                   <Input
+                    id="forestry-location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                   />
                 </Field>
-                <Field label="Loại dự án">
+                <Field label="Loại dự án" htmlFor="forestry-type">
                   <Select
+                    id="forestry-type"
                     value={projectType}
                     onChange={(e) => setProjectType(e.target.value)}
                     options={PROJECT_TYPE_OPTIONS}
+                    placeholder="Chọn loại dự án"
                   />
                 </Field>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Hình thức chi phí">
+                <Field label="Hình thức chi phí" htmlFor="forestry-pricing">
                   <Select
+                    id="forestry-pricing"
                     value={pricingType}
                     onChange={(e) =>
                       setPricingType(e.target.value as "fixed" | "quote")
                     }
                     options={PRICING_TYPE_OPTIONS}
+                    placeholder="Chọn hình thức chi phí"
                   />
                 </Field>
                 {pricingType === "fixed" && (
-                  <Field label="Chi phí (VNĐ / ha)">
+                  <Field label="Chi phí (VNĐ / ha)" htmlFor="forestry-price">
                     <Input
+                      id="forestry-price"
                       type="number"
                       value={pricePerHa}
                       onChange={(e) => setPricePerHa(Number(e.target.value))}
@@ -372,20 +380,23 @@ export default function ForestryAdminPage() {
 
               {pricingType === "fixed" && (
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Mật độ cây">
+                  <Field label="Mật độ cây" htmlFor="forestry-density">
                     <Input
+                      id="forestry-density"
                       value={treeDensity}
                       onChange={(e) => setTreeDensity(e.target.value)}
                     />
                   </Field>
-                  <Field label="Chăm sóc">
+                  <Field label="Chăm sóc" htmlFor="forestry-care">
                     <Input
+                      id="forestry-care"
                       value={careDuration}
                       onChange={(e) => setCareDuration(e.target.value)}
                     />
                   </Field>
-                  <Field label="Trồng dự kiến">
+                  <Field label="Trồng dự kiến" htmlFor="forestry-planting">
                     <Input
+                      id="forestry-planting"
                       value={expectedPlantingDate}
                       onChange={(e) => setExpectedPlantingDate(e.target.value)}
                     />
@@ -393,8 +404,9 @@ export default function ForestryAdminPage() {
                 </div>
               )}
 
-              <Field label="URL ảnh">
+              <Field label="URL ảnh" htmlFor="forestry-image">
                 <Input
+                  id="forestry-image"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                 />
@@ -402,6 +414,7 @@ export default function ForestryAdminPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
                 <Switch
+                  id="forestry-published-editor"
                   checked={published}
                   onChange={setPublished}
                   label="Hiển thị dự án"
@@ -430,6 +443,7 @@ export default function ForestryAdminPage() {
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
               options={locationOptions}
+              placeholder="Địa phương"
               className="w-48"
             />
           </Card>
@@ -445,6 +459,7 @@ export default function ForestryAdminPage() {
                   />
                   <div className="absolute top-2 right-2 rounded bg-white/95 px-2 py-1">
                     <Switch
+                      id={`forestry-published-${item.id}`}
                       checked={item.published}
                       onChange={() =>
                         setItems((prev) =>

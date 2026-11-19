@@ -2,6 +2,7 @@ import {
   Droplets,
   FileText,
   Handshake,
+  Info,
   Landmark,
   Leaf,
   Newspaper,
@@ -15,6 +16,7 @@ import { cn } from "@/lib/cn";
 import type { Post } from "../types";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "Giới thiệu ESG Report Online": Info,
   "Kiến thức ESG": FileText,
   "Môi trường": Leaf,
   "Xã hội": Users,

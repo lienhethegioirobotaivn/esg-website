@@ -16,6 +16,7 @@ export const ACHIEVEMENT_CATEGORIES = [
 ] as const;
 
 export const NEWS_CATEGORIES = [
+  msg("Giới thiệu ESG Report Online"),
   msg("Kiến thức ESG"),
   msg("Môi trường"),
   msg("Xã hội"),

@@ -158,7 +158,7 @@ Phần này do các phiên làm giao diện (frontend) bổ sung. Quy trình là
 - Chức năng: danh sách bài, đăng, lưu nháp, sửa, xóa (hộp thoại xác nhận có trạng thái chờ), sửa dải số liệu thành tựu (tối đa 8 mục) ở `/quan-tri/so-lieu`. Trang đặt `noindex`.
 - Mã: `apps/web/src/features/about-admin/` (components, lib), `apps/web/src/app/quan-tri/`, API `apps/web/src/app/api/admin/{login,logout,posts,posts/[id],stats,upload}` và `api/likes`; lớp máy chủ `apps/web/src/server/about/bridge.ts`, `server/admin/`.
 - Trình soạn bài: TipTap (giống Google Docs): tiêu đề lớn/nhỏ, in đậm/nghiêng/gạch chân, liên kết, căn lề, danh sách, trích dẫn, đường kẻ, **bảng**, ảnh (dán, kéo thả, chọn tệp; căn trái/giữa/phải, cỡ 25–100%, mô tả ảnh, chú thích). Chưa có: màu chữ, cỡ chữ, chữ bao quanh ảnh, nhúng video.
-- Ảnh bìa: hộp chỉnh ảnh (kéo, phóng to 100–400%, xoay, cắt 16:9, xuất 1600x900 JPEG); vùng tối cho biết phần bị cắt ở đầu trang bài (tỉ lệ 2,7:1).
+- Ảnh bìa: hộp chỉnh ảnh (kéo, phóng to 100–400%, xoay, cắt 16:9, xuất 1600x900 JPEG); ảnh bìa hiển thị đủ tỉ lệ 16:9 ở thẻ tin và đầu trang bài.
 - Chưa làm: sửa nội dung cố định của trang (tiêu đề lớn, đoạn giới thiệu, banner) từ trang quản trị; ô "Tiêu đề SEO" và "Mô tả SEO" riêng cho bài.
 
 ### 12.4 Định dạng nội dung và lưu trữ

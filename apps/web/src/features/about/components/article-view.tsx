@@ -38,7 +38,7 @@ export function ArticleView({ post, related }: ArticleViewProps) {
 
         <p className="mt-6 text-xl font-bold leading-relaxed">{post.summary}</p>
 
-        <Cover post={post} className="mt-6 aspect-[2.7/1]" />
+        <Cover post={post} className="mt-6" />
 
         <RichContent doc={post.body} className="mt-6" />
 

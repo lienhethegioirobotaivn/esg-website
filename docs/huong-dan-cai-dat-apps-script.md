@@ -128,7 +128,7 @@ Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quả
 Khi chọn ảnh bìa, hộp "Chỉnh ảnh bìa" tự mở:
 
 - Kéo ảnh để căn vị trí, dùng thanh trượt (hoặc con lăn chuột, phím + và -) để phóng to từ 100% đến 400%, xoay trái/phải, đặt lại.
-- Ảnh được cắt theo tỉ lệ 16:9 (cỡ 1600x900) như thẻ tin trên web. Vùng tối ở trên và dưới khung cho biết phần ảnh sẽ bị cắt ở đầu trang bài viết (tỉ lệ 2,7:1). Tắt vùng này bằng ô tích bên dưới.
+- Ảnh được cắt theo tỉ lệ 16:9 (cỡ 1600x900) và hiển thị đủ khung này ở thẻ tin lẫn đầu trang bài viết.
 - Bấm "Dùng ảnh này" để tải lên. Sau khi tải, nút "Chỉnh lại ảnh" mở lại ảnh gốc vừa chọn để căn lại. Nút này chỉ có trong lần soạn hiện tại. Mở lại bài đã lưu, muốn căn lại thì chọn lại file ảnh gốc bằng "Đổi ảnh".
 - Không cần cập nhật Apps Script cho phần này.
 

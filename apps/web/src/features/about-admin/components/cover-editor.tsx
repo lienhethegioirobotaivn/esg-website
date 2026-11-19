@@ -6,9 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, IconButton, Modal } from "@/components/ui";
 
 import {
-  BANNER_RATIO,
-  COVER_HEIGHT,
-  COVER_WIDTH,
   INITIAL_CROP,
   MAX_ZOOM,
   MIN_ZOOM,
@@ -27,14 +24,12 @@ interface CoverEditorProps {
 const PREVIEW_WIDTH = 960;
 const PREVIEW_HEIGHT = 540;
 const KEY_STEP = 0.02;
-const BANNER_BAND = (1 - COVER_WIDTH / BANNER_RATIO / COVER_HEIGHT) / 2;
 
 export function CoverEditor({ file, onCancel, onConfirm }: CoverEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const [image, setImage] = useState<ImageBitmap | null>(null);
   const [crop, setCrop] = useState<CropState>(INITIAL_CROP);
-  const [showGuide, setShowGuide] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -179,7 +174,7 @@ export function CoverEditor({ file, onCancel, onConfirm }: CoverEditorProps) {
       <div className="space-y-4">
         <p className="text-sm text-muted">
           Kéo ảnh để căn vị trí, dùng thanh trượt hoặc con lăn chuột để phóng
-          to, thu nhỏ. Ảnh được cắt theo tỉ lệ 16:9 như thẻ tin trên web.
+          to, thu nhỏ. Ảnh được cắt theo tỉ lệ 16:9 và hiển thị đủ khung này ở thẻ tin lẫn đầu trang bài viết.
         </p>
 
         <div className="relative overflow-hidden rounded-card border border-border bg-surface-muted">
@@ -201,24 +196,6 @@ export function CoverEditor({ file, onCancel, onConfirm }: CoverEditorProps) {
             onKeyDown={handleKeyDown}
             className="block aspect-video w-full cursor-grab touch-none active:cursor-grabbing"
           />
-          {image && showGuide ? (
-            <div aria-hidden className="pointer-events-none absolute inset-0">
-              <div
-                className="absolute inset-x-0 top-0 bg-foreground/45"
-                style={{ height: `${BANNER_BAND * 100}%` }}
-              />
-              <div
-                className="absolute inset-x-0 bottom-0 bg-foreground/45"
-                style={{ height: `${BANNER_BAND * 100}%` }}
-              />
-              <span
-                className="absolute left-2 rounded bg-surface/90 px-1.5 py-0.5 text-[11px] font-semibold text-foreground"
-                style={{ top: `calc(${BANNER_BAND * 100}% + 4px)` }}
-              >
-                Vùng hiển thị ở đầu trang bài viết
-              </span>
-            </div>
-          ) : null}
           {!image && !error ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 aria-hidden className="size-6 animate-spin text-muted" />
@@ -286,16 +263,6 @@ export function CoverEditor({ file, onCancel, onConfirm }: CoverEditorProps) {
             <Undo2 aria-hidden className="size-4" />
           </IconButton>
         </div>
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={showGuide}
-            onChange={(event) => setShowGuide(event.target.checked)}
-            className="size-4 accent-primary-600"
-          />
-          Hiện vùng hiển thị ở đầu trang bài viết (tỉ lệ 2,7:1)
-        </label>
 
         {error ? (
           <p role="alert" className="text-sm text-danger-600">

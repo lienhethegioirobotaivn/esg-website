@@ -1,6 +1,5 @@
 export const COVER_WIDTH = 1600;
 export const COVER_HEIGHT = 900;
-export const BANNER_RATIO = 2.7;
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 4;
 

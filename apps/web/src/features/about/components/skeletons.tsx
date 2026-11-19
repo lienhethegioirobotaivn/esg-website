@@ -102,7 +102,7 @@ export function ArticleSkeleton() {
           <Skeleton className="h-4 w-56" />
           <Skeleton className="h-14 w-full rounded-card" />
           <Skeleton className="h-6 w-full" />
-          <Skeleton className="aspect-[2.7/1] w-full rounded-card" />
+          <Skeleton className="aspect-video w-full rounded-card" />
           {[100, 96, 100, 90, 60].map((width, index) => (
             <Skeleton
               key={index}

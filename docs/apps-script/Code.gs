@@ -76,6 +76,7 @@ var SNAPSHOT_SHEET_NAME = 'Nội dung khảo sát';
 var SNAPSHOT_HEADERS = ['Mã lần xuất', 'Phần', 'Nội dung'];
 var SNAPSHOT_CHUNK_SIZE = 40000;
 var REPORT_TEMP_FOLDER_NAME = 'Tải lên tạm';
+var REPORT_EXPORTS_FOLDER_NAME = 'Báo cáo đã xuất';
 var REPORT_FORMATS = {
   pdf: { mime: 'application/pdf', signature: [37, 80, 68, 70, 45], idColumn: 'Id file PDF', nameColumn: 'Tên file PDF' },
   docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', signature: [80, 75, 3, 4], idColumn: 'Id file Word', nameColumn: 'Tên file Word' }
@@ -1222,8 +1223,10 @@ function reportFolder_(reportCode, props) {
     throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
   }
   var root = DriveApp.getFolderById(folderId);
-  var existing = root.getFoldersByName(reportCode);
-  return existing.hasNext() ? existing.next() : root.createFolder(reportCode);
+  var exportsIter = root.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+  var exportsRoot = exportsIter.hasNext() ? exportsIter.next() : root.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+  var existing = exportsRoot.getFoldersByName(reportCode);
+  return existing.hasNext() ? existing.next() : exportsRoot.createFolder(reportCode);
 }
 
 function reportCodeExists_(reportCode) {

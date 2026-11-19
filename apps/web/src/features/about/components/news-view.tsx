@@ -24,9 +24,15 @@ export function NewsView({ posts }: { posts: Post[] }) {
       (category === "" || post.category === category) &&
       matchesQuery(post, query),
   );
-  const featured = isFiltering ? [] : posts.filter((post) => post.featured).slice(0, 3);
-  const popular = isFiltering ? [] : posts.filter((post) => post.popular).slice(0, 5);
-  const spotlight = isFiltering ? [] : posts.filter((post) => post.spotlight).slice(0, 3);
+  const featured = isFiltering
+    ? []
+    : posts.filter((post) => post.featured).slice(0, 3);
+  const popular = isFiltering
+    ? []
+    : posts.filter((post) => post.popular).slice(0, 5);
+  const spotlight = isFiltering
+    ? []
+    : posts.filter((post) => post.spotlight).slice(0, 3);
   const featuredIds = new Set(featured.map((post) => post.id));
   const rest = filtered.filter((post) => !featuredIds.has(post.id));
   const pages = pageCount(rest.length, NEWS_PAGE_SIZE);
@@ -75,7 +81,9 @@ export function NewsView({ posts }: { posts: Post[] }) {
             ))}
           </div>
           <aside className="lg:border-l lg:border-border lg:pl-8">
-            <h2 className="text-xl font-bold text-primary-800">{t("Đọc nhiều")}</h2>
+            <h2 className="text-xl font-bold text-primary-800">
+              {t("Đọc nhiều")}
+            </h2>
             <ul className="mt-4 divide-y divide-border border-y border-border">
               {popular.map((post) => (
                 <li key={post.id}>
@@ -88,7 +96,7 @@ export function NewsView({ posts }: { posts: Post[] }) {
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-xs italic text-subtle">{t("Nội dung minh họa")}</p>
+            {/* <p className="mt-4 text-xs italic text-subtle">{t("Nội dung minh họa")}</p> */}
           </aside>
         </div>
       ) : null}

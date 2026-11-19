@@ -25,15 +25,22 @@ export function ArticleView({ post, related }: ArticleViewProps) {
           {post.title}
         </h1>
         <p className="mt-3 text-sm text-muted">
-          {post.author} <span aria-hidden>•</span> {t("{minutes} phút đọc", { minutes: post.readMinutes })}
+          {post.author} <span aria-hidden>•</span>{" "}
+          {t("{minutes} phút đọc", { minutes: post.readMinutes })}
         </p>
         {post.isSample ? (
-          <p className="mt-1 text-sm italic text-subtle">{t("Bài viết minh họa")}</p>
+          <p className="mt-1 text-sm italic text-subtle">
+            {t("Bài viết minh họa")}
+          </p>
         ) : null}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
           <ShareBar title={post.title} />
-          <LikeButton section={post.section} slug={post.slug} likes={post.likes} />
+          <LikeButton
+            section={post.section}
+            slug={post.slug}
+            likes={post.likes}
+          />
         </div>
 
         <p className="mt-6 text-xl font-bold leading-relaxed">{post.summary}</p>
@@ -43,7 +50,11 @@ export function ArticleView({ post, related }: ArticleViewProps) {
         <RichContent doc={post.body} className="mt-6" />
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
-          <LikeButton section={post.section} slug={post.slug} likes={post.likes} />
+          <LikeButton
+            section={post.section}
+            slug={post.slug}
+            likes={post.likes}
+          />
           <ShareBar title={post.title} />
         </div>
       </article>
@@ -70,7 +81,9 @@ export function ArticleView({ post, related }: ArticleViewProps) {
                   {item.title}
                 </Link>
                 {item.isSample ? (
-                  <p className="text-xs text-subtle">{t("Nội dung minh họa")}</p>
+                  <p className="text-xs text-subtle">
+                    {t("Nội dung minh họa")}
+                  </p>
                 ) : null}
               </li>
             ))}

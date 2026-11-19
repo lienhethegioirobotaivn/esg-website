@@ -1,6 +1,6 @@
 # Kế hoạch tính năng: lưu báo cáo đã xuất và xem lại bằng email OTP (16/11/2026)
 
-Trạng thái (18/11/2026): GĐ1 (lưu báo cáo) và GĐ2 (email OTP) đã làm xong; GĐ3 (trang "Báo cáo của tôi") và GĐ4 (hoàn thiện) chưa làm. Mục 4 đã được Bình chốt ngày 17/11. Mục 7 là bản đồ mã nguồn để làm tiếp. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
+Trạng thái (19/11/2026): GĐ1 (lưu báo cáo), GĐ2 (email OTP) và GĐ3 (trang "Báo cáo của tôi") đã làm xong; GĐ4 (hoàn thiện, chính sách quyền riêng tư) chưa làm. Mục 4 đã được Bình chốt ngày 17/11. Mục 7 là bản đồ mã nguồn để làm tiếp. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
 
 ## 1. Yêu cầu đã chốt
 
@@ -117,6 +117,25 @@ Việc cần làm khi triển khai: đặt `USER_SESSION_SECRET` ở web (Vercel
 **Đầu ra**: đăng nhập bằng OTP, xem, tải, mở lại, xóa báo cáo cũ.
 **Test**: truy cập chéo (báo cáo của email khác phải bị từ chối), cookie hết hạn hoặc bị sửa, tải file lớn, mở lại rồi xuất tiếp (tạo lần xuất mới), `/en`, `/fr`, `/zh`, màn hình hẹp.
 
+**Nhật ký GĐ3 (đã làm xong 19/11/2026, kiểm thử bằng bridge giả và trình duyệt thật; chưa thử Google/Vercel thật)**
+
+Luồng người dùng: header (và menu di động) có link "Báo cáo của tôi" tới `/bao-cao-cua-toi` (có tiền tố ngôn ngữ). Chưa đăng nhập thì thấy form email + OTP (cùng `EmailOtpForm`, prop `required` đổi tiêu đề thành "Xác nhận email để xem báo cáo", bỏ chữ "không bắt buộc"). Đã đăng nhập: danh sách nhóm theo mã báo cáo (tên doanh nghiệp, mã, các lần xuất mới nhất trước, nhãn Đầy đủ/Bản nháp, ngôn ngữ), mỗi lần xuất có **Tải PDF**, **Tải Word**, **Mở lại để chỉnh sửa**, **Xóa**; nút **Đăng xuất** ở đầu trang (chỉ xóa cookie, như mục GĐ2).
+
+Quyết định thiết kế:
+- Email **luôn lấy từ cookie** (`readSessionEmail()`), không route nào nhận email từ client. Apps Script kiểm chủ sở hữu **lần nữa** ở cả 4 hành động mới (`findOwnedExport_` so cột `Email đã xác thực`), nên lộ mã lần xuất cũng không đọc được báo cáo người khác. Báo cáo ẩn danh (chưa gắn email) không ai xem/xóa được qua trang này.
+- Apps Script thêm `listOwnerReports` (không trả id file Drive), `getOwnerReportFile` (trả base64 từng mảnh 2.499.999 byte, kèm `total`, `size`, `name`), `getOwnerSnapshot` (ghép các ô 40.000 ký tự), `deleteOwnerReport`. Trạng thái bình thường trả `ok: true` kèm `status` (`ok`, `missing`, `range`, `deleted`); id sai định dạng, định dạng lạ, chỉ số mảnh sai thì `ok: false`.
+- Tải file: `GET /api/my-reports/[id]/file?format=pdf|docx` mở mảnh đầu để biết kích thước, rồi **stream** các mảnh còn lại (`ReadableStream`, mỗi mảnh một lần gọi Apps Script) với `Content-Length`, `Content-Disposition` (có `filename*` UTF-8), `Cache-Control: private, no-store`, `nosniff`. Client tải bằng `fetch` rồi `downloadBlob` để lỗi 401/404 hiện thành thông báo thay vì tải về một tệp JSON.
+- Mở lại để chỉnh sửa: `GET /api/my-reports/[id]/snapshot` (kiểm tra bằng `reportSnapshotSchema`, 422 nếu hỏng), client gọi `applyReportSnapshot` (`features/survey/lib/apply-snapshot.ts`) ghi localStorage: bản nháp (`esg-studio:draft`), kế hoạch, theme (xóa nếu mặc định) và mã báo cáo (`esg-studio:report-code`), rồi chuyển về `/`. Khảo sát nạp lại bằng `restoreDraft` nên câu hỏi Sheet đổi thì khớp theo mã câu hỏi. Có hộp xác nhận vì bản nháp hiện có trên trình duyệt bị thay. Xuất tiếp sẽ tạo lần xuất **mới** cho cùng mã báo cáo (chưa ghi đè lần cũ).
+- Xóa: `DELETE /api/my-reports/[id]` -> `deleteOwnerReport`: đưa file PDF/Word và thư mục `RX-…` vào Thùng rác, thư mục mã báo cáo trong `Báo cáo đã xuất` cũng vào Thùng rác nếu rỗng, xóa các hàng `Nội dung khảo sát` và hàng `Báo cáo đã xuất`. **Không** đụng thư mục logo theo mã báo cáo ở gốc, và **không** xóa email ở `Data khách hàng` (đó là dữ liệu liên hệ của doanh nghiệp, không thuộc lần xuất).
+- Giới hạn tốc độ (bộ nhớ từng instance): đọc 60 lần/IP/10 phút, xóa 20 lần/IP/10 phút, 5.000 lần/ngày cho cả hệ thống (`server/my-reports/limits.ts`). Toàn bộ phản hồi `private, no-store`.
+- Trang `noindex`, `Disallow` trong `robots.ts` (`/bao-cao-cua-toi` và bản có tiền tố ngôn ngữ), không vào sitemap. Đã thu hẹp khoảng cách menu để thêm link không làm header cao hơn ở màn 900 px trở lên.
+
+Việc cần làm khi triển khai: chỉ cần dán lại `Code.gs` và tạo Phiên bản mới (có 4 hành động mới). Không có biến môi trường mới.
+
+Kiểm thử đã chạy: `@esg/shared` 78 pass; web 64 pass (13 test mới cho 4 route: 401 khi thiếu hoặc giả cookie, email lấy từ cookie, id/định dạng sai không gọi Apps Script, stream đúng thứ tự mảnh và header, 404, 422, giới hạn xóa theo IP); bridge Apps Script giả 42 pass (8 test mới: chỉ liệt kê đúng email và không lộ id Drive, tải đúng từng byte kể cả file hơn 2,5 MB chia 3 mảnh, từ chối email khác ở cả file/snapshot/xóa, id/định dạng/chỉ số sai, ghép snapshot, xóa dọn đủ thư mục, giữ thư mục khi còn lần xuất khác, file bị xóa ngoài hệ thống báo `missing`); typecheck, eslint 0 lỗi, `i18n:check` đủ (27 chuỗi mới, 3 ngôn ngữ). Chạy trang thật bằng trình duyệt với Apps Script giả: đăng nhập OTP, danh sách, tải PDF và Word đúng chữ ký, mở lại (ghi đúng localStorage), xóa, đăng xuất, màn 390 px.
+
+Chưa kiểm thử được (cần Bình thử thật): Drive/Sheet thật, giới hạn thời gian 6 phút và tốc độ của Apps Script với file lớn, stream trên Vercel, xóa vào Thùng rác Drive thật.
+
 ### GĐ4 - Hoàn thiện và bàn giao
 **Việc**: dọn dữ liệu mồ côi hoàn chỉnh (xóa báo cáo xóa luôn file Drive, hàng Sheet, mảnh nội dung; trigger dọn tệp tạm bỏ dở), `i18n:sync` rồi commit `src/i18n/messages/`, cập nhật `huong-dan-cai-dat-apps-script.md` (mục mới: dán lại `Code.gs`, Phiên bản mới, quyền Drive/Mail, cài trigger dọn), README (biến `USER_SESSION_SECRET`), `da-ngon-ngu.md`, dòng quyền riêng tư; chạy `pnpm typecheck`, `pnpm lint`, test `@esg/shared` và web, `i18n:check`; danh sách kiểm thử thủ công.
 **Việc tùy chọn (chờ quyết)**: captcha, đăng nhập một lần cho nhiều thiết bị, email nhắc xem lại báo cáo, trang quản trị xem danh sách báo cáo đã lưu, thêm SMS nếu sau này có ngân sách.
@@ -147,6 +166,10 @@ Việc cần làm khi triển khai: đặt `USER_SESSION_SECRET` ở web (Vercel
 | Giới hạn tốc độ | `server/auth/limits.ts`, `server/reports/limits.ts`, `server/brand-theme/limits.ts` (hàm chung) |
 | Lưu báo cáo (server) | `server/reports/archive.ts`, `app/api/reports/{upload,finish}/route.ts` |
 | Apps Script | `docs/apps-script/Code.gs`: nhóm hàm `*Report*_` (lưu, dọn, giữ 5 lần xuất, link), `otpRequest_`, `otpVerify_`, `setReportOwner_` |
-| Test | `packages/shared/tests/{report-archive,auth}.test.ts`, `apps/web/tests/{reports,auth}/*.test.ts`; `tests/setup/` có shim cho `server-only` và `next/headers` |
+| Trang Báo cáo của tôi (UI) | `features/my-reports/{components/my-reports-view.tsx,services/my-reports.service.ts,lib/format-export-time.ts,constants.ts}`, `app/[locale]/(public)/bao-cao-cua-toi/{page,loading}.tsx`, link ở `components/layout/site-header.tsx`, `app/robots.ts` |
+| Mở lại để chỉnh sửa (ghi localStorage) | `features/survey/lib/apply-snapshot.ts` (`applyReportSnapshot`, export ở `features/survey/index.ts`) |
+| API báo cáo của chủ sở hữu | `app/api/my-reports/{route.ts,[id]/route.ts,[id]/file/route.ts,[id]/snapshot/route.ts}`, `server/my-reports/{owner.ts,limits.ts}`, schema và `groupMyReports` ở `packages/shared/src/my-reports.ts` |
+| Apps Script (chủ sở hữu) | `Code.gs`: `listOwnerReports_`, `getOwnerReportFile_`, `getOwnerSnapshot_`, `deleteOwnerReport_`, `findOwnedExport_`, `trashReportExportFiles_` |
+| Test | `packages/shared/tests/{report-archive,auth,my-reports}.test.ts`, `apps/web/tests/{reports,auth,my-reports}/*.test.ts`; `tests/setup/` có shim cho `server-only` và `next/headers` |
 
-Gợi ý cho GĐ3: tạo thêm hành động Apps Script `listOwnerReports` (đọc theo cột `Email đã xác thực`, không lộ id file Drive ra client), `getOwnerReportFile` (trả base64 từng mảnh để route stream, kiểm chủ sở hữu ở **cả** Next và Apps Script), `getOwnerSnapshot`, `deleteOwnerReport`. Mọi route đọc dữ liệu phải lấy email từ `readSessionEmail()`, không nhận email từ client. Cẩn thận: `pruneReportExports_` xóa theo mã báo cáo, nên khi "Mở lại để chỉnh sửa" rồi xuất tiếp thì lần xuất mới nhất đẩy lần cũ nhất ra khỏi mức giữ 5.
+Quy tắc đã dùng ở GĐ3 và phải giữ cho việc sau: mọi route đọc dữ liệu lấy email từ `readSessionEmail()`, không nhận email từ client; kiểm chủ sở hữu ở **cả** Next và Apps Script; không lộ id file Drive ra client. Cẩn thận: `pruneReportExports_` xóa theo mã báo cáo, nên khi "Mở lại để chỉnh sửa" rồi xuất tiếp thì lần xuất mới nhất đẩy lần cũ nhất ra khỏi mức giữ 5.

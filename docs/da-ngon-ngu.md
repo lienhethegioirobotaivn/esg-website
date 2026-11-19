@@ -126,3 +126,4 @@ Mọi chữ người dùng nhìn thấy ở trang công khai phải đi qua mộ
 - Giao diện khung email trong hộp thoại và thông báo lỗi của `/api/auth/*` đi qua `t()` và `msg()` như thường lệ (đủ en, fr, zh).
 - **Nội dung email OTP gửi đi** không đi qua `t()`: đó là email do máy chủ dựng, gồm 4 bản cứng trong `apps/web/src/server/auth/otp-mail.ts`. Sửa câu chữ ở đó, đủ cả 4 ngôn ngữ, và giữ chỗ `{code}` nguyên vẹn. Email gửi theo ngôn ngữ trang người dùng đang xem.
 - Kiểm thử thủ công thêm: ở `/en`, `/fr`, `/zh` xin mã và kiểm tra tiêu đề, nội dung email đúng ngôn ngữ; thông báo "mã chưa đúng", "hết hạn", "chờ gửi lại" hiện đúng ngôn ngữ.
+- **Trang "Báo cáo của tôi"** (`features/my-reports`) và các lỗi của `/api/my-reports/*` đi qua `t()`/`msg()` như mọi chữ giao diện khác; chạy `pnpm i18n:sync` rồi commit `src/i18n/messages/`. Ngày giờ của lần xuất định dạng bằng `Intl.DateTimeFormat` theo ngôn ngữ trang, múi giờ Asia/Ho_Chi_Minh.

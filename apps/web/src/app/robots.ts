@@ -3,11 +3,11 @@ import type { MetadataRoute } from "next";
 import { DEFAULT_LOCALE, LOCALES } from "@/features/locale/constants";
 import { absoluteUrl } from "@/lib/site";
 
-const PRIVATE_PATHS = ["/quan-tri", "/api/", "/cong-cu-ai"];
+const PRIVATE_PATHS = ["/quan-tri", "/api/", "/cong-cu-ai", "/bao-cao-cua-toi"];
 
 const LOCALIZED_PRIVATE_PATHS = LOCALES.filter(
   (locale) => locale !== DEFAULT_LOCALE,
-).map((locale) => `/${locale}/cong-cu-ai`);
+).flatMap((locale) => [`/${locale}/cong-cu-ai`, `/${locale}/bao-cao-cua-toi`]);
 
 export default function robots(): MetadataRoute.Robots {
   return {

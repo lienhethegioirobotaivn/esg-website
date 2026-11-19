@@ -12,6 +12,7 @@ import { useEmailOtp } from "../hooks/use-email-otp";
 interface EmailOtpFormProps {
   onVerified?: (email: string) => Promise<void>;
   idPrefix?: string;
+  required?: boolean;
 }
 
 function cooldownLabel(
@@ -26,6 +27,7 @@ function cooldownLabel(
 export function EmailOtpForm({
   onVerified,
   idPrefix = "email-otp",
+  required = false,
 }: EmailOtpFormProps) {
   const t = useT();
   const otp = useEmailOtp({ onVerified });
@@ -113,12 +115,18 @@ export function EmailOtpForm({
       className="rounded-card border border-border px-4 py-3"
     >
       <p className="text-sm font-medium">
-        {t("Xem lại báo cáo sau (không bắt buộc)")}
+        {required
+          ? t("Xác nhận email để xem báo cáo")
+          : t("Xem lại báo cáo sau (không bắt buộc)")}
       </p>
       <p className="mt-0.5 text-xs text-muted">
-        {t(
-          "Nhập email để nhận mã xác nhận. Lần sau bạn chỉ cần email này để xem lại các báo cáo đã tạo.",
-        )}
+        {required
+          ? t(
+              "Nhập email đã dùng để lưu báo cáo. Chúng tôi sẽ gửi mã xác nhận để bạn xem danh sách báo cáo của mình.",
+            )
+          : t(
+              "Nhập email để nhận mã xác nhận. Lần sau bạn chỉ cần email này để xem lại các báo cáo đã tạo.",
+            )}
       </p>
 
       {otp.phase === "idle" ? (

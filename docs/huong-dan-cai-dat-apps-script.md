@@ -216,7 +216,7 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** (Triển khai → Qu
 
 1. Dán lại toàn bộ `Code.gs`, lưu.
 2. Chọn hàm `installReportCleanupTrigger`, bấm **Run** một lần và cấp quyền Drive. Kiểm tra mục **Triggers** có `cleanupReportUploads` chạy mỗi ngày.
-3. Thử: trên web làm khảo sát, bấm **Tạo báo cáo**; dialog hiện "Đã lưu báo cáo vào hệ thống."
+3. Thử: trên web làm khảo sát, bấm **Tạo báo cáo** (người dùng không thấy thông báo lưu). Kiểm tra tab **Báo cáo đã xuất** có dòng mới và Drive có thư mục `RX-…` chứa PDF và Word.
 
 Dữ liệu được tạo tự động:
 
@@ -256,3 +256,15 @@ Lưu ý quan trọng:
 - Một email chỉ gắn được vào lần xuất khi ô `Email đã xác thực` của lần xuất đó còn trống; muốn đổi chủ sở hữu thì sửa tay ô này trong Sheet.
 - Dữ liệu cá nhân (email, thông tin doanh nghiệp, câu trả lời) được lưu lâu dài. Cần có dòng giải thích trong chính sách quyền riêng tư (việc của GĐ4); hiện trong hộp thoại có câu "Email chỉ dùng để xác nhận và để bạn xem lại báo cáo."
 - **Đổi email:** nút "Dùng email khác" trên web chỉ đăng xuất trình duyệt đó. Dữ liệu đã gắn email cũ (cột `Email đã xác thực`, báo cáo trong Drive) **không bị xóa hay đổi**. Xác nhận email khác thì từ đó các lần xuất mới thuộc email mới; lần xuất đang mở (đã thuộc email cũ) được xuất lại thành một dòng mới cho email mới. Cột `Email đã xác thực` ở `Data khách hàng` lưu email gần nhất của mã báo cáo.
+
+## 14. Trang "Báo cáo của tôi"
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm bốn hành động `listOwnerReports`, `getOwnerReportFile`, `getOwnerSnapshot`, `deleteOwnerReport`. Không cần biến môi trường, trigger hay quyền mới.
+
+1. Dán lại toàn bộ `Code.gs`, lưu, tạo Phiên bản mới.
+2. Thử: tạo báo cáo, xác nhận email trong hộp thoại tải, rồi mở menu **Báo cáo của tôi** (`/bao-cao-cua-toi`). Phải thấy lần xuất vừa tạo; thử **Tải PDF**, **Tải Word**, **Mở lại để chỉnh sửa** (về trang khảo sát với dữ liệu cũ), **Xóa**.
+3. Chỉ xem được báo cáo có ô `Email đã xác thực` trùng email đang đăng nhập. Báo cáo chưa gắn email (người dùng không xác nhận) không hiện ở trang này và chỉ quản trị viên thấy trong Sheet.
+
+Khi người dùng bấm **Xóa**: file PDF, file Word và thư mục `RX-…` vào Thùng rác Drive (khôi phục được trong 30 ngày nếu cần), thư mục mã báo cáo trong `Báo cáo đã xuất` vào Thùng rác nếu rỗng, các hàng của lần xuất đó trong tab **Báo cáo đã xuất** và **Nội dung khảo sát** bị xóa. Thư mục logo và email ở **Data khách hàng** giữ nguyên.
+
+Tải file lớn đi qua nhiều lần gọi Apps Script (mỗi mảnh khoảng 2,5 MB), nên có thể chậm vài giây; nếu báo lỗi hết thời gian, thử lại.

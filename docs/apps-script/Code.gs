@@ -86,6 +86,7 @@ var REPORT_STATUS_LABELS = { draft: 'Bản nháp', complete: 'Đầy đủ' };
 var REPORT_THEME_LABELS = { 'default': 'Mặc định', brand: 'Thương hiệu' };
 var UPLOAD_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var REPORT_MAX_FILE_BYTES = 25 * 1024 * 1024;
+var REPORT_DOWNLOAD_CHUNK_BYTES = 2499999;
 var REPORT_MAX_CHUNKS = 12;
 var REPORT_MAX_CHUNK_CHARS = 4 * 1024 * 1024;
 var REPORT_MAX_SNAPSHOT_CHARS = 600000;
@@ -139,6 +140,18 @@ function doPost(e) {
     }
     if (body.action === 'setReportOwner') {
       return json_(setReportOwner_(body));
+    }
+    if (body.action === 'listOwnerReports') {
+      return json_(listOwnerReports_(body));
+    }
+    if (body.action === 'getOwnerReportFile') {
+      return json_(getOwnerReportFile_(body));
+    }
+    if (body.action === 'getOwnerSnapshot') {
+      return json_(getOwnerSnapshot_(body));
+    }
+    if (body.action === 'deleteOwnerReport') {
+      return json_(deleteOwnerReport_(body));
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -1372,6 +1385,51 @@ function removeSnapshotRows_(exportId) {
   }
 }
 
+function trashReportExportFiles_(record, removeEmptyParent) {
+  var exportId = cellText_(record[EXPORT_KEY]);
+  var exportFolder = null;
+  ['Id file PDF', 'Id file Word'].forEach(function (column) {
+    var id = cellText_(record[column]);
+    if (id === '') {
+      return;
+    }
+    try {
+      var file = DriveApp.getFileById(id);
+      var parents = file.getParents();
+      if (parents.hasNext()) {
+        var parent = parents.next();
+        if (parent.getName() === exportId) {
+          exportFolder = parent;
+        }
+      }
+      file.setTrashed(true);
+    } catch (err) {
+      console.log('Không xóa được file báo cáo ' + id + ': ' + err);
+    }
+  });
+  if (exportFolder === null) {
+    return;
+  }
+  var codeFolder = null;
+  try {
+    var upper = exportFolder.getParents();
+    codeFolder = upper.hasNext() ? upper.next() : null;
+    exportFolder.setTrashed(true);
+  } catch (err) {
+    console.log('Không xóa được thư mục báo cáo ' + exportId + ': ' + err);
+    return;
+  }
+  if (removeEmptyParent && codeFolder !== null) {
+    try {
+      if (!codeFolder.getFiles().hasNext() && !codeFolder.getFolders().hasNext()) {
+        codeFolder.setTrashed(true);
+      }
+    } catch (err) {
+      console.log('Không xóa được thư mục mã báo cáo: ' + err);
+    }
+  }
+}
+
 function pruneReportExports_(reportCode) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
   if (!sheet) {
@@ -1393,35 +1451,8 @@ function pruneReportExports_(reportCode) {
   });
   var dropped = mine.slice(0, mine.length - REPORT_KEEP_EXPORTS);
   dropped.forEach(function (record) {
-    var exportId = cellText_(record[EXPORT_KEY]);
-    var exportFolder = null;
-    ['Id file PDF', 'Id file Word'].forEach(function (column) {
-      var id = cellText_(record[column]);
-      if (id === '') {
-        return;
-      }
-      try {
-        var file = DriveApp.getFileById(id);
-        var parents = file.getParents();
-        if (parents.hasNext()) {
-          var parent = parents.next();
-          if (parent.getName() === exportId) {
-            exportFolder = parent;
-          }
-        }
-        file.setTrashed(true);
-      } catch (err) {
-        console.log('Không xóa được file báo cáo ' + id + ': ' + err);
-      }
-    });
-    if (exportFolder !== null) {
-      try {
-        exportFolder.setTrashed(true);
-      } catch (err) {
-        console.log('Không xóa được thư mục báo cáo ' + exportId + ': ' + err);
-      }
-    }
-    removeSnapshotRows_(exportId);
+    trashReportExportFiles_(record, false);
+    removeSnapshotRows_(cellText_(record[EXPORT_KEY]));
   });
   dropped
     .map(function (record) {
@@ -1796,6 +1827,147 @@ function setReportOwner_(body) {
     console.log('Không ghi được email vào Data khách hàng: ' + err);
   }
   return { ok: true, status: status };
+}
+
+function ownedExportRows_(email) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+  if (!sheet) {
+    return { sheet: null, rows: [] };
+  }
+  var wanted = normalizeEmail_(email);
+  var rows = readTable_(sheet).rows.filter(function (record) {
+    return cellText_(record[EXPORT_KEY]) !== '' && cellText_(record[OWNER_COLUMN]).toLowerCase() === wanted;
+  });
+  return { sheet: sheet, rows: rows };
+}
+
+function findOwnedExport_(email, exportId) {
+  if (!EXPORT_ID_PATTERN.test(exportId)) {
+    throw new Error('Mã lần xuất không hợp lệ.');
+  }
+  var found = null;
+  ownedExportRows_(email).rows.forEach(function (record) {
+    if (cellText_(record[EXPORT_KEY]) === exportId) {
+      found = record;
+    }
+  });
+  return found;
+}
+
+function listOwnerReports_(body) {
+  var reports = ownedExportRows_(body.email).rows.map(function (record) {
+    return {
+      exportId: cellText_(record[EXPORT_KEY]),
+      reportCode: cellText_(record['Mã báo cáo']),
+      time: cellText_(record['Thời gian']),
+      locale: cellText_(record['Ngôn ngữ']),
+      status: cellText_(record['Trạng thái']) === REPORT_STATUS_LABELS.complete ? 'complete' : 'draft',
+      company: cellText_(record['Doanh nghiệp']),
+      theme: cellText_(record['Giao diện']) === REPORT_THEME_LABELS.brand ? 'brand' : 'default',
+      pdf: cellText_(record['Id file PDF']) !== '',
+      docx: cellText_(record['Id file Word']) !== ''
+    };
+  });
+  reports.sort(function (a, b) {
+    if (a.time !== b.time) {
+      return a.time < b.time ? 1 : -1;
+    }
+    return a.exportId < b.exportId ? 1 : -1;
+  });
+  return { ok: true, reports: reports };
+}
+
+function getOwnerReportFile_(body) {
+  var format = String(body.format || '');
+  var spec = REPORT_FORMATS[format];
+  if (!spec) {
+    throw new Error('Định dạng file không hợp lệ.');
+  }
+  var index = Number(body.index);
+  if (!isFinite(index) || index < 0 || Math.floor(index) !== index) {
+    throw new Error('Số thứ tự mảnh không hợp lệ.');
+  }
+  var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+  if (!record) {
+    return { ok: true, status: 'missing' };
+  }
+  var id = cellText_(record[spec.idColumn]);
+  if (id === '') {
+    return { ok: true, status: 'missing' };
+  }
+  var file;
+  try {
+    file = DriveApp.getFileById(id);
+    if (file.isTrashed()) {
+      return { ok: true, status: 'missing' };
+    }
+  } catch (err) {
+    return { ok: true, status: 'missing' };
+  }
+  var bytes = file.getBlob().getBytes();
+  var total = Math.max(1, Math.ceil(bytes.length / REPORT_DOWNLOAD_CHUNK_BYTES));
+  if (index >= total) {
+    return { ok: true, status: 'range' };
+  }
+  var part = bytes.slice(index * REPORT_DOWNLOAD_CHUNK_BYTES, (index + 1) * REPORT_DOWNLOAD_CHUNK_BYTES);
+  return {
+    ok: true,
+    status: 'ok',
+    name: cellText_(record[spec.nameColumn]),
+    size: bytes.length,
+    total: total,
+    data: Utilities.base64Encode(part)
+  };
+}
+
+function getOwnerSnapshot_(body) {
+  var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+  if (!record) {
+    return { ok: true, status: 'missing' };
+  }
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!sheet) {
+    return { ok: true, status: 'missing' };
+  }
+  var exportId = cellText_(record[EXPORT_KEY]);
+  var parts = readTable_(sheet).rows.filter(function (row) {
+    return cellText_(row[EXPORT_KEY]) === exportId;
+  });
+  if (!parts.length) {
+    return { ok: true, status: 'missing' };
+  }
+  parts.sort(function (a, b) {
+    return Number(a['Phần']) - Number(b['Phần']);
+  });
+  var text = parts.map(function (row) {
+    return cellText_(row['Nội dung']);
+  }).join('');
+  return { ok: true, status: 'ok', snapshot: text };
+}
+
+function deleteOwnerReport_(body) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+    if (!record) {
+      return { ok: true, status: 'missing' };
+    }
+    var exportId = cellText_(record[EXPORT_KEY]);
+    trashReportExportFiles_(record, true);
+    removeSnapshotRows_(exportId);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+    var fresh = readTable_(sheet).rows.filter(function (row) {
+      return cellText_(row[EXPORT_KEY]) === exportId;
+    });
+    fresh.forEach(function (row) {
+      sheet.deleteRow(row._row);
+    });
+    SpreadsheetApp.flush();
+    return { ok: true, status: 'deleted' };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function logMailQuota() {

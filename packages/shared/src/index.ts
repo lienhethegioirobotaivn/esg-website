@@ -9,6 +9,7 @@ export * from "./draft";
 export * from "./about";
 export * from "./form-errors";
 export * from "./inquiry";
+export * from "./my-reports";
 export * from "./pillars";
 export * from "./profile";
 export * from "./rich-text";

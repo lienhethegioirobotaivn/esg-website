@@ -30,12 +30,27 @@ export default async function AdminLayout({
               <Link href="/quan-tri" className="font-bold text-primary-800">
                 Quản trị nội dung · ESG Report Online
               </Link>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-3 text-sm">
+                <Link
+                  href="/quan-tri/trong-rung"
+                  className="text-muted hover:underline"
+                >
+                  Trồng rừng
+                </Link>
+                <Link
+                  href="/quan-tri/tin-chi-carbon"
+                  className="text-muted hover:underline"
+                >
+                  Tín chỉ Carbon
+                </Link>
                 <Link href={ABOUT_PATH} className="text-muted hover:underline">
                   Xem trang web
                 </Link>
                 {signedIn ? (
-                  <Link href="/quan-tri/ban-dich" className="text-muted hover:underline">
+                  <Link
+                    href="/quan-tri/ban-dich"
+                    className="text-muted hover:underline"
+                  >
                     Bản dịch
                   </Link>
                 ) : null}

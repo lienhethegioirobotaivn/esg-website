@@ -1,6 +1,6 @@
 # Kế hoạch tính năng: lưu báo cáo đã xuất và xem lại bằng email OTP (16/11/2026)
 
-Trạng thái (19/11/2026): GĐ1 (lưu báo cáo), GĐ2 (email OTP) và GĐ3 (trang "Báo cáo của tôi") đã làm xong; GĐ4 (hoàn thiện, chính sách quyền riêng tư) chưa làm. Mục 4 đã được Bình chốt ngày 17/11. Mục 7 là bản đồ mã nguồn để làm tiếp. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
+Trạng thái (19/11/2026): GĐ1, GĐ2, GĐ3 và GĐ4 đã làm xong (chỉ còn các việc tùy chọn ở cuối GĐ4 và việc Bình thử thật trên Google/Vercel). Mục 4 đã được Bình chốt ngày 17/11. Mục 7 là bản đồ mã nguồn để làm tiếp. Đọc cùng `boi-canh-du-an.md` (mục 4, 6, 7, 12.5) và `huong-dan-cai-dat-apps-script.md`.
 
 ## 1. Yêu cầu đã chốt
 
@@ -24,7 +24,7 @@ Trạng thái (19/11/2026): GĐ1 (lưu báo cáo), GĐ2 (email OTP) và GĐ3 (tr
 ### 3.1 Lưu báo cáo (không phụ thuộc email)
 - Khi user bấm "Tạo báo cáo" và đã qua kiểm tra, trình duyệt dựng **cả PDF và Word** rồi gửi lên **trong lúc nút đang ở trạng thái loading** ("Đang tạo báo cáo..."), sau đó mới mở hộp thoại tải. File vừa dựng được giữ trong bộ nhớ nên bấm tải là có ngay. Dùng đúng dữ liệu và ngôn ngữ hiện tại. **Người dùng không được thấy chữ "đã lưu vào hệ thống"** (quyết định 18/11): lưu lỗi thì im lặng, hộp thoại vẫn mở và vẫn tải được; lần bấm "Tạo báo cáo" sau sẽ lưu lại.
 - Vì body route Vercel giới hạn khoảng 4,5 MB mà PDF có ảnh minh chứng có thể lớn hơn, file được **chia mảnh** (khoảng 2,5 MB nhị phân mỗi mảnh) gửi qua `POST /api/reports/upload`. Apps Script ghép lại và ghi vào Drive. Cơ chế ghép: mỗi mảnh là một tệp tạm trong thư mục tạm của Drive, bước kết thúc ghép base64 và tạo file; tệp tạm bị xóa ngay, và có trigger dọn tệp tạm quá 24 giờ.
-- Drive: `ESG Report Online / Báo cáo đã xuất / <mã báo cáo> / <exportId> /` chứa 1 PDF + 1 Word. Thư mục `Báo cáo đã xuất` tách riêng khỏi thư mục theo mã báo cáo ở gốc vì thư mục đó đang chứa logo (`saveCompany_`); không trộn báo cáo vào đó (18/11). Tên file `<exportId>_<tên theo buildReportFileName>`. Dọn bản cũ: trash cả thư mục exportId (chỉ khi thư mục cha của file tên đúng exportId; export cũ dạng phẳng chỉ trash file, không bao giờ trash thư mục mã báo cáo). Lỗi khi ghi: trash thư mục exportId vừa tạo.
+- Drive: `<thư mục cha của FOLDER_ID> / Báo cáo đã xuất / <mã báo cáo> / <exportId> /` chứa 1 PDF + 1 Word. `FOLDER_ID` là thư mục **logo khách hàng** (`saveCompany_`), nên `Báo cáo đã xuất` được đặt **ngang cấp** với nó (quyết định 19/11, sau khi bản 18/11 đặt bên trong thư mục logo). Tùy chọn `REPORTS_FOLDER_ID` để chỉ định nơi khác; thư mục cũ bên trong thư mục logo tự được chuyển ra (`reportsRootFolder_`); không tạo được ở cấp cha thì rơi về bên trong thư mục logo. Tên file `<exportId>_<tên theo buildReportFileName>`. Dọn bản cũ: trash cả thư mục exportId (chỉ khi thư mục cha của file tên đúng exportId; export cũ dạng phẳng chỉ trash file, không bao giờ trash thư mục mã báo cáo). Lỗi khi ghi: trash thư mục exportId vừa tạo.
 - Sheet (cùng bảng tính đang dùng), tab tự tạo:
   - `Báo cáo đã xuất`: Mã lần xuất, Mã báo cáo, Thời gian, Ngôn ngữ, Trạng thái (Bản nháp / Đầy đủ), Tên doanh nghiệp, Giao diện (mặc định / thương hiệu), Id file PDF, Id file Word, Email đã xác thực (trống nếu chưa).
   - `Nội dung khảo sát`: Mã lần xuất, ảnh chụp dữ liệu dạng JSON (doanh nghiệp, câu trả lời và ghi chú, kế hoạch, theme, nhóm đang làm, phiên bản định dạng), chia mảnh theo cùng cách `Nội dung bài viết`.
@@ -138,6 +138,15 @@ Chưa kiểm thử được (cần Bình thử thật): Drive/Sheet thật, gi�
 
 ### GĐ4 - Hoàn thiện và bàn giao
 **Việc**: dọn dữ liệu mồ côi hoàn chỉnh (xóa báo cáo xóa luôn file Drive, hàng Sheet, mảnh nội dung; trigger dọn tệp tạm bỏ dở), `i18n:sync` rồi commit `src/i18n/messages/`, cập nhật `huong-dan-cai-dat-apps-script.md` (mục mới: dán lại `Code.gs`, Phiên bản mới, quyền Drive/Mail, cài trigger dọn), README (biến `USER_SESSION_SECRET`), `da-ngon-ngu.md`, dòng quyền riêng tư; chạy `pnpm typecheck`, `pnpm lint`, test `@esg/shared` và web, `i18n:check`; danh sách kiểm thử thủ công.
+**Nhật ký GĐ4 (đã làm xong 19/11/2026, kiểm thử bằng bridge giả; chưa thử Google/Vercel thật)**
+- Thư mục báo cáo đặt ngang cấp thư mục logo (mục 3.1), tự chuyển thư mục cũ, `REPORTS_FOLDER_ID` tùy chọn.
+- Dọn mồ côi: trigger hằng ngày `cleanupReportUploads` thêm `cleanupReportOrphans_` (xóa dòng `Nội dung khảo sát` không còn dòng `Báo cáo đã xuất`, trong khóa để không đụng lần xuất đang ghi). Các đường dọn khác đã có từ trước: giữ 5 lần xuất (xóa file, thư mục và snapshot), hoàn tác khi ghi Sheet lỗi, nút Xóa (file, thư mục, thư mục mã báo cáo rỗng, snapshot, hàng Sheet), mảnh tạm quá 24 giờ.
+- Quyền riêng tư: dòng giải thích dưới khung email nay ghi rõ email dùng để xác nhận, để xem lại báo cáo và để liên hệ khi cần, và báo cáo xóa được ở "Báo cáo của tôi" (bản dịch en/fr/zh). Repo **không có trang chính sách quyền riêng tư**; nếu doanh nghiệp có chính sách riêng thì cần bổ sung ý: báo cáo (PDF, Word, câu trả lời, hồ sơ) và email được lưu để xem lại, người dùng tự xóa được, email có thể dùng để liên hệ.
+- Tài liệu: `huong-dan-cai-dat-apps-script.md` mục 12 (cấu trúc Drive, `REPORTS_FOLDER_ID`), 14 (trang Báo cáo của tôi), 15 (dọn mồ côi); README đã có `USER_SESSION_SECRET`; `da-ngon-ngu.md` có phụ lục OTP và trang Báo cáo của tôi.
+- Kiểm thử: bridge Apps Script giả 46 pass (thêm 4 ca: thư mục ngang cấp không nằm trong logo, chuyển thư mục cũ, `REPORTS_FOLDER_ID`, dọn snapshot mồ côi); web 64, shared 78, typecheck, eslint, `i18n:check` sạch. Chưa chạy được `pnpm build` (môi trường Claude không tải được phông Google).
+
+**Danh sách thử thủ công trên máy Bình** (sau khi dán `Code.gs`, tạo Phiên bản mới, đặt `USER_SESSION_SECRET`): (1) xuất báo cáo, kiểm tra Drive có `Báo cáo đã xuất` ngang cấp thư mục logo, thư mục `RX-…` chứa 2 file, Sheet có link; (2) nhận OTP thật ở Gmail (cả thư rác) cho vi, en, fr, zh; (3) `Báo cáo của tôi`: tải PDF/Word, mở lại, xuất tiếp, xóa, đăng xuất; (4) thử email thứ hai không thấy báo cáo của email đầu; (5) xóa tay một dòng ở `Báo cáo đã xuất`, chạy `cleanupReportUploads`, dòng snapshot tương ứng mất; (6) `pnpm build` và thử trên Vercel (tải file lớn stream); (7) mở `/robots.txt` thấy `/bao-cao-cua-toi`.
+
 **Việc tùy chọn (chờ quyết)**: captcha, đăng nhập một lần cho nhiều thiết bị, email nhắc xem lại báo cáo, trang quản trị xem danh sách báo cáo đã lưu, thêm SMS nếu sau này có ngân sách.
 
 ## 6. Rủi ro đã biết

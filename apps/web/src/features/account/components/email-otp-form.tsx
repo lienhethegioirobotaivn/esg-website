@@ -217,7 +217,7 @@ export function EmailOtpForm({
 
       {errorNode}
       <p className="mt-2 text-xs text-subtle">
-        {t("Email chỉ dùng để xác nhận và để bạn xem lại báo cáo.")}
+        {t("Email dùng để xác nhận, để bạn xem lại báo cáo và để chúng tôi liên hệ khi cần. Bạn có thể xóa báo cáo đã lưu trong mục Báo cáo của tôi.")}
       </p>
     </section>
   );

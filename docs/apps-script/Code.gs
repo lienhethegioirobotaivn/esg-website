@@ -1230,14 +1230,44 @@ function reportTempFolder_(props) {
   return existing.hasNext() ? existing.next() : root.createFolder(REPORT_TEMP_FOLDER_NAME);
 }
 
+function reportsRootFolder_(props, folderId) {
+  var explicitId = props.getProperty('REPORTS_FOLDER_ID');
+  if (explicitId) {
+    return DriveApp.getFolderById(explicitId);
+  }
+  var logoRoot = DriveApp.getFolderById(folderId);
+  var base = logoRoot;
+  var parents = logoRoot.getParents();
+  if (parents.hasNext()) {
+    base = parents.next();
+  }
+  var found = base.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+  if (found.hasNext()) {
+    return found.next();
+  }
+  if (base.getId() !== logoRoot.getId()) {
+    var legacy = logoRoot.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+    try {
+      if (legacy.hasNext()) {
+        var moved = legacy.next();
+        moved.moveTo(base);
+        return moved;
+      }
+      return base.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+    } catch (err) {
+      console.log('Không tạo được thư mục báo cáo ngang cấp thư mục logo: ' + err);
+    }
+  }
+  var inside = logoRoot.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+  return inside.hasNext() ? inside.next() : logoRoot.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+}
+
 function reportFolder_(reportCode, props) {
   var folderId = props.getProperty('FOLDER_ID');
   if (!folderId) {
     throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
   }
-  var root = DriveApp.getFolderById(folderId);
-  var exportsIter = root.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
-  var exportsRoot = exportsIter.hasNext() ? exportsIter.next() : root.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+  var exportsRoot = reportsRootFolder_(props, folderId);
   var existing = exportsRoot.getFoldersByName(reportCode);
   return existing.hasNext() ? existing.next() : exportsRoot.createFolder(reportCode);
 }
@@ -1991,9 +2021,42 @@ function cleanupReportUploads_(props) {
   return removed;
 }
 
+function cleanupReportOrphans_() {
+  var snapshotSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!snapshotSheet) {
+    return 0;
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var known = {};
+    var exportSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+    if (exportSheet) {
+      readTable_(exportSheet).rows.forEach(function (record) {
+        known[cellText_(record[EXPORT_KEY])] = true;
+      });
+    }
+    var rows = readTable_(snapshotSheet).rows;
+    var removed = 0;
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var id = cellText_(rows[i][EXPORT_KEY]);
+      if (id !== '' && !known[id]) {
+        snapshotSheet.deleteRow(rows[i]._row);
+        removed++;
+      }
+    }
+    SpreadsheetApp.flush();
+    return removed;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function cleanupReportUploads() {
   var removed = cleanupReportUploads_(PropertiesService.getScriptProperties());
   Logger.log('Đã xóa ' + removed + ' tệp tải lên tạm quá hạn.');
+  var orphans = cleanupReportOrphans_();
+  Logger.log('Đã xóa ' + orphans + ' dòng nội dung khảo sát mồ côi.');
 }
 
 function installReportCleanupTrigger() {

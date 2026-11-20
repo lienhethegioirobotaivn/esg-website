@@ -197,3 +197,14 @@ Kế hoạch chi tiết, nhật ký từng giai đoạn và bản đồ mã ngu�
 - Trang `/bao-cao-cua-toi` (`noindex`): đăng nhập OTP, danh sách theo mã báo cáo, tải lại PDF/Word (stream qua `/api/my-reports/[id]/file`), mở lại để chỉnh sửa (ghi localStorage rồi về `/`), xóa, đăng xuất. Email luôn lấy từ cookie và Apps Script kiểm chủ sở hữu lần nữa. Xóa đưa file và thư mục vào Thùng rác Drive, xóa hàng Sheet, không đụng logo hay `Data khách hàng`.
 - Quy ước đã chốt: SMS bỏ (tốn phí); email đã xác thực xem được mọi báo cáo gắn email đó từ bất kỳ thiết bị nào; báo cáo xuất trước khi xác thực chỉ gắn được cho lần xuất đang mở.
 - Bẫy đã gặp: base64 của các mảnh chỉ nối được khi kích thước mảnh chia hết cho 3; `next/headers` và `server-only` được giả trong `apps/web/tests/setup/`; thứ tự khóa i18n sắp theo `localeCompare(..., "vi")`; file `Code.gs` có thể là CRLF trên máy Windows.
+
+## 14. Cập nhật 20/11/2026: hướng chuyển toàn bộ sang Cloudflare
+
+Kế hoạch đầy đủ: [docs/ke-hoach-chuyen-cloudflare.md](ke-hoach-chuyen-cloudflare.md). **Chưa có code**; còn các điểm cần Bình chốt (mục 2 của tài liệu đó). Phiên làm việc về Cloudflare phải đọc tài liệu đó trước và **không tự code** khi chưa được chốt.
+
+- Hướng đã chốt: deploy trên Cloudflare (Workers + OpenNext, D1, R2, Email Service, Cron Triggers), chấp nhận build lại backend, trả gói Workers Paid 5 USD/tháng, muốn tạm ngưng khi vượt hạn mức, giữ nguyên mọi tính năng hiện có.
+- Hiện trạng cần thay: Google Sheet, Drive, Apps Script (`MailApp`, `CacheService`, `LockService`, `LanguageApp`, trigger) đằng sau lớp `server/*` của Next. Giới hạn tần suất đang nằm trong RAM tiến trình nên phải đổi khi lên Workers.
+- PDF và Word được dựng ở **trình duyệt**, máy chủ chỉ lưu file; rủi ro chạy react-pdf trên Workers vì thế thấp.
+- Spending limit của Cloudflare chỉ áp dụng cho Workers và Durable Objects, không phải trần cứng; cần giới hạn thêm trong code (mục 6 của tài liệu kế hoạch).
+- Bộ câu hỏi đề xuất giữ ở Google Sheet giai đoạn đầu (Bình không muốn sửa cấu trúc Sheet).
+- Apps Script giữ chạy song song cho tới khi cắt chuyển.

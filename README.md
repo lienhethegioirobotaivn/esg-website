@@ -115,6 +115,8 @@ Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo t
 - [Giao diện báo cáo theo thương hiệu: kiến trúc, vận hành, giới hạn](docs/thuong-hieu-bao-cao.md)
 - [Kế hoạch và nhật ký triển khai giao diện theo thương hiệu](docs/ke-hoach-bao-cao-theo-thuong-hieu.md)
 - [Kế hoạch và nhật ký triển khai đa ngôn ngữ](docs/ke-hoach-da-ngon-ngu.md)
+- [Kế hoạch lưu báo cáo đã xuất và xác nhận email OTP](docs/ke-hoach-luu-bao-cao-va-xac-thuc-email.md)
+- [Kế hoạch chuyển toàn bộ sang Cloudflare (chưa làm)](docs/ke-hoach-chuyen-cloudflare.md)
 - [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
 - [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)
 - [So sánh báo cáo xuất và mẫu](docs/so-sanh-bao-cao-xuat-va-mau.md)

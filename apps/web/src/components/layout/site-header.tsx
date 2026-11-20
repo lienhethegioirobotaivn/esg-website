@@ -11,6 +11,7 @@ import {
 import { GuardedLink } from "@/features/leave-guard";
 import { HowItWorksLink } from "@/features/how-it-works";
 import { ABOUT_PATH } from "@/features/about/constants";
+import { MY_REPORTS_PATH } from "@/features/my-reports/constants";
 import { ContactDialog, INQUIRY_COPY } from "@/features/contact";
 import type { InquiryKind } from "@esg/shared";
 import {
@@ -46,6 +47,7 @@ export function SiteHeader() {
   const pathname = useBarePathname();
   const isHome = pathname === "/";
   const isAbout = pathname.startsWith(ABOUT_PATH);
+  const isMyReports = pathname.startsWith(MY_REPORTS_PATH);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [isConsultOpen, setIsConsultOpen] = useState(false);
@@ -77,7 +79,7 @@ export function SiteHeader() {
           />
         </GuardedLink>
 
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+        <nav className="hidden md:flex items-center gap-3 lg:gap-6 xl:gap-8">
           <GuardedLink
             href="/"
             className={`group relative pb-2 text-sm ${
@@ -94,13 +96,21 @@ export function SiteHeader() {
             />
           </GuardedLink>
 
-          {/* <GuardedLink
-            href="#"
-            className="group relative pb-2 text-sm font-medium text-[#374151] hover:text-[#006644] transition-colors"
+          <GuardedLink
+            href={MY_REPORTS_PATH}
+            className={`group relative pb-2 text-sm ${
+              isMyReports
+                ? "font-semibold text-[#006644]"
+                : "font-medium text-[#374151] hover:text-[#006644] transition-colors"
+            }`}
           >
-            Báo cáo của tôi
-            <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-[#006644] transition-all duration-300 ease-out group-hover:w-full" />
-          </GuardedLink> */}
+            {t("Báo cáo của tôi")}
+            <span
+              className={`absolute bottom-0 left-0 h-0.5 bg-[#006644] transition-all duration-300 ease-out ${
+                isMyReports ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
+          </GuardedLink>
 
           <div className="group relative pb-2">
             <div className="text-sm font-medium text-[#374151] hover:text-[#006644] transition-colors">
@@ -251,13 +261,17 @@ export function SiteHeader() {
                 {t("Tạo báo cáo")}
               </GuardedLink>
 
-              {/* <GuardedLink
-                href="#"
+              <GuardedLink
+                href={MY_REPORTS_PATH}
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between rounded-lg p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+                className={`flex items-center justify-between rounded-lg p-3 text-sm ${
+                  isMyReports
+                    ? "font-semibold text-[#006644] bg-[#006644]/5"
+                    : "font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+                }`}
               >
-                Báo cáo của tôi
-              </GuardedLink> */}
+                {t("Báo cáo của tôi")}
+              </GuardedLink>
 
               <div className="rounded-lg p-3 text-sm font-medium text-[#374151] hover:bg-[#f3f4f6] transition-colors">
                 <HowItWorksLink />

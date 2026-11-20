@@ -54,6 +54,45 @@ var TRANSLATION_SYNC_MAX_ROUNDS = 6;
 var TRANSLATION_SYNC_MAX_MS = 270000;
 var TRANSLATION_SYNC_INTERVAL_MINUTES = 10;
 var TRANSLATION_SYNC_FULL_EVERY_MS = 24 * 60 * 60 * 1000;
+var EXPORT_SHEET_NAME = 'Báo cáo đã xuất';
+var EXPORT_HEADERS = ['Mã lần xuất', 'Mã báo cáo', 'Thời gian', 'Ngôn ngữ', 'Trạng thái', 'Doanh nghiệp', 'Giao diện', 'Id file PDF', 'Id file Word', 'Tên file PDF', 'Tên file Word', 'Link file PDF', 'Link file Word', 'Email đã xác thực'];
+var EXPORT_LINKS = [
+  { idColumn: 'Id file PDF', linkColumn: 'Link file PDF', label: 'Mở PDF' },
+  { idColumn: 'Id file Word', linkColumn: 'Link file Word', label: 'Mở Word' }
+];
+var OWNER_COLUMN = 'Email đã xác thực';
+var EXPORT_ID_PATTERN = /^RX-\d{8}-[A-Z0-9]{6}$/;
+var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+var OTP_CODE_PATTERN = /^\d{6}$/;
+var OTP_TTL_SECONDS = 600;
+var OTP_MAX_TRIES = 5;
+var OTP_RESEND_SECONDS = 60;
+var OTP_PER_EMAIL_PER_HOUR = 3;
+var OTP_DAILY_LIMIT = 60;
+var OTP_MIN_MAIL_QUOTA = 10;
+var OTP_SENDER_NAME = 'ESG Report Online';
+var EXPORT_KEY = 'Mã lần xuất';
+var SNAPSHOT_SHEET_NAME = 'Nội dung khảo sát';
+var SNAPSHOT_HEADERS = ['Mã lần xuất', 'Phần', 'Nội dung'];
+var SNAPSHOT_CHUNK_SIZE = 40000;
+var REPORT_TEMP_FOLDER_NAME = 'Tải lên tạm';
+var REPORT_EXPORTS_FOLDER_NAME = 'Báo cáo đã xuất';
+var REPORT_FORMATS = {
+  pdf: { mime: 'application/pdf', signature: [37, 80, 68, 70, 45], idColumn: 'Id file PDF', nameColumn: 'Tên file PDF' },
+  docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', signature: [80, 75, 3, 4], idColumn: 'Id file Word', nameColumn: 'Tên file Word' }
+};
+var REPORT_LOCALES = { vi: true, en: true, fr: true, zh: true };
+var REPORT_STATUS_LABELS = { draft: 'Bản nháp', complete: 'Đầy đủ' };
+var REPORT_THEME_LABELS = { 'default': 'Mặc định', brand: 'Thương hiệu' };
+var UPLOAD_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var REPORT_MAX_FILE_BYTES = 25 * 1024 * 1024;
+var REPORT_DOWNLOAD_CHUNK_BYTES = 2499999;
+var REPORT_MAX_CHUNKS = 12;
+var REPORT_MAX_CHUNK_CHARS = 4 * 1024 * 1024;
+var REPORT_MAX_SNAPSHOT_CHARS = 600000;
+var REPORT_KEEP_EXPORTS = 5;
+var REPORT_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+var REPORT_CLEANUP_TRIGGER_HOUR = 3;
 
 function doPost(e) {
   try {
@@ -86,6 +125,33 @@ function doPost(e) {
       } finally {
         pruneLock.releaseLock();
       }
+    }
+    if (body.action === 'uploadReportChunk') {
+      return json_(uploadReportChunk_(body, props));
+    }
+    if (body.action === 'finishReport') {
+      return json_(finishReport_(body, props));
+    }
+    if (body.action === 'otpRequest') {
+      return json_(otpRequest_(body, props));
+    }
+    if (body.action === 'otpVerify') {
+      return json_(otpVerify_(body, props));
+    }
+    if (body.action === 'setReportOwner') {
+      return json_(setReportOwner_(body));
+    }
+    if (body.action === 'listOwnerReports') {
+      return json_(listOwnerReports_(body));
+    }
+    if (body.action === 'getOwnerReportFile') {
+      return json_(getOwnerReportFile_(body));
+    }
+    if (body.action === 'getOwnerSnapshot') {
+      return json_(getOwnerSnapshot_(body));
+    }
+    if (body.action === 'deleteOwnerReport') {
+      return json_(deleteOwnerReport_(body));
     }
     if (body.action === 'saveInquiry' || body.action === 'saveFeedback') {
       if (!body.fields || typeof body.fields !== 'object') {
@@ -1152,6 +1218,858 @@ function runTranslationSync() {
   } finally {
     lock.releaseLock();
   }
+}
+
+function reportTempFolder_(props) {
+  var folderId = props.getProperty('FOLDER_ID');
+  if (!folderId) {
+    throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
+  }
+  var root = DriveApp.getFolderById(folderId);
+  var existing = root.getFoldersByName(REPORT_TEMP_FOLDER_NAME);
+  return existing.hasNext() ? existing.next() : root.createFolder(REPORT_TEMP_FOLDER_NAME);
+}
+
+function reportsRootFolder_(props, folderId) {
+  var explicitId = props.getProperty('REPORTS_FOLDER_ID');
+  if (explicitId) {
+    return DriveApp.getFolderById(explicitId);
+  }
+  var logoRoot = DriveApp.getFolderById(folderId);
+  var base = logoRoot;
+  var parents = logoRoot.getParents();
+  if (parents.hasNext()) {
+    base = parents.next();
+  }
+  var found = base.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+  if (found.hasNext()) {
+    return found.next();
+  }
+  if (base.getId() !== logoRoot.getId()) {
+    var legacy = logoRoot.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+    try {
+      if (legacy.hasNext()) {
+        var moved = legacy.next();
+        moved.moveTo(base);
+        return moved;
+      }
+      return base.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+    } catch (err) {
+      console.log('Không tạo được thư mục báo cáo ngang cấp thư mục logo: ' + err);
+    }
+  }
+  var inside = logoRoot.getFoldersByName(REPORT_EXPORTS_FOLDER_NAME);
+  return inside.hasNext() ? inside.next() : logoRoot.createFolder(REPORT_EXPORTS_FOLDER_NAME);
+}
+
+function reportFolder_(reportCode, props) {
+  var folderId = props.getProperty('FOLDER_ID');
+  if (!folderId) {
+    throw new Error('Chưa cấu hình FOLDER_ID trong Script Properties.');
+  }
+  var exportsRoot = reportsRootFolder_(props, folderId);
+  var existing = exportsRoot.getFoldersByName(reportCode);
+  return existing.hasNext() ? existing.next() : exportsRoot.createFolder(reportCode);
+}
+
+function reportCodeExists_(reportCode) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return false;
+  }
+  var layout = findLayout_(sheet);
+  var rowCount = sheet.getLastRow() - layout.headerRow;
+  if (rowCount <= 0) {
+    return false;
+  }
+  var keys = sheet.getRange(layout.headerRow + 1, layout.columns[KEY_COLUMN], rowCount, 1).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]).trim() === reportCode) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function chunkFileName_(uploadId, format, index) {
+  return uploadId + '.' + format + '.' + index;
+}
+
+function uploadReportChunk_(body, props) {
+  var uploadId = String(body.uploadId || '');
+  var format = String(body.format || '');
+  var index = Number(body.index);
+  var data = String(body.data || '');
+  if (!UPLOAD_ID_PATTERN.test(uploadId)) {
+    throw new Error('Mã tải lên không hợp lệ.');
+  }
+  if (!REPORT_FORMATS[format]) {
+    throw new Error('Định dạng báo cáo không được hỗ trợ.');
+  }
+  if (!(index >= 0 && index < REPORT_MAX_CHUNKS) || Math.floor(index) !== index) {
+    throw new Error('Số thứ tự mảnh không hợp lệ.');
+  }
+  if (data.length === 0 || data.length > REPORT_MAX_CHUNK_CHARS) {
+    throw new Error('Mảnh dữ liệu rỗng hoặc quá lớn.');
+  }
+  var folder = reportTempFolder_(props);
+  var name = chunkFileName_(uploadId, format, index);
+  var existing = folder.getFilesByName(name);
+  if (existing.hasNext()) {
+    existing.next().setContent(data);
+  } else {
+    folder.createFile(name, data, MimeType.PLAIN_TEXT);
+  }
+  return { ok: true };
+}
+
+function assembleReportFile_(folder, uploadId, spec) {
+  var base64 = '';
+  for (var i = 0; i < spec.chunks; i++) {
+    var files = folder.getFilesByName(chunkFileName_(uploadId, spec.format, i));
+    if (!files.hasNext()) {
+      throw new Error('Thiếu mảnh ' + (i + 1) + '/' + spec.chunks + ' của file ' + spec.format + '.');
+    }
+    var part = files.next().getBlob().getDataAsString();
+    if (i < spec.chunks - 1 && (part.length % 4 !== 0 || part.indexOf('=') !== -1)) {
+      throw new Error('Mảnh ' + (i + 1) + ' của file ' + spec.format + ' có độ dài không hợp lệ.');
+    }
+    base64 += part;
+  }
+  var bytes = Utilities.base64Decode(base64);
+  if (bytes.length !== spec.bytes || bytes.length > REPORT_MAX_FILE_BYTES) {
+    throw new Error('Kích thước file ' + spec.format + ' không khớp.');
+  }
+  var signature = REPORT_FORMATS[spec.format].signature;
+  for (var j = 0; j < signature.length; j++) {
+    if ((bytes[j] & 255) !== signature[j]) {
+      throw new Error('File ' + spec.format + ' không đúng định dạng.');
+    }
+  }
+  return bytes;
+}
+
+function safeReportFileName_(name, format) {
+  var cleaned = String(name || '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
+    .substring(0, 120);
+  var suffix = '.' + format;
+  if (cleaned === '') {
+    return 'bao-cao-esg' + suffix;
+  }
+  return cleaned.toLowerCase().slice(-suffix.length) === suffix ? cleaned : cleaned + suffix;
+}
+
+function createExportId_() {
+  var date = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd');
+  return 'RX-' + date + '-' + randomCode_(6);
+}
+
+function appendColumns_(sheet, startRow, records) {
+  if (!records.length) {
+    return;
+  }
+  var table = readTable_(sheet);
+  var needed = startRow + records.length - 1;
+  var missing = needed - sheet.getMaxRows();
+  if (missing > 0) {
+    sheet.insertRowsAfter(sheet.getMaxRows(), missing);
+  }
+  Object.keys(records[0]).forEach(function (name) {
+    var column = table.columns[name];
+    if (!column) {
+      throw new Error('Thiếu cột "' + name + '" trong tab "' + sheet.getName() + '".');
+    }
+    sheet.getRange(startRow, column, records.length, 1)
+      .setNumberFormat('@')
+      .setValues(records.map(function (record) {
+        return [record[name]];
+      }));
+  });
+}
+
+function writeSnapshotRows_(exportId, snapshot) {
+  var sheet = ensureTable_(SNAPSHOT_SHEET_NAME, SNAPSHOT_HEADERS);
+  var records = [];
+  for (var start = 0; start < snapshot.length; start += SNAPSHOT_CHUNK_SIZE) {
+    records.push({
+      'Mã lần xuất': exportId,
+      'Phần': records.length + 1,
+      'Nội dung': snapshot.substring(start, start + SNAPSHOT_CHUNK_SIZE)
+    });
+  }
+  appendColumns_(sheet, Math.max(sheet.getLastRow(), 1) + 1, records);
+}
+
+function removeSnapshotRows_(exportId) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!sheet) {
+    return;
+  }
+  var rows = readTable_(sheet).rows;
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (cellText_(rows[i][EXPORT_KEY]) === exportId) {
+      sheet.deleteRow(rows[i]._row);
+    }
+  }
+}
+
+function trashReportExportFiles_(record, removeEmptyParent) {
+  var exportId = cellText_(record[EXPORT_KEY]);
+  var exportFolder = null;
+  ['Id file PDF', 'Id file Word'].forEach(function (column) {
+    var id = cellText_(record[column]);
+    if (id === '') {
+      return;
+    }
+    try {
+      var file = DriveApp.getFileById(id);
+      var parents = file.getParents();
+      if (parents.hasNext()) {
+        var parent = parents.next();
+        if (parent.getName() === exportId) {
+          exportFolder = parent;
+        }
+      }
+      file.setTrashed(true);
+    } catch (err) {
+      console.log('Không xóa được file báo cáo ' + id + ': ' + err);
+    }
+  });
+  if (exportFolder === null) {
+    return;
+  }
+  var codeFolder = null;
+  try {
+    var upper = exportFolder.getParents();
+    codeFolder = upper.hasNext() ? upper.next() : null;
+    exportFolder.setTrashed(true);
+  } catch (err) {
+    console.log('Không xóa được thư mục báo cáo ' + exportId + ': ' + err);
+    return;
+  }
+  if (removeEmptyParent && codeFolder !== null) {
+    try {
+      if (!codeFolder.getFiles().hasNext() && !codeFolder.getFolders().hasNext()) {
+        codeFolder.setTrashed(true);
+      }
+    } catch (err) {
+      console.log('Không xóa được thư mục mã báo cáo: ' + err);
+    }
+  }
+}
+
+function pruneReportExports_(reportCode) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+  if (!sheet) {
+    return 0;
+  }
+  var mine = readTable_(sheet).rows.filter(function (record) {
+    return cellText_(record['Mã báo cáo']) === reportCode && cellText_(record[EXPORT_KEY]) !== '';
+  });
+  if (mine.length <= REPORT_KEEP_EXPORTS) {
+    return 0;
+  }
+  mine.sort(function (a, b) {
+    var left = cellText_(a['Thời gian']);
+    var right = cellText_(b['Thời gian']);
+    if (left !== right) {
+      return left < right ? -1 : 1;
+    }
+    return a._row - b._row;
+  });
+  var dropped = mine.slice(0, mine.length - REPORT_KEEP_EXPORTS);
+  dropped.forEach(function (record) {
+    trashReportExportFiles_(record, false);
+    removeSnapshotRows_(cellText_(record[EXPORT_KEY]));
+  });
+  dropped
+    .map(function (record) {
+      return record._row;
+    })
+    .sort(function (a, b) {
+      return b - a;
+    })
+    .forEach(function (row) {
+      sheet.deleteRow(row);
+    });
+  return dropped.length;
+}
+
+function discardReportChunks_(folder, uploadId, specs) {
+  specs.forEach(function (spec) {
+    for (var i = 0; i < spec.chunks; i++) {
+      var files = folder.getFilesByName(chunkFileName_(uploadId, spec.format, i));
+      while (files.hasNext()) {
+        files.next().setTrashed(true);
+      }
+    }
+  });
+}
+
+function fillReportLinks_(sheet) {
+  var table = readTable_(sheet);
+  EXPORT_LINKS.forEach(function (target) {
+    var column = table.columns[target.linkColumn];
+    if (!column || !table.columns[target.idColumn]) {
+      return;
+    }
+    table.rows.forEach(function (record) {
+      var id = cellText_(record[target.idColumn]);
+      if (id === '' || cellText_(record[target.linkColumn]) === target.label) {
+        return;
+      }
+      var richText = SpreadsheetApp.newRichTextValue()
+        .setText(target.label)
+        .setLinkUrl('https://drive.google.com/file/d/' + id + '/view')
+        .build();
+      sheet.getRange(record._row, column).setNumberFormat('@').setRichTextValue(richText);
+    });
+  });
+}
+
+function backfillReportLinks() {
+  var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+  fillReportLinks_(sheet);
+  Logger.log('Đã ghi link file báo cáo cho các dòng còn thiếu.');
+}
+
+function commitReportExport_(exportId, body, record) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    writeSnapshotRows_(exportId, String(body.snapshot));
+    try {
+      var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+      var values = {};
+      values[EXPORT_KEY] = exportId;
+      values['Mã báo cáo'] = String(body.reportCode);
+      values['Thời gian'] = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm:ss');
+      values['Ngôn ngữ'] = String(body.locale);
+      values['Trạng thái'] = REPORT_STATUS_LABELS[body.status];
+      values['Doanh nghiệp'] = String(body.companyName || '').substring(0, 200);
+      values['Giao diện'] = REPORT_THEME_LABELS[body.theme];
+      Object.keys(record).forEach(function (name) {
+        values[name] = record[name];
+      });
+      appendColumns_(sheet, Math.max(sheet.getLastRow(), 1) + 1, [values]);
+      try {
+        fillReportLinks_(sheet);
+      } catch (linkError) {
+        console.log('Không ghi được link file báo cáo: ' + linkError);
+      }
+    } catch (err) {
+      removeSnapshotRows_(exportId);
+      throw err;
+    }
+    var pruned = 0;
+    try {
+      pruned = pruneReportExports_(String(body.reportCode));
+    } catch (err) {
+      console.log('Không dọn được lần xuất cũ: ' + err);
+    }
+    SpreadsheetApp.flush();
+    return pruned;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function finishReport_(body, props) {
+  var reportCode = String(body.reportCode || '');
+  var uploadId = String(body.uploadId || '');
+  if (!REPORT_CODE_PATTERN.test(reportCode)) {
+    throw new Error('Mã báo cáo không hợp lệ.');
+  }
+  if (!UPLOAD_ID_PATTERN.test(uploadId)) {
+    throw new Error('Mã tải lên không hợp lệ.');
+  }
+  if (!REPORT_LOCALES[body.locale] || !REPORT_STATUS_LABELS[body.status] || !REPORT_THEME_LABELS[body.theme]) {
+    throw new Error('Thông tin báo cáo không hợp lệ.');
+  }
+  var snapshot = String(body.snapshot || '');
+  if (snapshot.length < 2 || snapshot.length > REPORT_MAX_SNAPSHOT_CHARS) {
+    throw new Error('Dữ liệu khảo sát rỗng hoặc quá lớn.');
+  }
+  JSON.parse(snapshot);
+  var specs = body.files;
+  if (!Array.isArray(specs) || specs.length < 1 || specs.length > 2) {
+    throw new Error('Thiếu danh sách file báo cáo.');
+  }
+  var seen = {};
+  specs.forEach(function (spec) {
+    var valid = spec && REPORT_FORMATS[spec.format] && !seen[spec.format] &&
+      spec.bytes > 0 && spec.bytes <= REPORT_MAX_FILE_BYTES &&
+      spec.chunks >= 1 && spec.chunks <= REPORT_MAX_CHUNKS;
+    if (!valid) {
+      throw new Error('Thông tin file báo cáo không hợp lệ.');
+    }
+    seen[spec.format] = true;
+  });
+  if (!reportCodeExists_(reportCode)) {
+    throw new Error('Chưa có hồ sơ doanh nghiệp cho mã báo cáo này.');
+  }
+
+  var ownerEmail = body.email ? normalizeEmail_(body.email) : '';
+  var tempFolder = reportTempFolder_(props);
+  var folder = reportFolder_(reportCode, props);
+  var exportId = createExportId_();
+  var exportFolder = null;
+  var record = {};
+  if (ownerEmail !== '') {
+    record[OWNER_COLUMN] = ownerEmail;
+  }
+  var pruned = 0;
+  try {
+    specs.forEach(function (spec) {
+      var format = REPORT_FORMATS[spec.format];
+      var bytes = assembleReportFile_(tempFolder, uploadId, spec);
+      if (exportFolder === null) {
+        exportFolder = folder.createFolder(exportId);
+      }
+      var fileName = exportId + '_' + safeReportFileName_(spec.name, spec.format);
+      var file = exportFolder.createFile(Utilities.newBlob(bytes, format.mime, fileName));
+      record[format.idColumn] = file.getId();
+      record[format.nameColumn] = fileName;
+    });
+    pruned = commitReportExport_(exportId, body, record);
+  } catch (err) {
+    if (exportFolder !== null) {
+      try {
+        exportFolder.setTrashed(true);
+      } catch (trashError) {
+        console.log('Không xóa được thư mục dở dang: ' + trashError);
+      }
+    }
+    throw err;
+  }
+  try {
+    discardReportChunks_(tempFolder, uploadId, specs);
+    cleanupReportUploads_(props);
+  } catch (err) {
+    console.log('Không dọn được tệp tạm: ' + err);
+  }
+  if (ownerEmail !== '') {
+    try {
+      writeCustomerEmail_(reportCode, ownerEmail);
+    } catch (err) {
+      console.log('Không ghi được email vào Data khách hàng: ' + err);
+    }
+  }
+  var fileIds = {};
+  specs.forEach(function (spec) {
+    fileIds[spec.format] = record[REPORT_FORMATS[spec.format].idColumn];
+  });
+  return { ok: true, exportId: exportId, fileIds: fileIds, pruned: pruned };
+}
+
+function normalizeEmail_(value) {
+  var email = String(value || '').trim().toLowerCase();
+  if (email.length < 3 || email.length > 254 || !EMAIL_PATTERN.test(email)) {
+    throw new Error('Email không hợp lệ.');
+  }
+  return email;
+}
+
+function bytesToHex_(bytes) {
+  return bytes
+    .map(function (value) {
+      var hex = (value < 0 ? value + 256 : value).toString(16);
+      return hex.length < 2 ? '0' + hex : hex;
+    })
+    .join('');
+}
+
+function hmacHex_(value, props) {
+  return bytesToHex_(Utilities.computeHmacSha256Signature(value, props.getProperty('SECRET')));
+}
+
+function readJsonCache_(cache, key) {
+  var raw = cache.get(key);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    cache.remove(key);
+    return null;
+  }
+}
+
+function generateOtpCode_() {
+  var hex = Utilities.getUuid().replace(/-/g, '').substring(0, 12);
+  var number = parseInt(hex, 16) % 1000000;
+  return ('000000' + number).slice(-6);
+}
+
+function otpRequest_(body, props) {
+  var email = normalizeEmail_(body.email);
+  var subject = String(body.subject || '').trim();
+  var text = String(body.text || '');
+  if (subject === '' || subject.length > 200 || text.length < 10 || text.length > 3000 || text.indexOf('{code}') === -1) {
+    throw new Error('Nội dung email xác nhận không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var cache = CacheService.getScriptCache();
+    var emailKey = hmacHex_(email, props);
+    var now = Date.now();
+    var state = readJsonCache_(cache, 'otp:' + emailKey);
+    if (state && now - state.sentAt < OTP_RESEND_SECONDS * 1000) {
+      return { ok: true, status: 'wait', retryAfter: Math.ceil((OTP_RESEND_SECONDS * 1000 - (now - state.sentAt)) / 1000) };
+    }
+    var hourly = readJsonCache_(cache, 'otph:' + emailKey);
+    var hourlyActive = hourly && now - hourly.start < 3600000;
+    if (hourlyActive && hourly.count >= OTP_PER_EMAIL_PER_HOUR) {
+      return { ok: true, status: 'hourly-limit', retryAfter: Math.ceil((3600000 - (now - hourly.start)) / 1000) };
+    }
+    var today = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd');
+    var day = String(props.getProperty('OTP_DAY') || '').split(':');
+    var used = day[0] === today ? Number(day[1]) || 0 : 0;
+    if (used >= OTP_DAILY_LIMIT || MailApp.getRemainingDailyQuota() < OTP_MIN_MAIL_QUOTA) {
+      return { ok: true, status: 'daily-limit' };
+    }
+    var code = generateOtpCode_();
+    MailApp.sendEmail(email, subject, text.split('{code}').join(code), { name: OTP_SENDER_NAME });
+    cache.put(
+      'otp:' + emailKey,
+      JSON.stringify({ h: hmacHex_(code + ':' + emailKey, props), tries: 0, sentAt: now }),
+      OTP_TTL_SECONDS
+    );
+    cache.put(
+      'otph:' + emailKey,
+      JSON.stringify(hourlyActive ? { start: hourly.start, count: hourly.count + 1 } : { start: now, count: 1 }),
+      3600
+    );
+    props.setProperty('OTP_DAY', today + ':' + (used + 1));
+    return { ok: true, status: 'sent', expiresIn: OTP_TTL_SECONDS, resendAfter: OTP_RESEND_SECONDS };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function otpVerify_(body, props) {
+  var email = normalizeEmail_(body.email);
+  var code = String(body.code || '');
+  if (!OTP_CODE_PATTERN.test(code)) {
+    throw new Error('Mã xác nhận không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var cache = CacheService.getScriptCache();
+    var emailKey = hmacHex_(email, props);
+    var key = 'otp:' + emailKey;
+    var state = readJsonCache_(cache, key);
+    if (!state) {
+      return { ok: true, status: 'expired' };
+    }
+    if (state.tries >= OTP_MAX_TRIES) {
+      cache.remove(key);
+      return { ok: true, status: 'locked' };
+    }
+    if (hmacHex_(code + ':' + emailKey, props) === state.h) {
+      cache.remove(key);
+      return { ok: true, status: 'verified' };
+    }
+    state.tries += 1;
+    if (state.tries >= OTP_MAX_TRIES) {
+      cache.remove(key);
+      return { ok: true, status: 'locked' };
+    }
+    var remaining = Math.max(1, OTP_TTL_SECONDS - Math.floor((Date.now() - state.sentAt) / 1000));
+    cache.put(key, JSON.stringify(state), remaining);
+    return { ok: true, status: 'invalid', triesLeft: OTP_MAX_TRIES - state.tries };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function writeCustomerEmail_(reportCode, email) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return;
+  }
+  var layout = findLayout_(sheet);
+  var column = layout.columns[OWNER_COLUMN];
+  if (!column) {
+    return;
+  }
+  var rowCount = sheet.getLastRow() - layout.headerRow;
+  if (rowCount <= 0) {
+    return;
+  }
+  var keys = sheet.getRange(layout.headerRow + 1, layout.columns[KEY_COLUMN], rowCount, 1).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]).trim() === reportCode) {
+      sheet.getRange(layout.headerRow + 1 + i, column).setNumberFormat('@').setValue(email);
+      return;
+    }
+  }
+}
+
+function setReportOwner_(body) {
+  var exportId = String(body.exportId || '');
+  var email = normalizeEmail_(body.email);
+  if (!EXPORT_ID_PATTERN.test(exportId)) {
+    throw new Error('Mã lần xuất không hợp lệ.');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  var reportCode = '';
+  var status = 'missing';
+  try {
+    if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME)) {
+      return { ok: true, status: 'missing' };
+    }
+    var sheet = ensureTable_(EXPORT_SHEET_NAME, EXPORT_HEADERS);
+    var table = readTable_(sheet);
+    var column = table.columns[OWNER_COLUMN];
+    var record = null;
+    table.rows.forEach(function (candidate) {
+      if (cellText_(candidate[EXPORT_KEY]) === exportId) {
+        record = candidate;
+      }
+    });
+    if (!record || !column) {
+      return { ok: true, status: 'missing' };
+    }
+    reportCode = cellText_(record['Mã báo cáo']);
+    var current = cellText_(record[OWNER_COLUMN]).toLowerCase();
+    if (current === email) {
+      status = 'already';
+    } else if (current !== '') {
+      return { ok: true, status: 'conflict' };
+    } else {
+      sheet.getRange(record._row, column).setNumberFormat('@').setValue(email);
+      status = 'attached';
+    }
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+  try {
+    writeCustomerEmail_(reportCode, email);
+  } catch (err) {
+    console.log('Không ghi được email vào Data khách hàng: ' + err);
+  }
+  return { ok: true, status: status };
+}
+
+function ownedExportRows_(email) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+  if (!sheet) {
+    return { sheet: null, rows: [] };
+  }
+  var wanted = normalizeEmail_(email);
+  var rows = readTable_(sheet).rows.filter(function (record) {
+    return cellText_(record[EXPORT_KEY]) !== '' && cellText_(record[OWNER_COLUMN]).toLowerCase() === wanted;
+  });
+  return { sheet: sheet, rows: rows };
+}
+
+function findOwnedExport_(email, exportId) {
+  if (!EXPORT_ID_PATTERN.test(exportId)) {
+    throw new Error('Mã lần xuất không hợp lệ.');
+  }
+  var found = null;
+  ownedExportRows_(email).rows.forEach(function (record) {
+    if (cellText_(record[EXPORT_KEY]) === exportId) {
+      found = record;
+    }
+  });
+  return found;
+}
+
+function listOwnerReports_(body) {
+  var reports = ownedExportRows_(body.email).rows.map(function (record) {
+    return {
+      exportId: cellText_(record[EXPORT_KEY]),
+      reportCode: cellText_(record['Mã báo cáo']),
+      time: cellText_(record['Thời gian']),
+      locale: cellText_(record['Ngôn ngữ']),
+      status: cellText_(record['Trạng thái']) === REPORT_STATUS_LABELS.complete ? 'complete' : 'draft',
+      company: cellText_(record['Doanh nghiệp']),
+      theme: cellText_(record['Giao diện']) === REPORT_THEME_LABELS.brand ? 'brand' : 'default',
+      pdf: cellText_(record['Id file PDF']) !== '',
+      docx: cellText_(record['Id file Word']) !== ''
+    };
+  });
+  reports.sort(function (a, b) {
+    if (a.time !== b.time) {
+      return a.time < b.time ? 1 : -1;
+    }
+    return a.exportId < b.exportId ? 1 : -1;
+  });
+  return { ok: true, reports: reports };
+}
+
+function getOwnerReportFile_(body) {
+  var format = String(body.format || '');
+  var spec = REPORT_FORMATS[format];
+  if (!spec) {
+    throw new Error('Định dạng file không hợp lệ.');
+  }
+  var index = Number(body.index);
+  if (!isFinite(index) || index < 0 || Math.floor(index) !== index) {
+    throw new Error('Số thứ tự mảnh không hợp lệ.');
+  }
+  var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+  if (!record) {
+    return { ok: true, status: 'missing' };
+  }
+  var id = cellText_(record[spec.idColumn]);
+  if (id === '') {
+    return { ok: true, status: 'missing' };
+  }
+  var file;
+  try {
+    file = DriveApp.getFileById(id);
+    if (file.isTrashed()) {
+      return { ok: true, status: 'missing' };
+    }
+  } catch (err) {
+    return { ok: true, status: 'missing' };
+  }
+  var bytes = file.getBlob().getBytes();
+  var total = Math.max(1, Math.ceil(bytes.length / REPORT_DOWNLOAD_CHUNK_BYTES));
+  if (index >= total) {
+    return { ok: true, status: 'range' };
+  }
+  var part = bytes.slice(index * REPORT_DOWNLOAD_CHUNK_BYTES, (index + 1) * REPORT_DOWNLOAD_CHUNK_BYTES);
+  return {
+    ok: true,
+    status: 'ok',
+    name: cellText_(record[spec.nameColumn]),
+    size: bytes.length,
+    total: total,
+    data: Utilities.base64Encode(part)
+  };
+}
+
+function getOwnerSnapshot_(body) {
+  var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+  if (!record) {
+    return { ok: true, status: 'missing' };
+  }
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!sheet) {
+    return { ok: true, status: 'missing' };
+  }
+  var exportId = cellText_(record[EXPORT_KEY]);
+  var parts = readTable_(sheet).rows.filter(function (row) {
+    return cellText_(row[EXPORT_KEY]) === exportId;
+  });
+  if (!parts.length) {
+    return { ok: true, status: 'missing' };
+  }
+  parts.sort(function (a, b) {
+    return Number(a['Phần']) - Number(b['Phần']);
+  });
+  var text = parts.map(function (row) {
+    return cellText_(row['Nội dung']);
+  }).join('');
+  return { ok: true, status: 'ok', snapshot: text };
+}
+
+function deleteOwnerReport_(body) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var record = findOwnedExport_(String(body.email || ''), String(body.exportId || ''));
+    if (!record) {
+      return { ok: true, status: 'missing' };
+    }
+    var exportId = cellText_(record[EXPORT_KEY]);
+    trashReportExportFiles_(record, true);
+    removeSnapshotRows_(exportId);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+    var fresh = readTable_(sheet).rows.filter(function (row) {
+      return cellText_(row[EXPORT_KEY]) === exportId;
+    });
+    fresh.forEach(function (row) {
+      sheet.deleteRow(row._row);
+    });
+    SpreadsheetApp.flush();
+    return { ok: true, status: 'deleted' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function logMailQuota() {
+  var props = PropertiesService.getScriptProperties();
+  Logger.log('Hạn mức email còn lại hôm nay: ' + MailApp.getRemainingDailyQuota());
+  Logger.log('Số mã OTP đã gửi (ngày:số lượng): ' + (props.getProperty('OTP_DAY') || 'chưa có'));
+}
+
+function cleanupReportUploads_(props) {
+  var folder = reportTempFolder_(props);
+  var files = folder.getFiles();
+  var cutoff = new Date().getTime() - REPORT_TEMP_MAX_AGE_MS;
+  var removed = 0;
+  while (files.hasNext()) {
+    var file = files.next();
+    if (file.getDateCreated().getTime() < cutoff) {
+      file.setTrashed(true);
+      removed++;
+    }
+  }
+  return removed;
+}
+
+function cleanupReportOrphans_() {
+  var snapshotSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SNAPSHOT_SHEET_NAME);
+  if (!snapshotSheet) {
+    return 0;
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var known = {};
+    var exportSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPORT_SHEET_NAME);
+    if (exportSheet) {
+      readTable_(exportSheet).rows.forEach(function (record) {
+        known[cellText_(record[EXPORT_KEY])] = true;
+      });
+    }
+    var rows = readTable_(snapshotSheet).rows;
+    var removed = 0;
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var id = cellText_(rows[i][EXPORT_KEY]);
+      if (id !== '' && !known[id]) {
+        snapshotSheet.deleteRow(rows[i]._row);
+        removed++;
+      }
+    }
+    SpreadsheetApp.flush();
+    return removed;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function cleanupReportUploads() {
+  var removed = cleanupReportUploads_(PropertiesService.getScriptProperties());
+  Logger.log('Đã xóa ' + removed + ' tệp tải lên tạm quá hạn.');
+  var orphans = cleanupReportOrphans_();
+  Logger.log('Đã xóa ' + orphans + ' dòng nội dung khảo sát mồ côi.');
+}
+
+function installReportCleanupTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'cleanupReportUploads') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  ScriptApp.newTrigger('cleanupReportUploads')
+    .timeBased()
+    .everyDays(1)
+    .atHour(REPORT_CLEANUP_TRIGGER_HOUR)
+    .create();
 }
 
 function parseBody_(e) {

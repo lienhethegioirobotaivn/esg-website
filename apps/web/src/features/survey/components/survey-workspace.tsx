@@ -442,6 +442,7 @@ function LoadedSurveyWorkspace({
             exportingFormat={reportExport.exportingFormat}
             error={reportExport.error}
             themeLabel={themeLabel}
+            onLinkEmail={reportExport.linkEmail}
             onDownload={(format) => void reportExport.downloadReport(format)}
             onClose={reportExport.closeDownload}
           />

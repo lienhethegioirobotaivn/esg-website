@@ -17,6 +17,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function callAbout(
   action: string,
   payload: Record<string, unknown> = {},
+  timeoutMs: number = BRIDGE_TIMEOUT_MS,
 ): Promise<Record<string, unknown>> {
   const env = getServerEnv();
   if (!env.GOOGLE_APPS_SCRIPT_URL || !env.GOOGLE_APPS_SCRIPT_SECRET) {
@@ -36,7 +37,7 @@ export async function callAbout(
         ...payload,
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(BRIDGE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {
     throw new CompanyBridgeError("Không kết nối được tới Google Apps Script.", "failed");

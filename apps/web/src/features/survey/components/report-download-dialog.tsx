@@ -3,6 +3,7 @@
 import { FileDown, FileText, Info, LoaderCircle } from "lucide-react";
 
 import { Button, Modal } from "@/components/ui";
+import { EmailOtpForm } from "@/features/account";
 import { useT } from "@/features/locale";
 
 import type { DraftJumpTarget, DraftReason } from "../lib/report-draft-state";
@@ -15,6 +16,7 @@ interface ReportDownloadDialogProps {
   exportingFormat: ReportFormat | null;
   error: string | null;
   themeLabel?: string | null;
+  onLinkEmail?: () => Promise<void>;
   onDownload: (format: ReportFormat) => void;
   onClose: () => void;
 }
@@ -26,6 +28,7 @@ export function ReportDownloadDialog({
   exportingFormat,
   error,
   themeLabel = null,
+  onLinkEmail,
   onDownload,
   onClose,
 }: ReportDownloadDialogProps) {
@@ -128,6 +131,10 @@ export function ReportDownloadDialog({
           </div>
         </div>
       ) : null}
+
+      <div className="mt-5">
+        <EmailOtpForm idPrefix="report-dialog" onVerified={onLinkEmail} />
+      </div>
 
       {error ? (
         <p role="alert" className="mt-4 text-xs text-danger-600">

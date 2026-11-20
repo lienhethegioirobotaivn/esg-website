@@ -92,7 +92,8 @@ export function ReportActions({
           variant="secondary"
           className="flex-1 sm:flex-none"
           onClick={onPreview}
-          disabled={disabled || isPreviewLoading}
+          disabled={disabled}
+          loading={isPreviewLoading}
           leadingIcon={<Eye aria-hidden className="size-4" />}
         >
           {isPreviewLoading
@@ -102,7 +103,8 @@ export function ReportActions({
         <Button
           className="flex-1 sm:flex-none"
           onClick={onExport}
-          disabled={disabled || isExporting}
+          disabled={disabled}
+          loading={isExporting}
           leadingIcon={<FileDown aria-hidden className="size-4" />}
         >
           {isExporting ? t("Đang tạo báo cáo...") : t("Tạo báo cáo")}

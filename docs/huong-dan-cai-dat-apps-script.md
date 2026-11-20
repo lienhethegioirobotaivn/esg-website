@@ -210,3 +210,65 @@ Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm hành 
 
 Cách hoạt động: lưu hoặc xóa bài và lưu số liệu trên trang quản trị tự dịch ngay. Sửa Sheet câu hỏi đặt một cờ, trong tối đa 10 phút trigger gọi web dịch phần mới và dọn dòng mồ côi (không dọn dòng có chữ sửa tay). Ngoài ra mỗi 24 giờ chạy một lượt đầy đủ. Nếu Apps Script báo "Web trả về mã 401", `WEB_CRON_SECRET` đang khác `CRON_SECRET`; mã 503 nghĩa là web chưa đặt `CRON_SECRET`.
 
+## 12. Lưu báo cáo đã xuất
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** (Triển khai → Quản lý bản triển khai → biểu tượng bút → Phiên bản mới → Triển khai) vì có thêm hành động `uploadReportChunk` và `finishReport`.
+
+1. Dán lại toàn bộ `Code.gs`, lưu.
+2. Chọn hàm `installReportCleanupTrigger`, bấm **Run** một lần và cấp quyền Drive. Kiểm tra mục **Triggers** có `cleanupReportUploads` chạy mỗi ngày.
+3. Thử: trên web làm khảo sát, bấm **Tạo báo cáo** (người dùng không thấy thông báo lưu). Kiểm tra tab **Báo cáo đã xuất** có dòng mới và Drive có thư mục `RX-…` chứa PDF và Word.
+
+Dữ liệu được tạo tự động:
+
+- Tab **Báo cáo đã xuất**: mỗi lần xuất một dòng (mã lần xuất, mã báo cáo, thời gian, ngôn ngữ, trạng thái, doanh nghiệp, giao diện, id và tên file PDF/Word, **link file PDF và link file Word**, email đã xác thực). Bấm chữ "Mở PDF" hoặc "Mở Word" (chữ có gắn liên kết) ở dòng tương ứng để mở file trong Drive (chỉ tài khoản chủ Drive mở được, file không chia sẻ công khai). Nếu tab này có từ bản cũ chưa có cột link, các cột link tự được thêm ở cuối và các dòng cũ được ghi bù ở lần xuất kế tiếp; muốn ghi bù ngay thì chọn hàm `backfillReportLinks` rồi bấm **Run**. Ô nào đang hiện `#ERROR!` (từ bản dùng công thức `HYPERLINK`) cũng được ghi đè đúng khi chạy hàm này.
+- Tab **Nội dung khảo sát**: câu trả lời, hồ sơ doanh nghiệp, kế hoạch cải thiện của từng lần xuất (cắt thành các ô 40.000 ký tự).
+- Cấu trúc Drive: thư mục `Báo cáo đã xuất` được tạo **ngang cấp** với thư mục logo (`FOLDER_ID`), tức nằm trong thư mục cha của thư mục logo: `<thư mục cha của FOLDER_ID> / Báo cáo đã xuất / <mã báo cáo> / <mã lần xuất RX-…> /`, trong cùng chứa đúng một file PDF và một file Word. Muốn đặt ở nơi khác, thêm Script Property tùy chọn `REPORTS_FOLDER_ID` (id thư mục sẽ chứa các thư mục mã báo cáo). Nếu thư mục `Báo cáo đã xuất` từng được tạo bên trong thư mục logo (bản trước 19/11), lần xuất kế tiếp tự **chuyển** nguyên thư mục đó ra ngang cấp, các lần xuất cũ trong đó vẫn dùng được. Nếu tài khoản không tạo được thư mục ở cấp cha (không đủ quyền) thì script rơi về tạo bên trong thư mục logo. Mỗi lần xuất có một thư mục riêng; khi bản cũ bị dọn (giữ 5 lần mới nhất), cả thư mục lần xuất đó vào Thùng rác. Báo cáo không còn nằm trong thư mục logo. Các file xuất từ bản đầu (nằm lẻ trong thư mục mã báo cáo cạnh logo) không được di chuyển và không còn được dọn tự động; xóa tay nếu muốn. Thư mục **Tải lên tạm** chứa mảnh đang tải, tự dọn sau 24 giờ.
+- Mỗi mã báo cáo giữ 5 lần xuất mới nhất; bản cũ bị xóa cả file Drive lẫn hàng trong Sheet. Mã báo cáo phải có sẵn trong tab Data khách hàng.
+- Ảnh minh chứng không được lưu.
+
+## 13. Xác nhận email bằng mã OTP
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm các hành động `otpRequest`, `otpVerify`, `setReportOwner`. Không cần trigger mới.
+
+1. Trên web (Vercel và `apps/web/.env.local`) đặt `USER_SESSION_SECRET` là chuỗi ngẫu nhiên từ 32 ký tự trở lên rồi deploy lại. Thiếu biến này thì khung nhập email không dùng được (web báo chưa bật); việc lưu báo cáo vẫn chạy bình thường. Đổi giá trị biến này sẽ làm mọi người dùng bị đăng xuất.
+2. Dán lại `Code.gs`, tạo Phiên bản mới. Lần đầu gửi mã, Google có thể yêu cầu cấp lại quyền gửi email (đã cấp từ trước cho form Tư vấn thì thường không hỏi lại).
+3. Tùy chọn: thêm cột `Email đã xác thực` vào dòng tiêu đề của tab **Data khách hàng** để người quản lý thấy email liên hệ ngay ở bảng đang dùng. Thiếu cột thì bỏ qua, không lỗi.
+4. Thử: trên web làm khảo sát, bấm **Tạo báo cáo**, nhập email của bạn ở khung "Xem lại báo cáo sau", bấm **Gửi mã**, mở email (xem cả thư rác), nhập mã. Kiểm tra tab **Báo cáo đã xuất**: cột `Email đã xác thực` của lần xuất vừa tạo có email.
+
+Quy tắc và nơi đổi:
+
+| Quy tắc | Giá trị | Nơi đổi |
+| --- | --- | --- |
+| Độ dài và hiệu lực mã | 6 số, 10 phút | `OTP_TTL_SECONDS` trong `Code.gs`; `EMAIL_OTP_RULES` trong `packages/shared/src/auth.ts` |
+| Số lần nhập sai | 5, sai lần 5 thì hủy mã | `OTP_MAX_TRIES` |
+| Chờ giữa hai lần gửi | 60 giây | `OTP_RESEND_SECONDS` |
+| Số mã mỗi email mỗi giờ | 3 | `OTP_PER_EMAIL_PER_HOUR` |
+| Số mã mỗi ngày cho cả hệ thống | 60 | `OTP_DAILY_LIMIT` |
+| Dừng khi hạn mức email Google còn dưới | 10 | `OTP_MIN_MAIL_QUOTA` |
+
+Khi đổi một quy tắc, đổi cả hai nơi (Apps Script và `EMAIL_OTP_RULES`) để thông báo trên web khớp.
+
+Lưu ý quan trọng:
+
+- Tài khoản Google chạy Apps Script là Gmail thường nên chỉ gửi được khoảng 100 người nhận mỗi ngày, **dùng chung** với email Tư vấn, Kiểm định, Góp ý và email mời đánh giá. Vì vậy mới đặt trần 60 mã mỗi ngày. Chạm trần thì web báo "Hệ thống tạm thời chưa gửi thêm được mã xác nhận, vui lòng thử lại vào ngày mai" và việc lưu báo cáo vẫn chạy. Xem hạn mức còn lại và số mã đã gửi hôm nay: chọn hàm `logMailQuota`, bấm **Run**, xem **Execution log**. Lưu lượng lớn thì chuyển sang Google Workspace (khoảng 1.500 mỗi ngày) hoặc dịch vụ gửi mail riêng.
+- Mã OTP được giữ trong `CacheService` (chỉ dạng băm, tự hết hạn sau 10 phút) nên không có tab hay dữ liệu OTP nào trong Sheet. Số mã đã gửi trong ngày nằm ở Script Property `OTP_DAY` (dạng `yyyyMMdd:số lượng`); không cần sửa tay.
+- Email gửi đi có tên người gửi "ESG Report Online", nội dung theo ngôn ngữ trang đang xem (vi, en, fr, zh) và nằm trong `apps/web/src/server/auth/otp-mail.ts`.
+- Một email chỉ gắn được vào lần xuất khi ô `Email đã xác thực` của lần xuất đó còn trống; muốn đổi chủ sở hữu thì sửa tay ô này trong Sheet.
+- Dữ liệu cá nhân (email, thông tin doanh nghiệp, câu trả lời) được lưu lâu dài. Cần có dòng giải thích trong chính sách quyền riêng tư (việc của GĐ4); hiện trong hộp thoại có câu "Email chỉ dùng để xác nhận và để bạn xem lại báo cáo."
+- **Đổi email:** nút "Dùng email khác" trên web chỉ đăng xuất trình duyệt đó. Dữ liệu đã gắn email cũ (cột `Email đã xác thực`, báo cáo trong Drive) **không bị xóa hay đổi**. Xác nhận email khác thì từ đó các lần xuất mới thuộc email mới; lần xuất đang mở (đã thuộc email cũ) được xuất lại thành một dòng mới cho email mới. Cột `Email đã xác thực` ở `Data khách hàng` lưu email gần nhất của mã báo cáo.
+
+## 14. Trang "Báo cáo của tôi"
+
+Cần dán lại `Code.gs` và tạo **Phiên bản mới** vì có thêm bốn hành động `listOwnerReports`, `getOwnerReportFile`, `getOwnerSnapshot`, `deleteOwnerReport`. Không cần biến môi trường, trigger hay quyền mới.
+
+1. Dán lại toàn bộ `Code.gs`, lưu, tạo Phiên bản mới.
+2. Thử: tạo báo cáo, xác nhận email trong hộp thoại tải, rồi mở menu **Báo cáo của tôi** (`/bao-cao-cua-toi`). Phải thấy lần xuất vừa tạo; thử **Tải PDF**, **Tải Word**, **Mở lại để chỉnh sửa** (về trang khảo sát với dữ liệu cũ), **Xóa**.
+3. Chỉ xem được báo cáo có ô `Email đã xác thực` trùng email đang đăng nhập. Báo cáo chưa gắn email (người dùng không xác nhận) không hiện ở trang này và chỉ quản trị viên thấy trong Sheet.
+
+Khi người dùng bấm **Xóa**: file PDF, file Word và thư mục `RX-…` vào Thùng rác Drive (khôi phục được trong 30 ngày nếu cần), thư mục mã báo cáo trong `Báo cáo đã xuất` vào Thùng rác nếu rỗng, các hàng của lần xuất đó trong tab **Báo cáo đã xuất** và **Nội dung khảo sát** bị xóa. Thư mục logo và email ở **Data khách hàng** giữ nguyên.
+
+Tải file lớn đi qua nhiều lần gọi Apps Script (mỗi mảnh khoảng 2,5 MB), nên có thể chậm vài giây; nếu báo lỗi hết thời gian, thử lại.
+
+## 15. Dọn dữ liệu mồ côi hằng ngày
+
+Trigger `cleanupReportUploads` (cài bằng `installReportCleanupTrigger`, chạy mỗi ngày) làm hai việc: đưa các mảnh tải lên tạm quá 24 giờ vào Thùng rác, và xóa các dòng ở tab **Nội dung khảo sát** không còn dòng tương ứng ở tab **Báo cáo đã xuất** (ví dụ khi bạn xóa tay một dòng báo cáo trong Sheet). Chạy tay: chọn hàm `cleanupReportUploads`, bấm **Run**, xem **Execution log**. Nếu bạn đã cài trigger từ trước thì **không cần cài lại**: trigger gọi cùng tên hàm nên tự dùng bản mới sau khi tạo Phiên bản mới. Hàm không đụng tới file Drive của báo cáo; muốn xóa hẳn một báo cáo thì dùng nút **Xóa** ở trang Báo cáo của tôi.

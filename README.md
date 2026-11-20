@@ -54,6 +54,7 @@ Mở `http://localhost:3000`.
 | `GEMINI_BRAND_MODEL` | Model Gemini riêng cho tính năng thương hiệu, bỏ trống thì dùng `GEMINI_MODEL` |
 | `BRAND_AI_DAILY_LIMIT` | Số lần gọi AI tối đa mỗi ngày cho cả hệ thống (mặc định 30), quá mức sẽ chuyển sang lấy màu từ ảnh |
 | `BRAND_AI_IP_LIMIT` | Số lần gọi AI tối đa mỗi 10 phút trên một địa chỉ IP (mặc định 5) |
+| `USER_SESSION_SECRET` | Chuỗi ngẫu nhiên từ 32 ký tự để ký phiên xác nhận email (cookie `esg-user`) và mã liên kết báo cáo. Để trống thì khung nhập email OTP bị tắt, việc lưu báo cáo ẩn danh vẫn chạy. Đổi giá trị sẽ đăng xuất mọi người dùng |
 
 Biến tùy chọn để trống được xem như chưa đặt. Hướng dẫn cài Apps Script: [docs/huong-dan-cai-dat-apps-script.md](docs/huong-dan-cai-dat-apps-script.md).
 

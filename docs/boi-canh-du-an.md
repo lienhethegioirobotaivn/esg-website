@@ -2,6 +2,8 @@
 
 Đọc file này trước khi làm. Tình trạng: phần 1–11 cập nhật đến ngày 05/11/2026, phần 12 (trang Về ESG Report Online, trang quản trị, Tư vấn, SEO) cập nhật đến ngày 08/11/2026. Mục nào ghi "cần kiểm tra" là điều chưa được xác nhận trong mã nguồn lúc viết.
 
+> **Cập nhật 23/11/2026: hướng đi mới là bản production v2** (NestJS + PostgreSQL tự host trên một VPS, bỏ Google Sheet, Apps Script, Drive, Vercel và hướng Cloudflare). Các mục 2, 3, 4, 13 và phần Apps Script ở mục 12 mô tả **bản demo hiện tại** và sẽ lỗi thời khi chuyển. Thiết kế v2 ở mục 14 và `docs/backend-*.md`. Hiện chỉ làm tài liệu, chưa code.
+
 ## 1. Cách làm việc với người dùng (Bình)
 
 - Trả lời bằng **tiếng Việt**. Giao diện web cũng tiếng Việt.
@@ -190,7 +192,7 @@ Phần này do các phiên làm giao diện (frontend) bổ sung. Quy trình là
 
 ## 13. Cập nhật 18/11/2026: lưu báo cáo đã xuất và xác nhận email OTP
 
-Kế hoạch chi tiết, nhật ký từng giai đoạn và bản đồ mã nguồn: [docs/ke-hoach-luu-bao-cao-va-xac-thuc-email.md](ke-hoach-luu-bao-cao-va-xac-thuc-email.md). Cài đặt Apps Script: mục 12 và 13 của [docs/huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Tình trạng (19/11/2026): GĐ1 đến GĐ4 xong (trang "Báo cáo của tôi" ở `/bao-cao-cua-toi`); còn việc Bình thử thật trên Google/Vercel và các việc tùy chọn (captcha, nhắc xem lại báo cáo...).
+Các quy tắc chi tiết đã được gộp vào [docs/backend-migration.md](backend-migration.md) và [docs/backend-api.md](backend-api.md) (file kế hoạch cũ đã xóa). Cài đặt Apps Script: mục 12 và 13 của [docs/huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Tình trạng (19/11/2026): GĐ1 đến GĐ4 xong (trang "Báo cáo của tôi" ở `/bao-cao-cua-toi`); còn việc Bình thử thật trên Google/Vercel và các việc tùy chọn (captcha, nhắc xem lại báo cáo...).
 
 - Mỗi lần bấm "Tạo báo cáo" (đã qua kiểm tra), trình duyệt dựng PDF và Word, chia mảnh 2.499.999 byte gửi qua `/api/reports/upload`, rồi `/api/reports/finish` ghép và lưu vào Drive (`Báo cáo đã xuất/<mã báo cáo>/<mã lần xuất>/`, thư mục này ngang cấp với thư mục logo `FOLDER_ID`, không nằm trong đó) và Sheet (tab `Báo cáo đã xuất`, `Nội dung khảo sát`). Chạy trong lúc loading của nút; người dùng **không** thấy thông báo "đã lưu", lưu lỗi thì im lặng. Mỗi mã báo cáo giữ 5 lần xuất mới nhất. Không lưu ảnh minh chứng.
 - Email OTP là tùy chọn, nằm trong hộp thoại tải. Gmail thường chỉ gửi khoảng 100 người nhận mỗi ngày (dùng chung với Tư vấn, Góp ý), nên trần 60 mã OTP mỗi ngày. Mã nằm ở `CacheService`, phiên ở cookie `esg-user` ký bằng `USER_SESSION_SECRET`. Email chủ sở hữu chỉ lấy từ cookie phía máy chủ, không bao giờ từ client.
@@ -198,13 +200,12 @@ Kế hoạch chi tiết, nhật ký từng giai đoạn và bản đồ mã ngu�
 - Quy ước đã chốt: SMS bỏ (tốn phí); email đã xác thực xem được mọi báo cáo gắn email đó từ bất kỳ thiết bị nào; báo cáo xuất trước khi xác thực chỉ gắn được cho lần xuất đang mở.
 - Bẫy đã gặp: base64 của các mảnh chỉ nối được khi kích thước mảnh chia hết cho 3; `next/headers` và `server-only` được giả trong `apps/web/tests/setup/`; thứ tự khóa i18n sắp theo `localeCompare(..., "vi")`; file `Code.gs` có thể là CRLF trên máy Windows.
 
-## 14. Cập nhật 20/11/2026: hướng chuyển toàn bộ sang Cloudflare
+## 14. Cập nhật 23/11/2026: bản production v2 (NestJS + PostgreSQL trên VPS)
 
-Kế hoạch đầy đủ: [docs/ke-hoach-chuyen-cloudflare.md](ke-hoach-chuyen-cloudflare.md). **Chưa có code**; còn các điểm cần Bình chốt (mục 2 của tài liệu đó). Phiên làm việc về Cloudflare phải đọc tài liệu đó trước và **không tự code** khi chưa được chốt.
+Thay hướng Cloudflare (đã bỏ, file kế hoạch đã xóa). Tài liệu: [backend-spec.md](backend-spec.md), [backend-database.md](backend-database.md), [backend-api.md](backend-api.md), [backend-migration.md](backend-migration.md), [backend-deployment.md](backend-deployment.md), [backend-roadmap.md](backend-roadmap.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md). **Chưa có code v2**; phiên làm việc về v2 phải đọc các tài liệu này trước và **không tự code** khi Bình chưa nói "làm giai đoạn tiếp theo". Trước mỗi giai đoạn phải nói rõ giai đoạn đó sẽ làm gì.
 
-- Hướng đã chốt: deploy trên Cloudflare (Workers + OpenNext, D1, R2, Email Service, Cron Triggers), chấp nhận build lại backend, trả gói Workers Paid 5 USD/tháng, muốn tạm ngưng khi vượt hạn mức, giữ nguyên mọi tính năng hiện có.
-- Hiện trạng cần thay: Google Sheet, Drive, Apps Script (`MailApp`, `CacheService`, `LockService`, `LanguageApp`, trigger) đằng sau lớp `server/*` của Next. Giới hạn tần suất đang nằm trong RAM tiến trình nên phải đổi khi lên Workers.
-- PDF và Word được dựng ở **trình duyệt**, máy chủ chỉ lưu file; rủi ro chạy react-pdf trên Workers vì thế thấp.
-- Spending limit của Cloudflare chỉ áp dụng cho Workers và Durable Objects, không phải trần cứng; cần giới hạn thêm trong code (mục 6 của tài liệu kế hoạch).
-- Bộ câu hỏi đề xuất giữ ở Google Sheet giai đoạn đầu (Bình không muốn sửa cấu trúc Sheet).
-- Apps Script giữ chạy song song cho tới khi cắt chuyển.
+- Công nghệ: NestJS 12, PostgreSQL 18 tự host, Drizzle ORM 0.45.x, Docker Compose, Caddy; frontend, backend, database cùng một VPS, triển khai một lần khi viết lại xong. Bỏ hẳn Google Sheet, Apps Script, Drive, Vercel; trang quản trị tự xây.
+- Chuyển toàn bộ dữ liệu Sheet/Drive, không mất gì; database có sao lưu tự động. Email OTP và thông báo qua dịch vụ ngoài (đề xuất Resend).
+- Đã chốt: tệp minh chứng và bản nháp trên server chỉ cho người đã xác thực email (chưa xác thực giữ nháp trong trình duyệt, có dialog nhắc); CRM nằm hoàn toàn trong trang quản trị, có nút xuất file; AI đánh giá minh chứng **chưa làm**, chỉ chừa chỗ mở rộng.
+- Hạ tầng (VPS, sao lưu ngoài máy, DNS, Cloudflare hay không) làm sau cùng. Tên miền mua ở PA Việt Nam.
+- Mọi thay đổi ảnh hưởng tính năng hoặc trải nghiệm so với bản demo được liệt kê ở `backend-quyet-dinh-can-chot.md` để Bình quyết định.

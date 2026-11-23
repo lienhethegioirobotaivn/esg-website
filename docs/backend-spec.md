@@ -1,567 +1,132 @@
-# ESGstudio: Tài liệu kỹ thuật cho Backend
+# ESGstudio v2: Tài liệu tổng quan Backend
 
-Tài liệu này mô tả hiện trạng frontend, mô hình dữ liệu, hợp đồng API và kế hoạch dựng `apps/api` (Express + Drizzle). Mục đánh dấu **(Đề xuất)** là quyết định tôi đề xuất để bạn xác nhận khi bắt đầu làm backend, không phải thứ frontend đã bắt buộc.
+Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Chưa có dòng code nào của v2 được viết; mọi thứ ở đây là thiết kế để bạn duyệt.
 
-## 1. Tổng quan
+Bộ tài liệu backend v2 gồm:
 
-ESGstudio là website khảo sát ESG nội bộ miễn phí cho doanh nghiệp.
-
-- Người quản trị tạo bộ câu hỏi ở `/admin`.
-- Người dùng điền thông tin doanh nghiệp và trả lời bộ câu hỏi ở trang chủ.
-- Bộ câu hỏi gồm 3 trụ cột cố định (Môi trường, Xã hội, Quản trị), mỗi trụ cột có nhiều nhóm, mỗi nhóm có nhiều câu.
-- Mỗi câu có ba trạng thái: **Đã thực hiện** (`implemented`), **Đang thực hiện** (`in_progress`), **Chưa thực hiện** (`not_implemented`). Chọn **Đã thực hiện** thì kèm mô tả và bằng chứng (tối đa 10 tệp PDF hoặc ảnh).
-- Người dùng lưu được bản nháp để làm tiếp sau.
-
-Trạng thái hiện tại:
-
-| Hạng mục | Trạng thái |
+| File | Nội dung |
 | --- | --- |
-| Frontend (Next.js) | Hoàn thiện giao diện, dữ liệu mock trong `apps/web/src/data` |
-| Lưu bộ câu hỏi | Chỉ trong bộ nhớ trình duyệt (zustand), mất khi tải lại trang |
-| Bản nháp (câu trả lời, mô tả, thông tin doanh nghiệp) | Lưu trong `localStorage` của trình duyệt, chưa gửi lên máy chủ |
-| Bằng chứng | Chỉ trong state của component, không có trong bản nháp |
-| Chấm điểm | Chưa làm (mục 12) |
-| Đăng nhập `/admin` | Chưa có |
-| Backend | Chưa bắt đầu |
+| `backend-spec.md` | Tổng quan, kiến trúc, nguyên tắc, module (file này) |
+| `backend-database.md` | Từng bảng PostgreSQL, ràng buộc, chỉ mục, dọn dữ liệu mồ côi |
+| `backend-api.md` | Hợp đồng API, quy tắc xác thực, giới hạn tần suất |
+| `backend-migration.md` | Ánh xạ từng action Apps Script sang module mới, kế hoạch chuyển toàn bộ dữ liệu Sheet/Drive |
+| `backend-deployment.md` | Docker, VPS, sao lưu, CI/CD (làm sau cùng) |
+| `backend-roadmap.md` | Các giai đoạn, đầu ra, kiểm thử, và các tính năng làm sau (AI đánh giá minh chứng...) |
+| `backend-quyet-dinh-can-chot.md` | Danh sách thay đổi ảnh hưởng tính năng/trải nghiệm so với bản demo, cần bạn quyết định |
 
-## 2. Kiến trúc monorepo
+## 1. Phạm vi và các quyết định đã chốt
 
-```
-esg-studio/
-├── apps/
-│   ├── web/              Next.js 16, Tailwind v4, lucide-react
-│   └── api/              Express + Drizzle (cần tạo)
-├── packages/
-│   └── shared/           @esg/shared: hằng số, schema Zod, kiểu dữ liệu, buildSurvey
-├── package.json
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
-```
+- Frontend (Next.js), backend (NestJS), PostgreSQL cùng chạy trên **một VPS**, triển khai **một lần** khi viết lại xong toàn bộ. Không chạy song song với bản demo.
+- Bỏ hoàn toàn Google Sheet, Apps Script, Google Drive và Vercel. Trang quản trị tự xây (được phép làm lại giao diện).
+- Chuyển **toàn bộ** dữ liệu hiện có sang database, không mất dữ liệu nào (xem `backend-migration.md`). Database có sao lưu tự động.
+- Email (OTP, thông báo, mời đánh giá) qua dịch vụ SMTP/API bên ngoài, ưu tiên miễn phí.
+- Tệp minh chứng chỉ lưu cho người dùng **đã xác thực email**.
+- Bản nháp lưu trên server chỉ khi đã xác thực email; chưa xác thực thì giữ trong trình duyệt, kèm dialog nhắc xác thực để khỏi mất bản nháp.
+- CRM (Data khách hàng, Đăng ký Tư vấn & Kiểm định) nằm hoàn toàn trong trang quản trị, có nút xuất file.
+- AI đánh giá minh chứng **chưa làm**: chỉ lưu tệp, thiết kế để mở rộng dễ (mục 8 và `backend-roadmap.md`).
+- Hạ tầng (VPS, nơi lưu sao lưu ngoài máy, DNS, quyết định Cloudflare) làm sau cùng. Tên miền đã mua ở PA Vietnam.
 
-Nguyên tắc:
+## 2. Công nghệ
 
-- `@esg/shared` là **hợp đồng** giữa web và api. Schema Zod ở đây dùng cho cả form frontend và validate request ở Express.
-- Không dùng `any`. Dữ liệu từ ngoài vào (request body, query, env) đều phải đi qua `safeParse` của Zod rồi mới được dùng.
-- `tsconfig.base.json` bật `strict` và `noUncheckedIndexedAccess`. `apps/api` cũng kế thừa file này.
+Phiên bản đã kiểm tra tháng 11/2026. Khi bắt đầu code sẽ khóa phiên bản chính xác trong `package.json` và `pnpm-lock.yaml`.
 
-### 2.1 Nội dung hiện có của `@esg/shared`
-
-| File | Xuất ra |
-| --- | --- |
-| `constants.ts` | `MAX_EVIDENCE_FILES` (10), `MAX_EVIDENCE_FILE_SIZE_BYTES` (10 MB), `ACCEPTED_EVIDENCE_MIME_TYPES`, `ANSWER_VALUES`, `REQUIREMENT_LEVELS`, `PILLAR_ICONS`, `QUESTION_ASPECTS` và các kiểu suy ra |
-| `report-period.ts` | `REPORT_PERIODS` (`q1`, `q2`, `q3`, `q4`, `full_year`) |
-| `draft.ts` | `DRAFT_VERSION`, `draftSnapshotSchema` (định dạng bản nháp lưu ở trình duyệt, dùng lại khi lưu bản nháp lên máy chủ) |
-| `survey.ts` | `pillarSchema`, `questionGroupSchema`, `questionSchema`, `guidanceSchema`, các schema `*InputSchema`, `surveySchema` và kiểu tương ứng |
-| `answer.ts` | `evidenceFileSchema`, `answerSchema` (discriminated union theo `value`) |
-| `company.ts` | `companyProfileSchema` |
-| `build-survey.ts` | `buildSurvey({ pillars, groups, questions })` dựng cây `Survey` đã sắp xếp theo `order` |
-| `form-errors.ts` | `flattenIssues(error)` gom lỗi Zod thành `Record<string, string>` |
-
-Chưa có trong shared (đang ở web, cần chuyển): `isQuestionComplete`, `validateReport`, tổng hợp số liệu báo cáo.
-
-### 2.2 Việc nên làm ở `@esg/shared` trước khi viết API
-
-1. **Chuyển logic "câu đã hoàn thành" về shared.** Hiện hàm `isQuestionComplete` nằm ở `apps/web/src/features/survey/lib/progress.ts`. Server cần dùng chính quy tắc đó để tính tiến độ và kiểm tra khi nộp bài. Đưa hàm này (kèm kiểu đầu vào thuần, không phụ thuộc `File`) vào `packages/shared/src/completion.ts`.
-2. **Chuyển `validateReport` và tổng hợp số liệu báo cáo** (mục 3.4) về `packages/shared`, kèm kiểu đầu vào thuần.
-3. **Tách kiểu bằng chứng.** Ở web, `EvidenceItem` giữ đối tượng `File`. Ở shared chỉ có `EvidenceFile` (metadata). Server làm việc với metadata, web ghép thêm `File` khi upload.
-4. **Đổi `questionId` trong `answerSchema` thành `z.string().uuid()`** cho nhất quán với `idSchema` trong `survey.ts`.
-
-## 3. Mô hình miền (domain)
-
-```
-Pillar 1───n QuestionGroup 1───n Question
-                                   │
-Submission 1───n Answer n───1 ─────┘
-               Answer 1───n EvidenceFile
-Submission 1───1 CompanyProfile (gộp trong bảng submissions)
-```
-
-### 3.1 Bộ câu hỏi (do admin quản lý)
-
-| Thực thể | Trường | Ghi chú |
+| Thành phần | Chọn | Ghi chú |
 | --- | --- | --- |
-| Pillar (trụ cột) | `id` uuid, `name`, `icon` (`sprout` \| `users` \| `landmark`), `order` | **Cố định 3 trụ cột**: Môi trường, Xã hội, Quản trị, tạo bằng seed. Admin không thêm, sửa, xóa |
-| QuestionGroup (nhóm) | `id` uuid, `pillarId`, `title`, `description`, `order` | Một nhóm thuộc đúng một trụ cột |
-| Question (câu hỏi) | `id` uuid, `groupId`, `text`, `aspect`, `descriptionRequirement`, `evidenceRequirement`, `guidance`, `order` | `*Requirement` là `required` hoặc `optional`. `aspect` thuộc `system`, `operation`, `process`, `environment`, `customer`, `society` |
-| Guidance | `title`, `body`, `suggestedEvidence`, `tip` | Hiển thị ở cột phải. Lưu thành 4 cột trong bảng `questions` |
+| Runtime | Node.js 24 LTS (hỗ trợ đến 04/2028) hoặc Node.js 26 (LTS từ 28/10/2026, đến 04/2029) | Đề xuất Node 24 cho an toàn hệ sinh thái; Node 26 cũng ổn. Cần bạn chốt (QĐ-20) |
+| Framework | NestJS 12 (ổn định từ 27/08/2026, bản mới nhất 12.5.0) | NestJS 11 chỉ còn vá bảo mật. Nest 12 dùng ESM, Standard Schema để validate, TypeScript 6 |
+| ORM | Drizzle ORM `0.45.x` ổn định + `drizzle-kit 0.31.x` | Drizzle 1.0 đang RC và còn thay đổi phá vỡ, nên chưa dùng. Nâng lên 1.0 khi bản stable ra, qua một giai đoạn riêng |
+| Database | PostgreSQL 18 (18.7) | PG 14 hết hỗ trợ 12/11/2026. Không dùng PG 19 (còn RC). Dùng UUIDv7 cho khóa chính |
+| Frontend | Next.js 16 + React 19 như hiện tại, chạy chế độ standalone trong Docker | Không còn route handler gọi Apps Script |
+| Đóng gói | pnpm workspace: `apps/web`, `apps/api`, `packages/shared` (`@esg/shared`), `tools/esg-agents` | Giữ monorepo, dùng chung zod schema và hằng số |
+| Proxy | Caddy (HTTPS tự động) | Cùng origin: `/` về web, `/api/*` về api, cookie `SameSite=Lax` |
+| Việc nền | `@nestjs/schedule` + khóa `pg_advisory_lock` | Không dùng Redis |
+| Email | Lớp `MailService` đổi được nhà cung cấp; đề xuất Resend (gói miễn phí 3.000 thư/tháng, 100 thư/ngày) | Xem QĐ-07 về giới hạn OTP |
+| Dịch tự động | Gemini API qua `TranslationService` | Thay `LanguageApp` của Apps Script (QĐ-08) |
 
-Quy tắc:
+## 3. Kiến trúc
 
-- **Không có mã câu hỏi** (như `E001`). Id là UUID. Giao diện hiển thị "Câu 1, Câu 2..." tính từ vị trí hiện tại trong nhóm, vì vậy backend **không lưu và không trả** số thứ tự hiển thị. Chỉ có `order` dùng để sắp xếp.
-- `order` là số nguyên tăng dần trong phạm vi cha (nhóm trong trụ cột, câu hỏi trong nhóm). Có thể có khoảng trống sau khi xóa, không cần đánh số lại.
-- Xóa nhóm sẽ xóa các câu hỏi bên trong.
-- Nhóm rỗng vẫn hợp lệ. Giao diện hiển thị trạng thái rỗng.
-- Giao diện khảo sát hiển thị từng nhóm một, chuyển giữa các nhóm bằng 3 tab trụ cột, nút Nhóm trước / Nhóm tiếp (đi xuyên các trụ cột) và khối Tiến độ.
-- **Dữ liệu ban đầu** lấy từ `Bo_cau_hoi_danh_gia_ESG.docx`: 8 nhóm (2 Môi trường, 3 Xã hội, 3 Quản trị), mỗi nhóm 10 câu, tổng 80 câu. Id cố định trong `apps/web/src/data/ids.ts`, dùng làm dữ liệu seed.
+```
+Trình duyệt ──HTTPS──> Caddy ──/──────> web (Next.js, SSR)
+                              └─/api/*─> api (NestJS)
+                                          ├─ PostgreSQL 18 (volume)
+                                          ├─ Thư mục tệp (volume): logo, minh chứng, PDF/Word, ảnh bài viết
+                                          └─ Email API ngoài, Gemini API (tùy chọn)
+```
 
-### 3.2 Bài khảo sát của người dùng
+- Next.js chỉ render giao diện; mọi dữ liệu đi qua `api`. Ngân hàng câu hỏi lấy từ database, không còn gviz CSV, không còn cache 300 giây.
+- PDF (`@react-pdf/renderer`) và Word (`docx`) vẫn dựng ở trình duyệt như hiện tại; server chỉ nhận và lưu tệp (giữ nguyên để không đổi trải nghiệm xuất báo cáo).
+- Giới hạn tần suất, OTP, phiên đăng nhập đều lưu trong PostgreSQL, nên chạy lại container không mất trạng thái.
 
-**CompanyProfile** (khớp `companyProfileSchema`):
+## 4. Nguyên tắc thiết kế (sửa các điểm chưa chuẩn của Google Sheet)
 
-| Trường | Kiểu | Bắt buộc |
-| --- | --- | --- |
-| `name` | string | Có |
-| `industry` | string (mã lựa chọn) | Có |
-| `headcount` | string (mã lựa chọn) | Có |
-| `address` | string | Có |
-| `reportPeriod` | `q1`, `q2`, `q3`, `q4` hoặc `full_year` | Có |
-| `reportYear` | số nguyên 2000 đến 2100, mặc định năm hiện tại | Có |
-| `reportScope` | string | Không |
-
-Danh sách lựa chọn hiện nằm trong `apps/web/src/data/company-options.ts`:
-
-- `industry`: `manufacturing`, `retail`, `services`, `it`, `construction`, `agriculture`, `education`, `other`.
-- `headcount`: `lt-10`, `10-49`, `50-199`, `200-499`, `gte-500`.
-
-**(Đề xuất)** Chuyển hai danh sách này vào `@esg/shared` dưới dạng mảng `as const` để server validate đúng giá trị.
-
-**Answer** (khớp `answerSchema`), phân biệt theo `value`:
-
-| `value` | Trường kèm theo |
+| Điểm yếu hiện tại trên Sheet | Cách khắc phục ở v2 |
 | --- | --- |
-| `implemented` | `description` (string), `evidence` (tối đa 10 tệp) |
-| `in_progress` | không có |
-| `not_implemented` | không có |
+| Ghép dữ liệu theo tên cột, đổi tên cột là mất trường mà không báo lỗi | Schema cố định, migration có phiên bản, kiểu dữ liệu chặt |
+| Không có bảng người dùng; email chỉ là chuỗi trong dòng báo cáo | Bảng `users` (email duy nhất, `email_verified_at`) |
+| Đồng ý (consent) lưu dạng chữ | Cột boolean + thời điểm + phiên bản văn bản đồng ý, bảng `consents` |
+| Giá trị lưu bằng nhãn tiếng Việt ("Mới tiếp nhận", "Tư vấn") | Mã enum ổn định; nhãn hiển thị nằm ở giao diện/i18n |
+| JSON cắt thành nhiều ô 40.000 ký tự, snapshot tối đa 600.000 ký tự | Cột `jsonb`, không giới hạn nhân tạo |
+| Lượt thích cộng trừ 1, không chống trùng | Bảng `post_likes` có ràng buộc duy nhất (QĐ-06) |
+| OTP trong `CacheService` (có thể mất), rate limit trong RAM của từng instance | Lưu ở PostgreSQL, tồn tại qua restart |
+| Ngân hàng câu hỏi không có phiên bản, sửa Sheet là đổi ngay báo cáo mới | `question_banks` có phiên bản; mỗi báo cáo ghi phiên bản đã dùng |
+| Id Drive nằm trong ô, xóa/di chuyển file là hỏng | Bảng `files` (khóa lưu trữ, kích thước, sha256), có việc dọn mồ côi |
+| Một mật khẩu quản trị dùng chung | Tài khoản quản trị riêng, vai trò, nhật ký thao tác (QĐ-05) |
+| Không có sao lưu có kiểm soát | `pg_dump` hằng đêm, tùy chọn lưu WAL, bản sao ngoài máy (thiết kế ở `backend-deployment.md`, làm sau) |
 
-**EvidenceFile**: `id`, `name`, `size` (byte, tối đa 10 MB), `mimeType` thuộc `application/pdf`, `image/png`, `image/jpeg`, `image/webp`.
+## 5. Các module NestJS
 
-### 3.3 Quy tắc "câu đã hoàn thành"
-
-Dùng để tính tiến độ và để tự lưu bản nháp (khi một nhóm chuyển sang hoàn thành). Phải giống hệt giữa web và api:
-
-1. Chưa chọn đáp án: chưa hoàn thành.
-2. Chọn `in_progress` hoặc `not_implemented`: hoàn thành.
-3. Chọn `implemented`:
-   - Nếu `descriptionRequirement = required` thì mô tả (sau khi `trim`) phải khác rỗng.
-   - Nếu `evidenceRequirement = required` thì phải có ít nhất 1 tệp bằng chứng.
-4. Khi chuyển từ `implemented` sang đáp án khác, mô tả và bằng chứng không còn được tính. **(Đề xuất)** server xóa luôn mô tả và tệp đã tải của câu đó để tránh rác.
-
-### 3.4 Báo cáo PDF và kiểm tra trước khi xuất
-
-Hiện báo cáo được **tạo hoàn toàn ở trình duyệt** bằng `@react-pdf/renderer` (font DejaVu Sans để có dấu tiếng Việt). Backend chưa cần tạo PDF.
-
-Quy tắc kiểm tra (`validateReport`, hiện ở `apps/web/src/features/survey/lib/report-validation.ts`) phải giống hệt giữa web và api:
-
-1. Thông tin doanh nghiệp: kiểm bằng `companyProfileSchema`.
-2. Mỗi câu có đúng một lý do lỗi, theo thứ tự: `unanswered` (chưa chọn), `missing-description` (chọn `implemented`, mô tả bắt buộc nhưng rỗng), `missing-evidence` (chọn `implemented`, bằng chứng bắt buộc nhưng chưa có tệp). Khớp với 3.3.
-3. Có lỗi thì không tạo báo cáo chính thức; vẫn cho xem bản nháp (PDF có khung "BẢN NHÁP").
-
-Số liệu trong báo cáo (tổng, theo trụ cột, nhóm, khía cạnh, điểm cần cải thiện) được tính từ cây `Survey` và câu trả lời, ở `report-data.ts`.
-
-**(Đề xuất)** khi có backend: chuyển `validateReport` và phần tổng hợp số liệu vào `@esg/shared`; `POST /submissions/:id/submit` dùng lại `validateReport` để trả 409 kèm danh sách lỗi. Việc tạo PDF có thể giữ ở web, dùng dữ liệu từ `GET /submissions/:id`.
-
-### 3.5 Làm báo cáo mới
-
-Nút "Làm báo cáo mới" xóa bản nháp ở trình duyệt và đưa form về trạng thái ban đầu. Khi có backend: **(Đề xuất)** không xóa bài cũ; client bỏ `submissionId` đã nhớ và gọi `POST /submissions` để tạo bài mới. Bài cũ giữ nguyên, có thể dọn sau theo thời hạn lưu.
-
-## 4. Lược đồ cơ sở dữ liệu (Drizzle, PostgreSQL)
-
-**(Đề xuất)** Dùng `drizzle-orm` với `pg-core`. Cột tên theo `snake_case`, thuộc tính TypeScript theo `camelCase`. Cột sắp xếp đặt tên `sort_order` vì `order` là từ khóa SQL, thuộc tính TypeScript vẫn là `order` để khớp `@esg/shared`.
-
-`apps/api/src/db/schema.ts`:
-
-```ts
-import {
-  ACCEPTED_EVIDENCE_MIME_TYPES,
-  ANSWER_VALUES,
-  PILLAR_ICONS,
-  QUESTION_ASPECTS,
-  REPORT_PERIODS,
-  REQUIREMENT_LEVELS,
-} from "@esg/shared";
-import {
-  index,
-  integer,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  unique,
-  uuid,
-} from "drizzle-orm/pg-core";
-
-export const pillarIconEnum = pgEnum("pillar_icon", PILLAR_ICONS);
-export const requirementLevelEnum = pgEnum(
-  "requirement_level",
-  REQUIREMENT_LEVELS,
-);
-export const questionAspectEnum = pgEnum("question_aspect", QUESTION_ASPECTS);
-export const reportPeriodEnum = pgEnum("report_period", REPORT_PERIODS);
-export const answerValueEnum = pgEnum("answer_value", ANSWER_VALUES);
-export const evidenceMimeTypeEnum = pgEnum(
-  "evidence_mime_type",
-  ACCEPTED_EVIDENCE_MIME_TYPES,
-);
-export const submissionStatusEnum = pgEnum("submission_status", [
-  "draft",
-  "submitted",
-]);
-
-const timestamps = {
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-};
-
-export const pillars = pgTable("pillars", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  icon: pillarIconEnum("icon").notNull(),
-  order: integer("sort_order").notNull(),
-  ...timestamps,
-});
-
-export const questionGroups = pgTable(
-  "question_groups",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    pillarId: uuid("pillar_id")
-      .notNull()
-      .references(() => pillars.id, { onDelete: "cascade" }),
-    title: text("title").notNull(),
-    description: text("description").notNull().default(""),
-    order: integer("sort_order").notNull(),
-    ...timestamps,
-  },
-  (table) => [index("question_groups_pillar_idx").on(table.pillarId)],
-);
-
-export const questions = pgTable(
-  "questions",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    groupId: uuid("group_id")
-      .notNull()
-      .references(() => questionGroups.id, { onDelete: "cascade" }),
-    text: text("text").notNull(),
-    aspect: questionAspectEnum("aspect").notNull(),
-    descriptionRequirement: requirementLevelEnum("description_requirement")
-      .notNull()
-      .default("required"),
-    evidenceRequirement: requirementLevelEnum("evidence_requirement")
-      .notNull()
-      .default("optional"),
-    guidanceTitle: text("guidance_title").notNull(),
-    guidanceBody: text("guidance_body").notNull(),
-    guidanceSuggestedEvidence: text("guidance_suggested_evidence")
-      .notNull()
-      .default(""),
-    guidanceTip: text("guidance_tip").notNull().default(""),
-    order: integer("sort_order").notNull(),
-    ...timestamps,
-  },
-  (table) => [index("questions_group_idx").on(table.groupId)],
-);
-
-export const submissions = pgTable("submissions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  status: submissionStatusEnum("status").notNull().default("draft"),
-  companyName: text("company_name"),
-  industry: text("industry"),
-  headcount: text("headcount"),
-  address: text("address"),
-  reportPeriod: reportPeriodEnum("report_period"),
-  reportYear: integer("report_year"),
-  reportScope: text("report_scope"),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }),
-  ...timestamps,
-});
-
-export const answers = pgTable(
-  "answers",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    submissionId: uuid("submission_id")
-      .notNull()
-      .references(() => submissions.id, { onDelete: "cascade" }),
-    questionId: uuid("question_id")
-      .notNull()
-      .references(() => questions.id, { onDelete: "cascade" }),
-    value: answerValueEnum("value").notNull(),
-    description: text("description").notNull().default(""),
-    ...timestamps,
-  },
-  (table) => [
-    unique("answers_submission_question_unique").on(
-      table.submissionId,
-      table.questionId,
-    ),
-  ],
-);
-
-export const evidenceFiles = pgTable(
-  "evidence_files",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    answerId: uuid("answer_id")
-      .notNull()
-      .references(() => answers.id, { onDelete: "cascade" }),
-    originalName: text("original_name").notNull(),
-    mimeType: evidenceMimeTypeEnum("mime_type").notNull(),
-    sizeBytes: integer("size_bytes").notNull(),
-    storageKey: text("storage_key").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("evidence_files_answer_idx").on(table.answerId)],
-);
-```
-
-Quyết định cần chốt:
-
-- **Không đặt ràng buộc unique cho `(parent, sort_order)`.** Đổi chỗ hai phần tử bằng cách hoán đổi `order` sẽ vi phạm unique tạm thời. Thay vào đó, hoán đổi trong một transaction.
-- **Xóa câu hỏi có bài khảo sát đã nộp:** thiết kế trên dùng `cascade`, nghĩa là câu trả lời liên quan bị xóa theo. Nếu muốn giữ lịch sử các bài đã nộp, cần chuyển sang lưu ảnh chụp (snapshot) nội dung câu hỏi vào bài nộp, hoặc xóa mềm câu hỏi (`deleted_at`). **(Đề xuất)** làm xóa mềm khi bắt đầu có người dùng thật.
-- **Trụ cột cố định:** bảng `pillars` chỉ có 3 dòng do seed tạo. Không làm route ghi cho `pillars`.
-- **Số lượng bằng chứng tối đa 10 mỗi câu** phải kiểm tra ở tầng ứng dụng (đếm trước khi chèn, trong transaction). Không có cách biểu diễn gọn bằng ràng buộc cột.
-- **Danh tính người dùng:** frontend chưa có đăng nhập. **(Đề xuất)** giai đoạn đầu mỗi bài khảo sát là một `submission` ẩn danh, trình duyệt giữ `submissionId` trong `localStorage` để tiếp tục. Khi thêm tài khoản, thêm cột `user_id` vào `submissions`.
-
-## 5. Hợp đồng API
-
-Tiền tố: `/api/v1`. Dữ liệu là JSON, ngoại trừ upload tệp (`multipart/form-data`). Thời gian theo ISO 8601 (UTC).
-
-### 5.1 Quy ước chung
-
-Phản hồi lỗi thống nhất:
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Dữ liệu không hợp lệ",
-    "fields": { "text": "Vui lòng nhập nội dung câu hỏi" }
-  }
-}
-```
-
-| HTTP | `code` | Khi nào |
-| --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | Body, query hoặc param không qua Zod. `fields` dùng đúng định dạng của `flattenIssues` |
-| 401 | `UNAUTHORIZED` | Thiếu hoặc sai thông tin đăng nhập (khi có auth) |
-| 403 | `FORBIDDEN` | Không đủ quyền |
-| 404 | `NOT_FOUND` | Không tìm thấy tài nguyên |
-| 409 | `CONFLICT` | Vi phạm quy tắc nghiệp vụ, ví dụ đã đủ 10 tệp bằng chứng, bài đã nộp |
-| 413 | `FILE_TOO_LARGE` | Tệp vượt 10 MB |
-| 415 | `UNSUPPORTED_MEDIA_TYPE` | Định dạng tệp không được chấp nhận |
-| 500 | `INTERNAL_ERROR` | Lỗi không lường trước. Không lộ chi tiết ra ngoài |
-
-Thông báo lỗi trả về bằng tiếng Việt vì giao diện hiển thị trực tiếp. Schema Zod trong shared đã mang sẵn thông báo tiếng Việt.
-
-### 5.2 API công khai (người dùng)
-
-| Phương thức | Đường dẫn | Mô tả | Body / phản hồi |
-| --- | --- | --- | --- |
-| GET | `/survey` | Toàn bộ bộ câu hỏi dạng cây | Phản hồi `Survey` (kết quả của `buildSurvey`) |
-| POST | `/submissions` | Tạo bài khảo sát nháp | Phản hồi `{ id }`, mã 201 |
-| GET | `/submissions/:id` | Lấy bài khảo sát | `{ id, status, company, answers }` |
-| PUT | `/submissions/:id/company` | Lưu thông tin doanh nghiệp | Body `CompanyProfile` |
-| PUT | `/submissions/:id/answers/:questionId` | Lưu hoặc cập nhật câu trả lời | Body `Answer` (không gồm `evidence`) |
-| POST | `/submissions/:id/answers/:questionId/evidence` | Tải lên một tệp bằng chứng | `multipart`, trường `file` |
-| DELETE | `/submissions/:id/answers/:questionId/evidence/:evidenceId` | Xóa một tệp bằng chứng | 204 |
-| GET | `/submissions/:id/evidence/:evidenceId` | Tải hoặc xem tệp | Chuyển hướng tới URL ký sẵn hoặc stream tệp |
-| POST | `/submissions/:id/submit` | Nộp bài | 409 nếu còn câu chưa hoàn thành |
-| GET | `/submissions/:id/progress` | Tiến độ | `{ completedQuestions, totalQuestions, completedGroups, totalGroups, evidenceCount }` |
-
-Ghi chú:
-
-- `PUT` câu trả lời là **upsert** theo cặp `(submissionId, questionId)`. Ràng buộc unique ở bảng `answers` bảo đảm không trùng.
-- Tải tệp mỗi lần **một tệp**, khớp với giao diện (một ô tải, thêm bằng nút `+`). Server kiểm tra: câu trả lời hiện là `implemented`, chưa đủ 10 tệp, đúng loại, không quá 10 MB.
-- Server **không tin `Content-Type` do client gửi**. Đọc vài byte đầu của tệp (magic bytes) để xác định PDF, PNG, JPEG, WEBP rồi so với danh sách cho phép.
-- Bài đã `submitted` không cho sửa (409).
-
-### 5.3 API quản trị
-
-Tất cả nằm dưới `/admin`. **(Đề xuất)** bọc bằng middleware xác thực ngay từ đầu, kể cả khi ban đầu chỉ kiểm tra một khóa API cố định lấy từ biến môi trường, để sau này thay bằng đăng nhập thật mà không đổi route.
-
-| Phương thức | Đường dẫn | Body | Ghi chú |
-| --- | --- | --- | --- |
-| GET | `/admin/survey` | không | Giống `/survey`. Trụ cột chỉ đọc |
-| POST | `/admin/groups` | `QuestionGroupInput` | Kiểm tra `pillarId` tồn tại |
-| PATCH | `/admin/groups/:id` | `QuestionGroupInput` | Cho phép đổi `pillarId` |
-| DELETE | `/admin/groups/:id` | không | Xóa kèm câu hỏi |
-| POST | `/admin/groups/:id/move` | `{ "direction": -1 \| 1 }` | Hoán đổi `order` với nhóm liền kề cùng trụ cột |
-| POST | `/admin/questions` | `QuestionInput` | `order` = lớn nhất trong nhóm + 1 |
-| PATCH | `/admin/questions/:id` | `QuestionInput` | |
-| DELETE | `/admin/questions/:id` | không | |
-| POST | `/admin/questions/:id/move` | `{ "direction": -1 \| 1 }` | Hoán đổi với câu liền kề cùng nhóm |
-
-Phản hồi của `POST` và `PATCH` là thực thể vừa tạo hoặc sửa (kiểu `QuestionGroup`, `Question`). Giao diện hiện tại dùng id do client sinh ra, khi nối API thì **server sinh id** và client dùng id trả về.
-
-Việc `move` trả về `204` hoặc danh sách anh em đã sắp xếp lại đều được. **(Đề xuất)** trả về danh sách anh em để client không phải gọi lại `GET /survey`.
-
-## 6. Cấu trúc `apps/api`
-
-Chia theo tính năng, cùng triết lý với frontend:
-
-```
-apps/api/
-├── package.json
-├── tsconfig.json
-├── drizzle.config.ts
-├── drizzle/                     file migration sinh ra
-└── src/
-    ├── index.ts                 khởi động server
-    ├── app.ts                   dựng Express app (tách ra để test)
-    ├── config/env.ts            đọc và validate biến môi trường bằng Zod
-    ├── db/
-    │   ├── client.ts
-    │   └── schema.ts
-    ├── middleware/
-    │   ├── validate.ts          validate body, params, query bằng Zod
-    │   ├── error-handler.ts
-    │   ├── require-admin.ts
-    │   └── upload.ts            multer, giới hạn dung lượng
-    ├── lib/
-    │   ├── http-error.ts        lớp lỗi có mã HTTP và `code`
-    │   └── storage/             giao diện lưu tệp và các bản triển khai
-    └── features/
-        ├── survey/              routes, controller, service, repository
-        ├── admin/
-        ├── submissions/
-        └── evidence/
-```
-
-Phân tầng trong mỗi feature:
-
-- **routes**: khai báo đường dẫn và gắn middleware validate.
-- **controller**: nhận request đã validate, gọi service, trả response.
-- **service**: nghiệp vụ (quy tắc ở mục 3.3, giới hạn 10 tệp, hoán đổi `order`).
-- **repository**: truy vấn Drizzle. Chỉ tầng này được import `db`.
-
-### 6.1 Thư viện đề xuất
-
-| Mục đích | Thư viện |
+| Module | Trách nhiệm |
 | --- | --- |
-| Web server | `express` (v5), `cors`, `helmet` |
-| CSDL | `drizzle-orm`, `drizzle-kit`, `pg` hoặc `postgres` |
-| Validate | `zod` (dùng chung với shared) |
-| Upload | `multer` (lưu bộ nhớ hoặc đĩa tạm, giới hạn 10 MB) |
-| Chạy dev | `tsx` |
-| Test | `vitest`, `supertest` |
+| `config` | Đọc và kiểm tra biến môi trường lúc khởi động (từ chối chạy nếu thiếu) |
+| `database` | Kết nối Drizzle, migration, giao dịch |
+| `auth` | OTP email, phiên người dùng, cookie `esg-user` |
+| `admin-auth` | Đăng nhập quản trị, vai trò (`admin`, `content`, `ops`), khóa khi sai nhiều lần |
+| `question-bank` | Phiên bản ngân hàng câu hỏi, nhóm, câu hỏi, route, quy tắc minh chứng; API đọc cho web, API soạn thảo cho admin |
+| `companies` | Hồ sơ doanh nghiệp, upsert theo mã báo cáo, logo |
+| `reports` | Mã báo cáo `ESG-YYYYMMDD-XXXX`, bản xuất `RX-YYYYMMDD-XXXXXX`, snapshot, giữ tối đa 5 bản xuất mỗi mã |
+| `drafts` | Bản nháp trên server cho người dùng đã xác thực |
+| `evidence` | Lưu tệp minh chứng gắn với câu hỏi/báo cáo; điểm mở rộng cho AI |
+| `files` / `storage` | `StorageService` (ổ đĩa VPS), bảng `files`, kiểm tra loại/kích thước/sha256, dọn mồ côi |
+| `inquiries` | Đăng ký Tư vấn và Kiểm định (mã `TV-...`, `KD-...`), trạng thái, ưu tiên, ghi chú, xuất file |
+| `feedback` | Mời đánh giá sau `FEEDBACK_DELAY_DAYS` = 5 ngày, nhận đánh giá |
+| `posts` | Bài viết (nội dung ProseMirror JSON), ảnh, lượt thích, thống kê trang chủ |
+| `translation` | Dịch tự động, bảng bản dịch, ưu tiên chỉnh tay |
+| `mail` | Gửi email theo mẫu qua hộp thư đi `email_outbox` có thử lại |
+| `rate-limit` | Giới hạn tần suất lưu trong PostgreSQL |
+| `audit` | Nhật ký thao tác quản trị |
+| `jobs` | Lịch chạy nền: dọn tệp tạm, dọn mồ côi, gửi thư mời đánh giá, dịch, sao lưu |
+| `health` | `/health` cho Docker và giám sát |
 
-### 6.2 Biến môi trường
+## 6. Mô hình báo cáo
 
-Validate khi khởi động, lỗi thì dừng ngay:
+Giữ nguyên mô hình dữ liệu dùng chung ở `@esg/shared` để frontend không phải đổi:
 
-| Biến | Ý nghĩa |
-| --- | --- |
-| `PORT` | Cổng server, ví dụ `4000` |
-| `DATABASE_URL` | Chuỗi kết nối PostgreSQL |
-| `CORS_ORIGIN` | Địa chỉ web được phép gọi API |
-| `ADMIN_API_KEY` | Khóa tạm cho `/admin` **(Đề xuất)** |
-| `STORAGE_DRIVER` | `local` hoặc `s3` |
-| `STORAGE_LOCAL_DIR` | Thư mục lưu tệp khi dùng `local` |
-| `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Khi dùng `s3` hoặc dịch vụ tương thích S3 |
+- Kiểu nhập: `PRACTICE`, `INCIDENT`, `PRESENCE`, `NUMBER`, `INTEGER`, `TEXT`, `FUEL_TABLE`, `WORKFORCE_TABLE`.
+- Lựa chọn: `yes/partial/no/unknown/na` (dữ liệu: `known/unknown/na`; văn bản: `provided/unknown/na`).
+- Bản nháp định dạng v2; snapshot báo cáo định dạng v1 gồm hồ sơ doanh nghiệp, câu trả lời theo id câu hỏi, kế hoạch hành động, giao diện (theme), `activeGroupId`.
+- `selectSurvey` lọc theo lĩnh vực chính (`MAN/RET/SER/ICT/CON/AGR/EDU/OTH`) và nhóm nhân sự (`lt-10`, `10-49` là cơ bản; `50-199`, `200-499`, `gte-500` là mở rộng). Bộ câu hỏi v0.1 còn có route theo lĩnh vực phụ và năng lực (`sector_any`, `capability_any`), xem QĐ-04.
 
-### 6.3 Về kiểu dữ liệu, không dùng `any`
+## 7. Bảo mật và quyền riêng tư
 
-- Middleware validate nhận một `ZodType<T>` và ghi kết quả đã parse vào một chỗ có kiểu rõ ràng, controller không đọc `req.body` thô.
-- Lỗi không lường trước được gán là `unknown` ở `catch`, rồi thu hẹp bằng `instanceof HttpError` trước khi xử lý.
-- Hàng đọc từ Drizzle dùng `typeof table.$inferSelect` để suy ra kiểu, sau đó ánh xạ sang kiểu của `@esg/shared`. Cần ánh xạ vì cột `guidance*` được trải phẳng trong DB nhưng là object lồng nhau trong `Question`.
+- Cookie phiên: `HttpOnly`, `Secure`, `SameSite=Lax`. Token phiên ngẫu nhiên dài, chỉ lưu băm trong database (khác với HMAC hiện tại, nên có thể thu hồi từng phiên).
+- Mật khẩu quản trị băm argon2id. Khóa tạm sau 5 lần sai trong 15 phút (giữ như demo).
+- Tệp minh chứng và báo cáo không có URL công khai; tải qua API có kiểm tra chủ sở hữu.
+- Đồng ý được ghi kèm thời điểm và phiên bản văn bản. Dữ liệu nghiên cứu chỉ dùng khi có đồng ý tương ứng (P-020).
+- Mọi dữ liệu có lưu trữ đều phải có đường dọn: tệp không còn được tham chiếu, OTP hết hạn, phiên hết hạn, đoạn tải lên dở, bản xuất quá 5 bản, ảnh bài viết không còn dùng (chi tiết ở `backend-database.md`, mục 5).
 
-## 7. Lưu trữ tệp bằng chứng
+## 8. Điểm mở rộng cho AI đánh giá minh chứng
 
-Định nghĩa giao diện để đổi nơi lưu mà không sửa nghiệp vụ:
+Chưa làm ở giai đoạn này. Để sau này thêm không phải sửa lại lõi:
 
-```ts
-export interface EvidenceStorage {
-  put(key: string, data: Buffer, mimeType: string): Promise<void>;
-  getReadUrl(key: string, expiresInSeconds: number): Promise<string>;
-  remove(key: string): Promise<void>;
-}
-```
+1. Tệp minh chứng đã lưu theo `question_code` + `report_id`, kèm sha256, mime, kích thước.
+2. Quy tắc minh chứng theo câu hỏi nằm trong ngân hàng câu hỏi (cột `evidence_rule` kiểu `jsonb`, nạp từ tab 18/19 của file câu hỏi) và được giữ nguyên khi nhập, dù chưa được dùng.
+3. Tên bảng dự trữ `evidence_reviews` (chưa tạo): kết quả đánh giá, mô hình, phiên bản prompt, độ tin cậy, trạng thái duyệt của người.
+4. `EvidenceModule` phát sự kiện nội bộ `evidence.uploaded`; hiện không có bên nghe. Sau này một worker đăng ký nghe là đủ.
 
-- `storageKey` có dạng `submissions/{submissionId}/{evidenceId}` (không dùng tên tệp gốc để tránh trùng và ký tự lạ). Tên gốc lưu ở `original_name` để hiển thị.
-- Bản triển khai `local` cho giai đoạn đầu, `s3` khi lên môi trường thật.
-- Vercel không giữ tệp ghi xuống đĩa lâu dài, vì vậy khi deploy phải dùng `s3` hoặc dịch vụ lưu trữ đối tượng tương đương.
-- Khi xóa bằng chứng hoặc xóa bài khảo sát, xóa cả tệp trong kho lưu trữ. Làm thành bước nền hoặc dọn dẹp định kỳ nếu xóa đồng bộ bị chậm.
+Chi tiết nằm ở `backend-roadmap.md`, mục "Tính năng làm sau".
 
-## 8. Tích hợp với frontend hiện tại
+## 9. Giới hạn đã biết của thiết kế
 
-| Vị trí ở web | Hiện tại | Khi có backend |
-| --- | --- | --- |
-| `features/survey/services/survey.service.ts` | Đọc từ `data/` | `fetch` tới `GET /survey`, trả `Survey` đã kiểm bằng `surveySchema.parse` |
-| `features/survey/store/survey-content-store.ts` | Mutation trực tiếp trên state | Mỗi action gọi API `/admin/*` rồi cập nhật state bằng dữ liệu server trả về |
-| `features/survey/hooks/use-survey-answers.ts` | Reducer cục bộ, khởi tạo từ bản nháp | Vẫn giữ state cục bộ, thêm gọi `PUT .../answers/:questionId` sau khi người dùng dừng gõ (debounce) hoặc chọn đáp án |
-| `features/survey/lib/draft-storage.ts`, `hooks/use-survey-draft.ts` | Lưu bản nháp vào `localStorage` (tự lưu khi xong một nhóm, nút lưu thủ công) | Thay bằng `submission` ở máy chủ. Giữ định dạng `draftSnapshotSchema` hoặc thay bằng API, và giữ `localStorage` chỉ để nhớ `submissionId` |
-| `features/survey/lib/report-*.ts`, `report/`, `hooks/use-report-export.ts`, `use-report-preview.ts` | Kiểm tra và tạo PDF ở trình duyệt từ state cục bộ | Giữ tạo PDF ở web. Dữ liệu lấy từ submission; `validateReport` dùng từ `@esg/shared`; nút Tạo báo cáo gọi thêm `POST .../submit` |
-| Nút "Làm báo cáo mới" (`reset-report-dialog.tsx`) | Xóa bản nháp, remount form | Bỏ `submissionId` đã nhớ, `POST /submissions` tạo bài mới |
-| `features/leave-guard` | Cảnh báo khi còn thay đổi chưa lưu | Giữ nguyên. Điều kiện "chưa lưu" đổi thành "chưa đồng bộ lên máy chủ" |
-| `features/evidence` | Chỉ giữ `File` trong bộ nhớ | `POST` từng tệp, lưu `evidenceId` trả về thay cho `crypto.randomUUID()` |
-| `features/company/components/company-profile-form.tsx` | Controlled form, giá trị do `survey-workspace` giữ; chỉ hiện "đã ghi nhận" | Gọi `PUT .../company` khi bấm lưu |
-| `data/` | Dữ liệu mock | Chuyển thành file seed của Drizzle, sau đó giữ làm dữ liệu test |
-
-Biến môi trường phía web: `NEXT_PUBLIC_API_URL`, ví dụ `http://localhost:4000/api/v1`.
-
-Mock data dùng UUID cố định trong `data/ids.ts`, có thể dùng nguyên các id đó làm dữ liệu seed.
-
-## 9. Bảo mật và vận hành
-
-- `helmet`, CORS chỉ cho phép `CORS_ORIGIN`.
-- Giới hạn tần suất (`express-rate-limit`) cho API công khai, đặc biệt là upload và tạo bài khảo sát.
-- Validate mọi đầu vào bằng Zod. Mọi truy vấn qua Drizzle (tham số hóa) để tránh SQL injection.
-- Kiểm tra quyền truy cập bài khảo sát: chỉ người giữ `submissionId` mới đọc được. Dùng UUID khó đoán, nhưng **(Đề xuất)** thêm một `accessToken` ngẫu nhiên riêng cho mỗi bài khi cần chặt chẽ hơn.
-- Không ghi nội dung tệp hoặc thông tin doanh nghiệp vào log.
-- Endpoint `GET /health` trả 200, phục vụ kiểm tra khi deploy.
-- Deploy `apps/api` tách khỏi web (Render, Railway hoặc Fly.io), vì Express chạy như server dài hạn, không phù hợp chạy trực tiếp trên Vercel.
-
-## 10. Lộ trình triển khai gợi ý
-
-1. Tạo `apps/api`: `package.json`, `tsconfig.json` kế thừa `tsconfig.base.json`, `src/app.ts`, `GET /health`.
-2. Chuyển `isQuestionComplete`, `validateReport` và danh sách lựa chọn doanh nghiệp vào `@esg/shared` (mục 2.2 và 3.2).
-3. Cài Drizzle, viết `schema.ts`, chạy migration đầu tiên, viết script seed từ `apps/web/src/data`.
-4. Làm `GET /survey` và nối `surveyService` ở web. Đây là bước đầu tiên có thể kiểm chứng toàn tuyến.
-5. Làm các API `/admin/*` và nối store của admin. Thêm middleware `require-admin`.
-6. Làm `submissions`, `company` và `answers`. Nối form doanh nghiệp và việc lưu câu trả lời.
-7. Làm upload bằng chứng với kho lưu trữ `local`, sau đó thêm `s3`.
-8. Làm `submit` và `progress`.
-9. Viết test tích hợp cho các quy tắc ở mục 3.3 và giới hạn tệp, rồi thêm giới hạn tần suất và log.
-
-## 11. Câu hỏi còn mở
-
-- Người dùng có cần đăng nhập để tiếp tục bài khảo sát trên nhiều thiết bị không, hay chỉ cần link riêng?
-- Báo cáo PDF hiện tạo ở trình duyệt (mục 3.4). Khi có backend có cần lưu bản PDF đã xuất, hay chỉ tạo lại từ dữ liệu khi cần? Việc "Tạo báo cáo" có đặt bài thành `submitted` (khóa chỉnh sửa) không?
-- Một doanh nghiệp có nhiều bài khảo sát theo từng năm báo cáo không? Nếu có, cần thêm khái niệm `Company` tách khỏi `Submission`.
-- Cách chấm điểm (mục 12) có đúng như dự kiến không?
-- Có cho phép nhiều quản trị viên không, và có cần nhật ký thay đổi bộ câu hỏi không?
-- Khi admin sửa hoặc xóa câu hỏi sau khi đã có bài nộp, có cần giữ nguyên nội dung cũ cho các bài đó không (xem mục 4)?
-
-## 12. TODO
-
-### 12.1 Chấm điểm theo nhóm
-
-File Word `Bo_cau_hoi_danh_gia_ESG.docx` có dòng "Điểm: ....../20" ở cuối mỗi nhóm (10 câu, tối đa 20 điểm). Cách tính dự kiến, **chưa được xác nhận**:
-
-| Trạng thái | Điểm |
-| --- | --- |
-| `implemented` | 2 |
-| `in_progress` | 1 |
-| `not_implemented` | 0 |
-
-Cần chốt: điểm hiển thị ở đâu (đầu nhóm, khối Tiến độ, báo cáo cuối), có tính điểm theo từng trụ cột và tổng không, có xếp loại theo ngưỡng không, câu chưa trả lời tính thế nào. Khi làm, đặt hàm tính điểm trong `@esg/shared` để web và api dùng chung, và thêm vào `GET /submissions/:id/progress`.
-
-### 12.2 Lưu bằng chứng trong bản nháp
-
-Bản nháp ở trình duyệt chỉ lưu câu trả lời, mô tả và thông tin doanh nghiệp. Tệp bằng chứng mất khi tải lại trang. Giải quyết khi có backend: tải từng tệp lên `POST .../evidence` ngay khi người dùng chọn, bản nháp chỉ giữ `evidenceId`. Trong lúc đó giao diện đã cảnh báo người dùng ở thanh lưu nháp, hộp thoại rời trang và thông báo khôi phục.
-
-### 12.3 Khác
-
-- Mở rộng báo cáo: người lập và ngày lập, nhúng ảnh bằng chứng, so sánh kỳ trước, khuyến nghị theo nhóm, ghi phiên bản bộ câu hỏi vào báo cáo.
-- Chặn nút Back của trình duyệt khi còn thay đổi chưa lưu (hiện chỉ chặn đóng tab, tải lại và liên kết `GuardedLink`).
-- Bản dịch cho bộ chuyển ngôn ngữ (hiện chỉ đổi thuộc tính `lang`).
-- Rà soát câu hỏi nhắc tên riêng một doanh nghiệp (ví dụ câu về cổ phiếu LIX) nếu dùng cho mọi doanh nghiệp.
-
-## 13. Bắt đầu làm backend trong cuộc hội thoại mới
-
-Hai file `README.md` và `docs/backend-spec.md` là điểm khởi đầu nhưng chưa đủ, vì người đọc không nhìn thấy mã nguồn. Gửi kèm ở tin nhắn đầu:
-
-- `package.json` gốc, `pnpm-workspace.yaml`, `tsconfig.base.json`.
-- Toàn bộ `packages/shared/src/*` (hợp đồng mà API phải bám theo).
-- `apps/web/src/data/*` (làm dữ liệu seed).
-- `apps/web/src/features/survey/lib/{progress.ts, report-validation.ts, report-data.ts}` và `types.ts` (logic cần chuyển sang shared).
-- `apps/web/src/features/survey/services/survey.service.ts`, `store/survey-content-store.ts`, `hooks/use-survey-answers.ts` (các điểm sẽ nối API).
-
-Quy ước làm việc cần nhắc lại: làm theo từng phần ("tiếp tục" để sang phần kế), trả file đầy đủ, không comment trong mã, commit theo Conventional Commits có scope và viết bằng tiếng Anh.
+- Một VPS duy nhất nghĩa là không có dự phòng; chấp nhận được với lượng người dùng doanh nghiệp ít, bù bằng sao lưu và khả năng dựng lại bằng Docker Compose.
+- PDF/Word dựng ở trình duyệt nên server không kiểm tra được nội dung tệp xuất. Chỉ kiểm tra loại, kích thước, sha256.
+- Quét virus (ClamAV) chưa làm; liệt kê ở tính năng làm sau.

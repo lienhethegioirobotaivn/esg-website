@@ -1,6 +1,6 @@
 # Đa ngôn ngữ (vi, en, fr, zh)
 
-Tài liệu bàn giao cho người phát triển và người quản trị. Nhật ký từng giai đoạn nằm ở [ke-hoach-da-ngon-ngu.md](ke-hoach-da-ngon-ngu.md); cài Apps Script ở [huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md).
+Tài liệu bàn giao cho người phát triển và người quản trị. Cài Apps Script ở [huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Lưu ý: phần dịch bằng Apps Script (`LanguageApp`, tab "Bản dịch") chỉ đúng với bản demo; ở v2, bản dịch nằm ở bảng `translations`, dịch bằng Gemini, giữ nguyên khóa băm và quy tắc chỉnh tay thắng (xem [backend-database.md](backend-database.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md) mục QĐ-08).
 
 ## 1. Nguyên tắc
 

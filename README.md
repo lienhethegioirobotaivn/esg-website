@@ -13,7 +13,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
 | Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
-| `apps/api` | Không dùng (đã thay bằng Sheet và Apps Script) |
+| `apps/api` | Chưa có. Bản production v2 sẽ dựng NestJS + PostgreSQL thay Sheet và Apps Script; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md) (đang ở giai đoạn tài liệu, chưa code) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
 
@@ -113,12 +113,15 @@ Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo t
 - [Bối cảnh dự án](docs/boi-canh-du-an.md)
 - [Đa ngôn ngữ (vi, en, fr, zh): kiến trúc, vận hành, kiểm thử](docs/da-ngon-ngu.md)
 - [Giao diện báo cáo theo thương hiệu: kiến trúc, vận hành, giới hạn](docs/thuong-hieu-bao-cao.md)
-- [Kế hoạch và nhật ký triển khai giao diện theo thương hiệu](docs/ke-hoach-bao-cao-theo-thuong-hieu.md)
-- [Kế hoạch và nhật ký triển khai đa ngôn ngữ](docs/ke-hoach-da-ngon-ngu.md)
-- [Kế hoạch lưu báo cáo đã xuất và xác nhận email OTP](docs/ke-hoach-luu-bao-cao-va-xac-thuc-email.md)
-- [Kế hoạch chuyển toàn bộ sang Cloudflare (chưa làm)](docs/ke-hoach-chuyen-cloudflare.md)
+- Backend v2 (NestJS + PostgreSQL, tự host trên VPS):
+  - [Tổng quan](docs/backend-spec.md)
+  - [Database](docs/backend-database.md)
+  - [API](docs/backend-api.md)
+  - [Chuyển từ Apps Script/Sheet](docs/backend-migration.md)
+  - [Triển khai và sao lưu](docs/backend-deployment.md)
+  - [Lộ trình và tính năng làm sau](docs/backend-roadmap.md)
+  - [Thay đổi cần chốt so với bản demo](docs/backend-quyet-dinh-can-chot.md)
 - [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
 - [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)
-- [So sánh báo cáo xuất và mẫu](docs/so-sanh-bao-cao-xuat-va-mau.md)
 - [Đối chiếu biến mẫu và nguồn dữ liệu](docs/doi-chieu-bien-mau-nguon-du-lieu.md)
-- `docs/backend-spec.md` là tài liệu cũ về backend Express, không còn đúng với kiến trúc hiện tại.
+- Cài đặt Apps Script và quản trị Sheet chỉ còn đúng với bản demo; sẽ bỏ khi chuyển sang v2.

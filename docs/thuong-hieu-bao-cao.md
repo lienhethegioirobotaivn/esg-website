@@ -1,6 +1,8 @@
 # Giao diện báo cáo theo thương hiệu
 
-Tính năng tùy chọn: doanh nghiệp tải ảnh bộ nhận diện thương hiệu (logo, bảng màu, ấn phẩm), Google Gemini đề xuất màu, phông chữ và kiểu bố cục, và báo cáo PDF cùng Word được dựng theo đó. Kế hoạch và nhật ký từng giai đoạn: [ke-hoach-bao-cao-theo-thuong-hieu.md](ke-hoach-bao-cao-theo-thuong-hieu.md).
+Tính năng tùy chọn: doanh nghiệp tải ảnh bộ nhận diện thương hiệu (logo, bảng màu, ấn phẩm), Google Gemini đề xuất màu, phông chữ và kiểu bố cục, và báo cáo PDF cùng Word được dựng theo đó.
+
+Lưu ý v2: tài liệu mô tả bản demo trên Vercel. Ở bản production v2 (VPS), tính năng vẫn tùy chọn và tắt mặc định; hạn mức theo IP/ngày chuyển sang bảng `rate_limits` trong PostgreSQL (hết giới hạn "trong bộ nhớ từng instance" ở mục 4). Nếu sau này lưu bộ nhận diện lên server thì dùng bảng `files` và job dọn mồ côi, xem [backend-database.md](backend-database.md).
 
 ## 1. Bật và cấu hình
 

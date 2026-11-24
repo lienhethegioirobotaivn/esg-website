@@ -7,8 +7,10 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module.js";
 import { configureApp } from "./app.setup.js";
 import { EnvValidationError, loadEnv } from "./config/env.schema.js";
+import { loadEnvFile } from "./config/load-env-file.js";
 
 async function bootstrap(): Promise<void> {
+  loadEnvFile();
   const env = loadEnv(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   configureApp(app);

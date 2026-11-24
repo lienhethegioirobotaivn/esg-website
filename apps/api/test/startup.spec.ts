@@ -8,7 +8,7 @@ const apiRoot = fileURLToPath(new URL("..", import.meta.url));
 function runMain(env: NodeJS.ProcessEnv) {
   return spawnSync(process.execPath, ["--import", "tsx", "src/main.ts"], {
     cwd: apiRoot,
-    env: { PATH: process.env["PATH"] ?? "", ...env },
+    env: { PATH: process.env["PATH"] ?? "", NODE_ENV: "test", ...env },
     encoding: "utf8",
     timeout: 20000,
   });

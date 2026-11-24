@@ -1,8 +1,10 @@
 import { EnvValidationError, loadEnv } from "../config/env.schema.js";
+import { loadEnvFile } from "../config/load-env-file.js";
 import { createPool } from "./client.js";
 import { runMigrations } from "./migrate.js";
 
 async function main(): Promise<void> {
+  loadEnvFile();
   const env = loadEnv(process.env);
   const pool = createPool(env.DATABASE_URL, 2);
   try {

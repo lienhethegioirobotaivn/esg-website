@@ -49,6 +49,8 @@ pnpm db:migrate
 pnpm dev:api
 ```
 
+Nếu `pnpm db:up` báo lỗi cổng 5432 (`forbidden by its access permissions` trên Windows), tạo file `.env` ở thư mục gốc với `DB_PORT=5433`, rồi đổi cổng thành 5433 trong `DATABASE_URL` của `apps/api/.env` và `TEST_DATABASE_URL`. Kiểm tra cổng bị chặn bằng `netsh interface ipv4 show excludedportrange protocol=tcp`.
+
 Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","database":"up",...}`.
 
 | Biến (`apps/api/.env`) | Mặc định | Ý nghĩa |

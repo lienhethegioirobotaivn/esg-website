@@ -10,19 +10,28 @@ describe("loadEnv", () => {
   it("áp dụng giá trị mặc định khi chỉ có DATABASE_URL", () => {
     const env = loadEnv(validSource);
 
-    expect(env).toEqual({
+    expect(env).toMatchObject({
       NODE_ENV: "development",
       PORT: 3001,
       DATABASE_URL: validSource.DATABASE_URL,
       DATABASE_POOL_MAX: 10,
       RUN_MIGRATIONS_ON_START: false,
+      MAIL_PROVIDER: "console",
+      MAIL_DAILY_LIMIT: 300,
+      TRUSTED_PROXY: 0,
+      JOBS_ENABLED: true,
     });
+    expect(env.SESSION_SECRET.length).toBeGreaterThanOrEqual(32);
   });
 
   it("đọc và ép kiểu các biến đã đặt", () => {
     const env = loadEnv({
       ...validSource,
       NODE_ENV: "production",
+      SESSION_SECRET: "y".repeat(32),
+      MAIL_PROVIDER: "brevo",
+      MAIL_API_KEY: "khoa-thu-nghiem",
+      MAIL_FROM: "no-reply@example.com",
       PORT: "8080",
       DATABASE_POOL_MAX: "25",
       RUN_MIGRATIONS_ON_START: "true",
@@ -84,5 +93,50 @@ describe("loadEnv", () => {
         "RUN_MIGRATIONS_ON_START",
       ]);
     }
+  });
+  it("production bắt buộc SESSION_SECRET và cấm MAIL_PROVIDER=console", () => {
+    expect.assertions(2);
+    try {
+      loadEnv({ ...validSource, NODE_ENV: "production" });
+    } catch (error) {
+      const issues = (error as EnvValidationError).issues;
+      expect(issues.some((issue) => issue.startsWith("SESSION_SECRET: bắt buộc"))).toBe(true);
+      expect(issues.some((issue) => issue.startsWith("MAIL_PROVIDER: không được"))).toBe(true);
+    }
+  });
+
+  it("MAIL_PROVIDER=brevo bắt buộc MAIL_API_KEY và MAIL_FROM", () => {
+    expect.assertions(2);
+    try {
+      loadEnv({ ...validSource, MAIL_PROVIDER: "brevo" });
+    } catch (error) {
+      const issues = (error as EnvValidationError).issues;
+      expect(issues).toContain("MAIL_API_KEY: bắt buộc khi MAIL_PROVIDER=brevo");
+      expect(issues).toContain("MAIL_FROM: bắt buộc khi MAIL_PROVIDER=brevo");
+    }
+  });
+
+  it("chấp nhận cấu hình production đầy đủ với Brevo", () => {
+    const env = loadEnv({
+      ...validSource,
+      NODE_ENV: "production",
+      SESSION_SECRET: "x".repeat(40),
+      MAIL_PROVIDER: "brevo",
+      MAIL_API_KEY: "khoa-thu-nghiem",
+      MAIL_FROM: "no-reply@example.com",
+      TRUSTED_PROXY: "1",
+      MAIL_DAILY_LIMIT: "250",
+    });
+
+    expect(env.MAIL_PROVIDER).toBe("brevo");
+    expect(env.TRUSTED_PROXY).toBe(1);
+    expect(env.MAIL_DAILY_LIMIT).toBe(250);
+    expect(env.SESSION_SECRET).toBe("x".repeat(40));
+  });
+
+  it("từ chối SESSION_SECRET ngắn hơn 32 ký tự", () => {
+    expect(() => loadEnv({ ...validSource, SESSION_SECRET: "ngan" })).toThrow(
+      /SESSION_SECRET: phải dài ít nhất 32 ký tự/,
+    );
   });
 });

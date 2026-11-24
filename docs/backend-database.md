@@ -86,15 +86,22 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 
 | Dữ liệu | Điều kiện dọn | Tần suất |
 | --- | --- | --- |
-| `otp_challenges` | Đã hết hạn hoặc đã dùng quá 1 ngày | Hằng giờ |
-| `user_sessions`, `admin_sessions` | Hết hạn | Hằng ngày |
-| `rate_limits` | `window_start` cũ hơn 2 ngày | Hằng ngày |
+| `otp_challenges` | Đã hết hạn hoặc đã dùng quá 1 ngày | Hằng giờ (đã làm GĐ 2) |
+| `user_sessions`, `admin_sessions` | Hết hạn | Hằng giờ (đã làm GĐ 2) |
+| `rate_limits` | `window_start` cũ hơn 2 ngày | Hằng ngày (đã làm GĐ 2) |
 | `files` chưa tham chiếu | `referenced_at` rỗng sau 24 giờ → xóa mềm, 7 ngày sau xóa tệp trên đĩa | Hằng ngày |
 | `report_exports` thừa | Vượt 5 bản mỗi báo cáo → xóa dòng và tệp PDF/Word | Khi lưu bản mới, kèm quét hằng ngày |
 | `files` ảnh bài viết | Không còn trong `post_files` của bài nào (thay `trashUnusedImages_`) | Hằng ngày |
 | `evidence_files` | Báo cáo bị xóa → xóa theo, `files` tương ứng thành mồ côi | Cascade, rồi job tệp |
-| `email_outbox` | `sent` quá 30 ngày | Hằng tuần |
+| `email_outbox` | `sent` quá 30 ngày (thư `failed` được giữ để quản trị xem) | Hằng tuần (đã làm GĐ 2) |
 | Bản nháp | Người dùng xóa báo cáo → xóa nháp; nháp quá 12 tháng không cập nhật (QĐ-13) | Hằng tuần |
+
+### 8.1 Cơ chế việc nền (đã làm ở GĐ 2)
+
+- `JobScheduler` chạy trong tiến trình `api` (tắt bằng `JOBS_ENABLED=false`). Mỗi lần chạy một việc, `api` giữ khóa advisory `job:<tên>` nên chạy nhiều bản `api` cũng không chạy trùng; việc có `track` ghi `job_runs` (running, succeeded, failed, kèm `detail`).
+- Các việc: `deliver-outbox` (30 giây, không ghi `job_runs`), `cleanup-otp-challenges` và `cleanup-sessions` (1 giờ), `cleanup-rate-limits` (1 ngày), `cleanup-sent-emails` (7 ngày). Mỗi việc chạy lần đầu sau 10 giây tới 3 phút kể từ lúc khởi động.
+- Hộp thư đi: thư được ghi vào `email_outbox` rồi gửi ngay; việc `deliver-outbox` gửi lại thư còn `pending` đến hạn. Mỗi lần lấy thư, `attempts` tăng và `next_attempt_at` lùi 120 giây (thuê tạm) để hai tiến trình không gửi trùng. Thử lại sau 30 giây, 2 phút, 10 phút, 1 giờ; quá số lần của mẫu thư hoặc gặp lỗi không thử lại được (ví dụ sai khóa API) thì `failed`. Mẫu `otp` chỉ thử một lần (mã quá hạn nhanh) và xóa mã khỏi `payload` sau khi gửi xong hoặc thất bại.
+- Hạn mức thư: đếm thư `sent` trong 24 giờ gần nhất so với `MAIL_DAILY_LIMIT`. Hết hạn mức thì không tạo thêm OTP (`503 mail_daily_limit`); thư không phải OTP chỉ được gửi khi còn lại nhiều hơn 20% hạn mức dành cho OTP.
 
 Job kiểm tra thêm hai chiều: tệp trên đĩa không có dòng trong `files` (cảnh báo, không tự xóa), và dòng `files` mà tệp đã mất (ghi cảnh báo, hiện trong trang quản trị).
 

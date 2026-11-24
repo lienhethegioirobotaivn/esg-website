@@ -8,7 +8,7 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | --- | --- | --- | --- | --- |
 | 0 | Tài liệu (xong 23/11/2026) | Viết bộ tài liệu backend v2, danh sách quyết định, xóa tài liệu lỗi thời | `docs/backend-*.md`, README, bối cảnh dự án cập nhật | Rà liên kết, tên bảng/endpoint nhất quán |
 | 1 | Khung dự án và database (xong 23/11/2026) | Dựng `apps/api` (NestJS 12), cấu hình/validate biến môi trường, Drizzle + migration cho toàn bộ bảng, Docker Compose cho dev, `/health`, CI cơ bản | `apps/api`, schema, migration đầu tiên | Migration chạy sạch từ database rỗng; kiểm thử khởi động |
-| 2 | Xác thực người dùng, email, giới hạn tần suất | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
+| 2 | Xác thực người dùng, email, giới hạn tần suất (xong 24/11/2026) | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
 | 3 | Ngân hàng câu hỏi | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
 | 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
 | 5 | Quản trị: tài khoản, CRM, phản hồi | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
@@ -29,7 +29,16 @@ Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đo�
 - Phát hiện cần xử lý ở GĐ 3: bộ câu hỏi v0.1 có `input_type` `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` ngoài 8 kiểu của `@esg/shared`; `@esg/shared` hiện export thẳng file `.ts` nên `apps/api` chỉ dùng được sau khi cho nó build ra JS hoặc bundle.
 - Điểm Sheet chưa có chỗ trong schema (chờ bạn quyết định, xem phần hỏi cuối GĐ 1): trạng thái chăm sóc/ngày liên hệ tiếp/ghi chú/người phụ trách của Sheet "Data khách hàng", trạng thái hồ sơ 4 mức, và các cột bài viết như mã bài, mục, chuyên mục, tên tác giả, phút đọc, cờ nổi bật.
 
-**Giai đoạn kế tiếp (GĐ 2):** xác thực người dùng bằng OTP email, phiên đăng nhập lưu băm trong database, `MailService` + `email_outbox`, giới hạn tần suất trong PostgreSQL, bộ lọc lỗi chuẩn `{ "error": ... }`, job dọn OTP/phiên.
+### 1.2 Kết quả giai đoạn 2 (24/11/2026)
+
+- `/api/v1/auth/*`: `email/request`, `email/verify`, `me`, `logout` (cookie `esg-user`, HttpOnly, SameSite=Lax, 30 ngày; token ngẫu nhiên, chỉ lưu SHA-256 trong `user_sessions`). Mã OTP lưu HMAC-SHA256 với `SESSION_SECRET`. Luật OTP: 6 số, hạn 600 giây, tối đa 5 lần thử, cách nhau 60 giây, 3 lần/giờ/email, giới hạn IP và toàn hệ thống như demo; khóa advisory theo email chống chạy đua.
+- `MailService` + `email_outbox` + `MailProvider`: adapter Brevo (API HTTP, không thêm thư viện) và `console` (dev). Mẫu thư OTP 4 ngôn ngữ giữ nguyên nội dung demo. Production bắt buộc `brevo`.
+- `RateLimitService` trong PostgreSQL (cửa sổ cố định, đếm nguyên tử bằng upsert), `AllExceptionsFilter` (định dạng lỗi `{ error: { code, message, ... } }`, `Retry-After`), `UserSessionGuard` + `@CurrentUser()` cho các endpoint cần đăng nhập sau này, `JobScheduler` (khóa advisory, `job_runs`) và 5 việc nền.
+- Biến mới: `SESSION_SECRET`, `MAIL_PROVIDER`, `MAIL_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_DAILY_LIMIT`, `TRUSTED_PROXY`, `JOBS_ENABLED`.
+- Chưa làm (để giai đoạn hạ tầng): xác thực tên miền gửi thư (SPF/DKIM/DMARC), adapter Resend dự phòng, `ADMIN_NOTIFY_EMAIL`.
+- Kiểm thử: 53 đơn vị, 65 tích hợp trong `apps/api`.
+
+**Giai đoạn kế tiếp (GĐ 3):** ngân hàng câu hỏi có phiên bản: bảng đã có, công cụ nhập xlsx v0.1 (175 câu), API đọc `GET /survey-bank` (ETag), kiểm tra hợp lệ; xử lý các kiểu nhập `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` và cách `apps/api` dùng `@esg/shared` (cho nó build ra JS).
 
 ## 2. Nguyên tắc kiểm thử
 

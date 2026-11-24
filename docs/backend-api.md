@@ -13,7 +13,20 @@ Ký hiệu quyền: **Public** (không cần đăng nhập), **User** (cookie `e
 | `GET /auth/me` | Public | Trả về người dùng hiện tại hoặc `null` | `/api/auth/me` |
 | `POST /auth/logout` | User | Hủy phiên | `/api/auth/logout` |
 
-Giới hạn (giữ như demo): yêu cầu OTP 6 lần/IP/10 phút và 300/ngày; xác minh 20 và 3.000; mỗi email 3 lần/giờ, cách nhau 60 giây; sai tối đa 5 lần mỗi mã. Mức trần 60 OTP/ngày toàn hệ thống: xem QĐ-07.
+Giới hạn (giữ như demo): yêu cầu OTP 6 lần/IP/10 phút và 300/ngày; xác minh 20 và 3.000; mỗi email 3 lần/giờ, cách nhau 60 giây; sai tối đa 5 lần mỗi mã. Hạn mức thư theo nhà cung cấp (`MAIL_DAILY_LIMIT`, Brevo free 300/24 giờ): xem QĐ-07. Đã làm ở Giai đoạn 2.
+
+Chi tiết đã làm (Giai đoạn 2):
+
+| Endpoint | Thân yêu cầu | Thành công | Lỗi |
+| --- | --- | --- | --- |
+| `POST /auth/email/request` | `{ email, locale }` (`vi`, `en`, `fr`, `zh`) | `200 { resendAfter: 60, expiresIn: 600 }` | `400 invalid_email`, `429 otp_wait` / `otp_hourly_limit` / `rate_limited` (kèm `retryAfter` và tiêu đề `Retry-After`), `502 mail_unavailable`, `503 mail_daily_limit` |
+| `POST /auth/email/verify` | `{ email, code }` (6 số) | `200 { email }` + cookie `esg-user` | `400 otp_invalid` (kèm `triesLeft`), `410 otp_expired`, `429 otp_locked` / `rate_limited` |
+| `GET /auth/me` | - | `200 { email: string \| null }` | - |
+| `POST /auth/logout` | - | `204`, xóa cookie | `401 unauthorized` nếu chưa đăng nhập |
+
+Email được chuẩn hóa về chữ thường. Yêu cầu mã mới làm mã cũ hết hiệu lực. Nếu gửi thư thất bại thì mã vừa tạo bị xóa và không tính vào hạn mức 3 lần/giờ.
+
+Mã lỗi dùng chung (`error.code`): `invalid_request` (400), `unauthorized` (401), `forbidden` (403), `not_found` (404), `method_not_allowed` (405), `payload_too_large` (413), `rate_limited` (429), `internal_error` (500, không lộ chi tiết). Thân lỗi luôn là `{ "error": { "code", "message", ...trường phụ như retryAfter, triesLeft } }`.
 
 ## 2. Ngân hàng câu hỏi và hồ sơ
 

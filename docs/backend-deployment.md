@@ -24,11 +24,12 @@ Kiểm tra bằng schema lúc khởi động. Không có biến nào dùng chung
 | --- | --- |
 | Cơ bản (đã có từ GĐ 1) | `NODE_ENV`, `PORT` (mặc định 3001), `DATABASE_URL` (bắt buộc), `DATABASE_POOL_MAX` (mặc định 10), `RUN_MIGRATIONS_ON_START` (mặc định `false`; bật ở production để `api` tự migrate có khóa advisory) |
 | Database | `DATABASE_URL` |
-| Phiên | `SESSION_SECRET` (dùng cho băm/ký phụ trợ), `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` (chỉ để tạo quản trị đầu tiên) |
+| Phiên (đã có từ GĐ 2) | `SESSION_SECRET` (tối thiểu 32 ký tự; băm mã OTP, IP, bắt buộc ở production), `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` (GĐ 5, chỉ để tạo quản trị đầu tiên) |
 | Tệp | `STORAGE_DIR`, `MAX_UPLOAD_BYTES` |
-| Email | `MAIL_PROVIDER`, `MAIL_API_KEY`, `MAIL_FROM`, `ADMIN_NOTIFY_EMAIL` |
+| Email (đã có từ GĐ 2) | `MAIL_PROVIDER` (`console` hoặc `brevo`; production bắt buộc `brevo`), `MAIL_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_DAILY_LIMIT` (mặc định 300); `ADMIN_NOTIFY_EMAIL` (GĐ 5) |
 | Dịch | `GEMINI_API_KEY` (tùy chọn) |
-| Website | `PUBLIC_BASE_URL`, `TRUSTED_PROXY` |
+| Website | `PUBLIC_BASE_URL`; `TRUSTED_PROXY` (đã có từ GĐ 2: số lớp proxy tin cậy, Caddy đặt `1`) |
+| Việc nền (đã có từ GĐ 2) | `JOBS_ENABLED` (mặc định `true`) |
 
 ## 3. Sao lưu tự động
 
@@ -59,7 +60,7 @@ GitHub Actions: kiểm tra kiểu, lint, kiểm thử → build image → đẩy
 
 1. Chạy nhập dữ liệu thử và đối chiếu (xem `backend-migration.md`).
 2. Khôi phục thử từ sao lưu thành công.
-3. Kiểm tra gửi/nhận OTP từ tên miền thật, không vào thư rác.
+3. Kiểm tra gửi/nhận OTP từ tên miền thật, không vào thư rác. Cần làm trước: xác thực tên miền ở Brevo (thêm bản ghi SPF/DKIM/DMARC do Brevo cung cấp vào DNS), tạo người gửi trên tên miền đó rồi đổi `MAIL_FROM`; trong lúc phát triển dùng người gửi đã xác minh tạm.
 4. Kiểm thử tải: nhiều người cùng điền và xuất báo cáo.
 5. Đã thông báo thời điểm chuyển và việc đăng nhập lại.
 6. Sheet/Drive đã chuyển sang chỉ đọc và đã có bản sao nguyên trạng.

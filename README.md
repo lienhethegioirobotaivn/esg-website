@@ -60,6 +60,16 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 | `NODE_ENV` | `development` | `development`, `test` hoặc `production` |
 | `DATABASE_POOL_MAX` | `10` | Số kết nối tối đa |
 | `RUN_MIGRATIONS_ON_START` | `false` | `true` để tự chạy migration khi khởi động |
+| `SESSION_SECRET` | khóa tạm khi dev | Khóa băm mã OTP, IP, phiên; tối thiểu 32 ký tự; bắt buộc ở production. Sinh: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
+| `MAIL_PROVIDER` | `console` | `console` (chỉ in thư ra log để dev, mã OTP hiện trong log) hoặc `brevo`; production bắt buộc `brevo` |
+| `MAIL_API_KEY` | (trống) | API key Brevo, bắt buộc khi `MAIL_PROVIDER=brevo` |
+| `MAIL_FROM` | (trống) | Địa chỉ người gửi đã xác minh ở Brevo, bắt buộc khi `MAIL_PROVIDER=brevo` |
+| `MAIL_FROM_NAME` | `ESG Report Online` | Tên hiển thị người gửi |
+| `MAIL_DAILY_LIMIT` | `300` | Hạn mức thư mỗi 24 giờ của nhà cung cấp (Brevo free: 300) |
+| `TRUSTED_PROXY` | `0` | Số lớp proxy tin cậy phía trước API (Caddy: `1`); 0 là không tin tiêu đề `X-Forwarded-For` |
+| `JOBS_ENABLED` | `true` | `false` để tắt việc nền (gửi lại thư, dọn dữ liệu) |
+
+Dùng thử đăng nhập OTP khi dev: để `MAIL_PROVIDER=console`, gọi `POST /api/v1/auth/email/request`, mã 6 số hiện trong log của API.
 
 Kiểm thử: `pnpm --filter api test` (không cần database) và `TEST_DATABASE_URL=postgres://esg:esg@localhost:5432/postgres pnpm --filter api test:integration` (cần PostgreSQL 18, tạo và xóa database tạm). Sinh migration sau khi sửa schema: `pnpm db:generate`.
 

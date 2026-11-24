@@ -1,6 +1,6 @@
 # ESGstudio v2: Tài liệu tổng quan Backend
 
-Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 (khung `apps/api` và database) đã code ngày 23/11/2026; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
+Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 (khung `apps/api` và database, 23/11/2026) và giai đoạn 2 (đăng nhập OTP, email, giới hạn tần suất, việc nền, 24/11/2026) đã code; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
 
 Bộ tài liệu backend v2 gồm:
 
@@ -39,8 +39,8 @@ Phiên bản kiểm tra lại ngày 23/11/2026 và đã khóa chính xác trong 
 | Frontend | Next.js 16 + React 19 như hiện tại, chạy chế độ standalone trong Docker | Không còn route handler gọi Apps Script |
 | Đóng gói | pnpm workspace: `apps/web`, `apps/api`, `packages/shared` (`@esg/shared`), `tools/esg-agents` | Giữ monorepo, dùng chung zod schema và hằng số |
 | Proxy | Caddy (HTTPS tự động) | Cùng origin: `/` về web, `/api/*` về api, cookie `SameSite=Lax` |
-| Việc nền | `@nestjs/schedule` + khóa `pg_advisory_lock` | Không dùng Redis |
-| Email | Lớp `MailService` đổi được nhà cung cấp; đề xuất Resend (gói miễn phí 3.000 thư/tháng, 100 thư/ngày) | Xem QĐ-07 về giới hạn OTP |
+| Việc nền | `JobScheduler` tự viết (bộ hẹn giờ trong tiến trình + khóa `pg_advisory_lock`, ghi `job_runs`) | Không dùng Redis và không cần `@nestjs/schedule`; xem `backend-database.md` mục 8.1 |
+| Email | Lớp `MailService` đổi được nhà cung cấp (`MailProvider`); đã làm adapter Brevo (gói miễn phí 300 thư/ngày) và `console` cho dev; Resend (100 thư/ngày) là phương án dự phòng, chưa làm adapter | Xem QĐ-07 về giới hạn OTP |
 | Dịch tự động | Gemini API qua `TranslationService` | Thay `LanguageApp` của Apps Script (QĐ-08) |
 
 ## 3. Kiến trúc

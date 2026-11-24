@@ -6,8 +6,8 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 
 | GĐ | Tên | Nội dung | Đầu ra | Kiểm thử |
 | --- | --- | --- | --- | --- |
-| 0 | Tài liệu (đang làm) | Viết bộ tài liệu backend v2, danh sách quyết định, xóa tài liệu lỗi thời | `docs/backend-*.md`, README, bối cảnh dự án cập nhật | Rà liên kết, tên bảng/endpoint nhất quán |
-| 1 | Khung dự án và database | Dựng `apps/api` (NestJS 12), cấu hình/validate biến môi trường, Drizzle + migration cho toàn bộ bảng, Docker Compose cho dev, `/health`, CI cơ bản | `apps/api`, schema, migration đầu tiên | Migration chạy sạch từ database rỗng; kiểm thử khởi động |
+| 0 | Tài liệu (xong 23/11/2026) | Viết bộ tài liệu backend v2, danh sách quyết định, xóa tài liệu lỗi thời | `docs/backend-*.md`, README, bối cảnh dự án cập nhật | Rà liên kết, tên bảng/endpoint nhất quán |
+| 1 | Khung dự án và database (xong 23/11/2026) | Dựng `apps/api` (NestJS 12), cấu hình/validate biến môi trường, Drizzle + migration cho toàn bộ bảng, Docker Compose cho dev, `/health`, CI cơ bản | `apps/api`, schema, migration đầu tiên | Migration chạy sạch từ database rỗng; kiểm thử khởi động |
 | 2 | Xác thực người dùng, email, giới hạn tần suất | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
 | 3 | Ngân hàng câu hỏi | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
 | 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
@@ -18,7 +18,18 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 9 | Chuyển dữ liệu | `tools/migrate-from-sheet`, chạy khô và chạy thật trên bản thử, đối chiếu số liệu | Công cụ nhập, báo cáo đối chiếu | Số dòng/tệp/dung lượng khớp, mẫu sha256 |
 | 10 | Hạ tầng và cutover | VPS, Docker Compose, Caddy, sao lưu và diễn tập khôi phục, CI/CD, DNS, gửi email thật, chuyển | Hệ thống production | Danh sách ở `backend-deployment.md`, mục 6 |
 
-Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp sau tài liệu là GĐ 1.**
+Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 2.**
+
+### 1.1 Kết quả giai đoạn 1 (23/11/2026)
+
+- `apps/api`: NestJS 12.6.0 (ESM), TypeScript 6.0.3, Vitest, ESLint; biến môi trường kiểm tra bằng zod lúc khởi động; `GET /api/v1/health`.
+- Database: schema Drizzle cho 29 bảng, migration `apps/api/drizzle/0000_init.sql`, chạy qua `pnpm db:migrate` (khóa advisory) hoặc `RUN_MIGRATIONS_ON_START=true`. Không tạo `evidence_reviews` (dự trữ) và `upload_sessions` (QĐ-12).
+- Hạ tầng dev: `compose.dev.yaml` (PostgreSQL 18), CI `.github/workflows/ci.yml` (typecheck, lint, test, kiểm thử tích hợp trên PG 18, build và smoke test `/health`).
+- Node 24 ở `package.json` gốc (`engines`, `packageManager`) và README.
+- Phát hiện cần xử lý ở GĐ 3: bộ câu hỏi v0.1 có `input_type` `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` ngoài 8 kiểu của `@esg/shared`; `@esg/shared` hiện export thẳng file `.ts` nên `apps/api` chỉ dùng được sau khi cho nó build ra JS hoặc bundle.
+- Điểm Sheet chưa có chỗ trong schema (chờ bạn quyết định, xem phần hỏi cuối GĐ 1): trạng thái chăm sóc/ngày liên hệ tiếp/ghi chú/người phụ trách của Sheet "Data khách hàng", trạng thái hồ sơ 4 mức, và các cột bài viết như mã bài, mục, chuyên mục, tên tác giả, phút đọc, cờ nổi bật.
+
+**Giai đoạn kế tiếp (GĐ 2):** xác thực người dùng bằng OTP email, phiên đăng nhập lưu băm trong database, `MailService` + `email_outbox`, giới hạn tần suất trong PostgreSQL, bộ lọc lỗi chuẩn `{ "error": ... }`, job dọn OTP/phiên.
 
 ## 2. Nguyên tắc kiểm thử
 

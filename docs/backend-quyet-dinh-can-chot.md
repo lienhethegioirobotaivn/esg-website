@@ -1,6 +1,8 @@
 # ESGstudio v2: Thay đổi so với bản demo cần bạn quyết định
 
-Mỗi mục dưới đây ảnh hưởng tính năng hiện có hoặc trải nghiệm người dùng so với bản demo dùng Google Sheet. Cột "Đề xuất" là khuyến nghị của tôi; **chưa áp dụng cho tới khi bạn chốt**. Ghi chú: các mục đánh dấu "đã chốt" là quyết định bạn đã đưa ra, liệt kê lại để đủ danh sách.
+Mỗi mục dưới đây ảnh hưởng tính năng hiện có hoặc trải nghiệm người dùng so với bản demo dùng Google Sheet. Cột "Đề xuất" là khuyến nghị của tôi.
+
+**Trạng thái (23/11/2026):** bạn đã chốt theo cột "Đề xuất" cho tất cả QĐ-01 đến QĐ-20. Riêng QĐ-01 chốt rõ là giữ như bản demo (10 tệp, 10 MB, PDF/PNG/JPEG/WEBP) và QĐ-20 chốt Node 24 LTS. Các việc cần xác nhận lại khi tới giai đoạn liên quan vẫn giữ nguyên (ví dụ QĐ-02 đối chiếu `Code.gs` ở GĐ 4). Tác động lên schema: QĐ-12 làm bỏ bảng `upload_sessions`; QĐ-05, QĐ-06, QĐ-10 đã có bảng tương ứng. Ghi chú: các mục đánh dấu "đã chốt" là quyết định bạn đã đưa ra, liệt kê lại để đủ danh sách.
 
 Mức ảnh hưởng: **Cao** (người dùng/quản trị thấy khác ngay), **Vừa**, **Thấp**.
 

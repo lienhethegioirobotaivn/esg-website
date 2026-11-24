@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm --filter @esg/shared test
+      - run: pnpm --filter web test
+      - run: pnpm --filter api test
+
+  api-integration:
+    name: API integration (PostgreSQL 18)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: esg
+          POSTGRES_PASSWORD: esg
+          POSTGRES_DB: esg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U esg -d esg"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://esg:esg@localhost:5432/postgres
+      DATABASE_URL: postgres://esg:esg@localhost:5432/esg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api test:integration
+      - run: pnpm --filter api build
+      - name: Migrate and smoke-test the built API
+        working-directory: apps/api
+        run: |
+          pnpm db:migrate
+          PORT=3001 node dist/main.js &
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://localhost:3001/api/v1/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API không phản hồi /api/v1/health" >&2
+          exit 1

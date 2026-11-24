@@ -9,7 +9,7 @@
 | `caddy` | `caddy:2` | HTTPS tự động, chuyển `/api/*` về `api`, còn lại về `web` |
 | `web` | build từ `apps/web` | Next.js standalone |
 | `api` | build từ `apps/api` | NestJS, chạy migration lúc khởi động có khóa |
-| `db` | `postgres:18` | Volume riêng, không mở cổng ra ngoài |
+| `db` | `postgres:18` | Volume riêng, không mở cổng ra ngoài. Từ PG 18 image dùng thư mục dữ liệu theo phiên bản, nên mount volume vào `/var/lib/postgresql` (không phải `/var/lib/postgresql/data`) như `compose.dev.yaml` |
 | `backup` | tiện ích `pg_dump` + công cụ đồng bộ | Chạy theo lịch, xem mục 3 |
 
 Volume: `pgdata` (database), `files` (tệp người dùng), `backups` (bản sao tại máy). Chỉ Caddy mở cổng 80/443.
@@ -22,6 +22,7 @@ Kiểm tra bằng schema lúc khởi động. Không có biến nào dùng chung
 
 | Nhóm | Biến |
 | --- | --- |
+| Cơ bản (đã có từ GĐ 1) | `NODE_ENV`, `PORT` (mặc định 3001), `DATABASE_URL` (bắt buộc), `DATABASE_POOL_MAX` (mặc định 10), `RUN_MIGRATIONS_ON_START` (mặc định `false`; bật ở production để `api` tự migrate có khóa advisory) |
 | Database | `DATABASE_URL` |
 | Phiên | `SESSION_SECRET` (dùng cho băm/ký phụ trợ), `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` (chỉ để tạo quản trị đầu tiên) |
 | Tệp | `STORAGE_DIR`, `MAX_UPLOAD_BYTES` |

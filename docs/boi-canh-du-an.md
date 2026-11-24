@@ -2,7 +2,7 @@
 
 Đọc file này trước khi làm. Tình trạng: phần 1–11 cập nhật đến ngày 05/11/2026, phần 12 (trang Về ESG Report Online, trang quản trị, Tư vấn, SEO) cập nhật đến ngày 08/11/2026. Mục nào ghi "cần kiểm tra" là điều chưa được xác nhận trong mã nguồn lúc viết.
 
-> **Cập nhật 23/11/2026: hướng đi mới là bản production v2** (NestJS + PostgreSQL tự host trên một VPS, bỏ Google Sheet, Apps Script, Drive, Vercel và hướng Cloudflare). Các mục 2, 3, 4, 13 và phần Apps Script ở mục 12 mô tả **bản demo hiện tại** và sẽ lỗi thời khi chuyển. Thiết kế v2 ở mục 14 và `docs/backend-*.md`. Hiện chỉ làm tài liệu, chưa code.
+> **Cập nhật 23/11/2026: hướng đi mới là bản production v2** (NestJS + PostgreSQL tự host trên một VPS, bỏ Google Sheet, Apps Script, Drive, Vercel và hướng Cloudflare). Các mục 2, 3, 4, 13 và phần Apps Script ở mục 12 mô tả **bản demo hiện tại** và sẽ lỗi thời khi chuyển. Thiết kế v2 ở mục 14 và `docs/backend-*.md`. Giai đoạn 0 (tài liệu) và giai đoạn 1 (khung `apps/api`, schema, migration) đã xong; xem mục 14.
 
 ## 1. Cách làm việc với người dùng (Bình)
 
@@ -22,7 +22,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 
 - `apps/web`: Next.js (App Router, Turbopack), Tailwind v4, @react-pdf/renderer, zod 4.
 - `packages/shared` (`@esg/shared`): kiểu dữ liệu, quy tắc câu trả lời, `buildReportModel`, test bằng `tsx --test`.
-- `apps/api`: **chưa tạo**, đã thay bằng Google Sheet + Apps Script.
+- `apps/api`: bản v2 (NestJS 12 + Drizzle + PostgreSQL 18), mới xong giai đoạn 1. Frontend vẫn dùng Google Sheet + Apps Script cho tới giai đoạn 8.
 
 Không còn mock data và không còn bộ câu hỏi do admin nhập trong web. `/admin` được ẩn nhưng giữ code.
 
@@ -118,6 +118,7 @@ Quyết định đã chốt:
 ## 9. Lệnh thường dùng
 
 - `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm typecheck`, `pnpm lint`
+- Backend v2: `pnpm db:up`, `pnpm db:migrate`, `pnpm db:generate`, `pnpm dev:api`, `pnpm --filter api test`, `pnpm --filter api test:integration` (cần `TEST_DATABASE_URL`).
 - Test shared: chạy trong `packages/shared` (`tsx --test`), file `tests/report-model.test.ts`.
 
 ## 10. Quy ước code
@@ -202,8 +203,9 @@ Các quy tắc chi tiết đã được gộp vào [docs/backend-migration.md](b
 
 ## 14. Cập nhật 23/11/2026: bản production v2 (NestJS + PostgreSQL trên VPS)
 
-Thay hướng Cloudflare (đã bỏ, file kế hoạch đã xóa). Tài liệu: [backend-spec.md](backend-spec.md), [backend-database.md](backend-database.md), [backend-api.md](backend-api.md), [backend-migration.md](backend-migration.md), [backend-deployment.md](backend-deployment.md), [backend-roadmap.md](backend-roadmap.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md). **Chưa có code v2**; phiên làm việc về v2 phải đọc các tài liệu này trước và **không tự code** khi Bình chưa nói "làm giai đoạn tiếp theo". Trước mỗi giai đoạn phải nói rõ giai đoạn đó sẽ làm gì.
+Thay hướng Cloudflare (đã bỏ, file kế hoạch đã xóa). Tài liệu: [backend-spec.md](backend-spec.md), [backend-database.md](backend-database.md), [backend-api.md](backend-api.md), [backend-migration.md](backend-migration.md), [backend-deployment.md](backend-deployment.md), [backend-roadmap.md](backend-roadmap.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md). **Giai đoạn 1 đã code (23/11/2026), các giai đoạn sau chưa**; phiên làm việc về v2 phải đọc các tài liệu này trước và **không tự code** khi Bình chưa nói "làm giai đoạn tiếp theo". Trước mỗi giai đoạn phải nói rõ giai đoạn đó sẽ làm gì.
 
+- Đã chốt 23/11/2026: theo cột "Đề xuất" cho mọi QĐ; QĐ-01 giữ như demo; QĐ-20 Node 24 LTS. Phiên bản khóa: NestJS 12.6.0, Drizzle ORM 0.45.4, drizzle-kit 0.31.11, TypeScript 6.0.3 cho `apps/api`, PostgreSQL 18.7.
 - Công nghệ: NestJS 12, PostgreSQL 18 tự host, Drizzle ORM 0.45.x, Docker Compose, Caddy; frontend, backend, database cùng một VPS, triển khai một lần khi viết lại xong. Bỏ hẳn Google Sheet, Apps Script, Drive, Vercel; trang quản trị tự xây.
 - Chuyển toàn bộ dữ liệu Sheet/Drive, không mất gì; database có sao lưu tự động. Email OTP và thông báo qua dịch vụ ngoài (đề xuất Resend).
 - Đã chốt: tệp minh chứng và bản nháp trên server chỉ cho người đã xác thực email (chưa xác thực giữ nháp trong trình duyệt, có dialog nhắc); CRM nằm hoàn toàn trong trang quản trị, có nút xuất file; AI đánh giá minh chứng **chưa làm**, chỉ chừa chỗ mở rộng.

@@ -1,6 +1,6 @@
 # ESGstudio v2: Tài liệu tổng quan Backend
 
-Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Chưa có dòng code nào của v2 được viết; mọi thứ ở đây là thiết kế để bạn duyệt.
+Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 (khung `apps/api` và database) đã code ngày 23/11/2026; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
 
 Bộ tài liệu backend v2 gồm:
 
@@ -28,14 +28,14 @@ Bộ tài liệu backend v2 gồm:
 
 ## 2. Công nghệ
 
-Phiên bản đã kiểm tra tháng 11/2026. Khi bắt đầu code sẽ khóa phiên bản chính xác trong `package.json` và `pnpm-lock.yaml`.
+Phiên bản kiểm tra lại ngày 23/11/2026 và đã khóa chính xác trong `package.json` và `pnpm-lock.yaml` ở Giai đoạn 1.
 
 | Thành phần | Chọn | Ghi chú |
 | --- | --- | --- |
-| Runtime | Node.js 24 LTS (hỗ trợ đến 04/2028) hoặc Node.js 26 (LTS từ 28/10/2026, đến 04/2029) | Đề xuất Node 24 cho an toàn hệ sinh thái; Node 26 cũng ổn. Cần bạn chốt (QĐ-20) |
-| Framework | NestJS 12 (ổn định từ 27/08/2026, bản mới nhất 12.5.0) | NestJS 11 chỉ còn vá bảo mật. Nest 12 dùng ESM, Standard Schema để validate, TypeScript 6 |
-| ORM | Drizzle ORM `0.45.x` ổn định + `drizzle-kit 0.31.x` | Drizzle 1.0 đang RC và còn thay đổi phá vỡ, nên chưa dùng. Nâng lên 1.0 khi bản stable ra, qua một giai đoạn riêng |
-| Database | PostgreSQL 18 (18.7) | PG 14 hết hỗ trợ 12/11/2026. Không dùng PG 19 (còn RC). Dùng UUIDv7 cho khóa chính |
+| Runtime | Node.js 24 LTS (hỗ trợ đến 04/2028) | Đã chốt (QĐ-20); `engines` là `>=24 <25`. Node 26 (LTS từ 28/10/2026) có thể chuyển khi bạn muốn |
+| Framework | NestJS 12 (ổn định từ 27/08/2026), khóa `12.6.0` (CLI `12.0.15`) | NestJS 11 chỉ còn vá bảo mật. Nest 12 dùng ESM (import tương đối có đuôi `.js`), Vitest, Standard Schema để validate. `apps/api` dùng TypeScript `6.0.3`: bản `latest` trên npm hiện là TypeScript 7 nhưng Nest 12 chưa dùng được với nó |
+| ORM | Drizzle ORM `0.45.4` + `drizzle-kit 0.31.11` (khóa chính xác) | Drizzle 1.0 đang RC và còn thay đổi phá vỡ, nên chưa dùng. Nâng lên 1.0 khi bản stable ra, qua một giai đoạn riêng |
+| Database | PostgreSQL 18 (18.7), image `postgres:18` | PG 14 hết hỗ trợ 12/11/2026. PG 19.0 đã phát hành stable ngày 19/11/2026 nhưng mới là bản `.0`; giữ PG 18 và xem xét PG 19 sau khi có vài bản vá. Dùng UUIDv7 cho khóa chính (hàm `uuidv7()` có sẵn từ PG 18) |
 | Frontend | Next.js 16 + React 19 như hiện tại, chạy chế độ standalone trong Docker | Không còn route handler gọi Apps Script |
 | Đóng gói | pnpm workspace: `apps/web`, `apps/api`, `packages/shared` (`@esg/shared`), `tools/esg-agents` | Giữ monorepo, dùng chung zod schema và hằng số |
 | Proxy | Caddy (HTTPS tự động) | Cùng origin: `/` về web, `/api/*` về api, cookie `SameSite=Lax` |
@@ -77,8 +77,8 @@ Trình duyệt ──HTTPS──> Caddy ──/──────> web (Next.js,
 
 | Module | Trách nhiệm |
 | --- | --- |
-| `config` | Đọc và kiểm tra biến môi trường lúc khởi động (từ chối chạy nếu thiếu) |
-| `database` | Kết nối Drizzle, migration, giao dịch |
+| `config` | Đọc và kiểm tra biến môi trường lúc khởi động bằng zod (từ chối chạy, thoát mã 1 và nêu rõ biến lỗi) |
+| `database` | Kết nối Drizzle (`pg` Pool), migration có khóa `pg_advisory_lock`, tùy chọn chạy khi khởi động (`RUN_MIGRATIONS_ON_START`), giao dịch |
 | `auth` | OTP email, phiên người dùng, cookie `esg-user` |
 | `admin-auth` | Đăng nhập quản trị, vai trò (`admin`, `content`, `ops`), khóa khi sai nhiều lần |
 | `question-bank` | Phiên bản ngân hàng câu hỏi, nhóm, câu hỏi, route, quy tắc minh chứng; API đọc cho web, API soạn thảo cho admin |
@@ -95,7 +95,7 @@ Trình duyệt ──HTTPS──> Caddy ──/──────> web (Next.js,
 | `rate-limit` | Giới hạn tần suất lưu trong PostgreSQL |
 | `audit` | Nhật ký thao tác quản trị |
 | `jobs` | Lịch chạy nền: dọn tệp tạm, dọn mồ côi, gửi thư mời đánh giá, dịch, sao lưu |
-| `health` | `/health` cho Docker và giám sát |
+| `health` | `GET /api/v1/health` cho Docker và giám sát: 200 khi database trả lời trong 3 giây, 503 khi không |
 
 ## 6. Mô hình báo cáo
 

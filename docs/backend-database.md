@@ -1,13 +1,13 @@
 # ESGstudio v2: Thiết kế database
 
-PostgreSQL 18, ORM Drizzle `0.45.x`, migration bằng `drizzle-kit`. Tài liệu này mô tả bảng, cột chính, ràng buộc và việc dọn dữ liệu mồ côi. Mã Drizzle sẽ viết ở Giai đoạn 1, bám sát bảng dưới đây.
+PostgreSQL 18, ORM Drizzle `0.45.4`, migration bằng `drizzle-kit 0.31.11`. Tài liệu này mô tả bảng, cột chính, ràng buộc và việc dọn dữ liệu mồ côi. Mã Drizzle đã viết ở Giai đoạn 1 (`apps/api/src/database/schema/`), migration đầu tiên là `apps/api/drizzle/0000_init.sql` (29 bảng). Khi sửa schema, sửa mã Drizzle rồi chạy `pnpm db:generate`, không sửa tay file SQL đã sinh.
 
 Quy ước chung:
 
-- Khóa chính `id uuid` kiểu UUIDv7, sinh ở ứng dụng. Mã dễ đọc (`ESG-...`, `RX-...`, `TV-...`) là cột riêng, duy nhất.
-- Mọi bảng có `created_at timestamptz not null default now()`; bảng có sửa đổi có thêm `updated_at`.
-- Giá trị trạng thái/loại lưu bằng **mã enum tiếng Anh** (kiểu `text` kèm ràng buộc `check`, hoặc enum Postgres), không lưu nhãn tiếng Việt.
-- Email lưu chữ thường, dùng kiểu `citext` hoặc chuẩn hóa ở ứng dụng, có chỉ mục duy nhất.
+- Khóa chính `id uuid` kiểu UUIDv7, sinh ở ứng dụng (thư viện `uuid`); cột còn có giá trị mặc định `uuidv7()` của PostgreSQL 18 để công cụ nhập dữ liệu và SQL thủ công vẫn sinh đúng. Mã dễ đọc (`ESG-...`, `RX-...`, `TV-...`) là cột riêng, duy nhất.
+- Mọi bảng có `created_at timestamptz not null default now()`; bảng có sửa đổi có thêm `updated_at` (ứng dụng cập nhật khi ghi, không dùng trigger).
+- Giá trị trạng thái/loại lưu bằng **mã enum tiếng Anh**, kiểu `text` kèm ràng buộc `check` (đã chọn `text` + `check` thay vì enum Postgres để thêm giá trị mới chỉ cần một migration đổi `check`). Danh sách giá trị nằm ở `schema/enums.ts`. Không lưu nhãn tiếng Việt.
+- Email lưu chữ thường: ứng dụng chuẩn hóa, database chặn bằng `check (email = lower(email))` (đã chọn cách này, không dùng `citext`), có chỉ mục duy nhất.
 - Xóa mềm chỉ dùng ở bảng `files` (`deleted_at`) để job dọn tệp trên đĩa; các bảng khác xóa cứng.
 
 ## 1. Người dùng và xác thực
@@ -26,8 +26,8 @@ Quy ước chung:
 | Bảng | Cột chính | Ghi chú |
 | --- | --- | --- |
 | `question_banks` | `id`, `version`, `status` (`draft`/`published`/`archived`), `published_at`, `note` | Chỉ một bản `published` tại một thời điểm (chỉ mục duy nhất từng phần) |
-| `question_groups` | `id`, `bank_id`, `code` (ví dụ `P-G01`), `title`, `position`, `track` (`profile`/`core`/...) | Nhóm lưu theo từng 5 câu cho việc lưu nháp |
-| `questions` | `id`, `bank_id`, `group_id`, `code` (ví dụ `P-001`, `C-001`), `topic`, `input_type`, `text`, `guidance`, `evidence_hint`, `declaration_level`, `route` (`jsonb`), `evidence_rule` (`jsonb`, nullable), `review_status`, `position`, `source_ref` | `(bank_id, code)` duy nhất; `route` dạng `{"sector_any":[...],"capability_any":[...]}`; `evidence_rule` nạp từ tab 18/19, chưa dùng |
+| `question_groups` | `id`, `bank_id`, `code` (ví dụ `P-G01`), `title`, `position`, `track` (`profile`/`core`/`sector`) | Nhóm lưu theo từng 5 câu cho việc lưu nháp; `(bank_id, code)` duy nhất |
+| `questions` | `id`, `bank_id`, `group_id`, `code` (ví dụ `P-001`, `C-001`), `topic`, `input_type`, `text`, `guidance`, `evidence_hint`, `declaration_level`, `route` (`jsonb`), `evidence_rule` (`jsonb`, nullable), `review_status`, `position`, `source_ref` | `(bank_id, code)` duy nhất; `route` dạng `{"sector_any":[...],"capability_any":[...]}`, giá trị `{}` nghĩa là hiển thị cho mọi doanh nghiệp (cột `ALL` trong xlsx); `declaration_level` là `basic`/`extended`; `review_status` là `pending`/`approved` ("Chờ duyệt"/"Đã duyệt"); `input_type` **không** ràng buộc `check`, vì bộ v0.1 còn có `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` ngoài 8 kiểu của `@esg/shared` (kiểm tra ở công cụ nhập, GĐ 3); `evidence_rule` nạp từ tab 18/19, chưa dùng |
 | `question_texts` | `question_id`, `locale`, `text`, `guidance` | Bản dịch chỉnh tay theo câu; bản tự động nằm ở `translations` |
 
 Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp lệ (id không trùng, route đúng cú pháp, nhóm không rỗng) rồi chuyển bản cũ sang `archived`. Báo cáo cũ vẫn tham chiếu được đúng bản đã dùng.
@@ -41,7 +41,7 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | `reports` | `id`, `code` (`ESG-YYYYMMDD-XXXX`), `company_id`, `owner_user_id` (nullable), `status` (`draft`/`exported`), `bank_version_id`, `last_export_at` | `code` duy nhất; `owner_user_id` đặt qua luồng gắn email; nếu chủ khác thì báo xung đột |
 | `report_exports` | `id`, `export_code` (`RX-YYYYMMDD-XXXXXX`), `report_id`, `bank_version_id`, `snapshot` (`jsonb`), `pdf_file_id`, `docx_file_id`, `locale`, `brand` | Giữ tối đa 5 bản mới nhất mỗi `report_id`; bản cũ hơn bị xóa kèm tệp |
 | `report_drafts` | `id`, `user_id`, `report_id` (nullable), `data` (`jsonb`, định dạng nháp v2), `schema_version`, `updated_at` | Chỉ cho người dùng đã xác thực; mỗi `(user_id, report_id)` một dòng |
-| `upload_sessions` | `id`, `kind`, `expected_chunks`, `received_chunks`, `owner_token_hash`, `expires_at` | Thay cơ chế đoạn tải 2.499.999 byte của Apps Script nếu giữ tải theo đoạn; xem QĐ-12 |
+| ~~`upload_sessions`~~ | (không tạo) | Đã bỏ theo QĐ-12 (chốt theo đề xuất): tải báo cáo một lần qua multipart, không còn tải theo đoạn |
 
 ## 4. Tệp, minh chứng
 
@@ -49,13 +49,13 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | --- | --- | --- |
 | `files` | `id`, `storage_key`, `kind` (`logo`/`evidence`/`export_pdf`/`export_docx`/`post_image`/`post_cover`), `mime`, `size`, `sha256`, `owner_user_id`, `original_name`, `referenced_at`, `deleted_at` | `storage_key` duy nhất; tệp chưa được tham chiếu sau 24 giờ bị dọn |
 | `evidence_files` | `id`, `report_id`, `question_code`, `file_id`, `uploaded_by_user_id` | `(report_id, question_code, file_id)` duy nhất; tối đa số tệp theo QĐ-01; chỉ người dùng đã xác thực |
-| `evidence_reviews` | (dự trữ, **chưa tạo**) | Dành cho AI sau này, xem `backend-roadmap.md` |
+| `evidence_reviews` | (dự trữ, **chưa tạo**, kiểm thử bảo đảm không có trong migration) | Dành cho AI sau này, xem `backend-roadmap.md` |
 
 ## 5. CRM, phản hồi, nội dung
 
 | Bảng | Cột chính | Ghi chú |
 | --- | --- | --- |
-| `inquiries` | `id`, `code` (`TV-...`/`KD-...`), `kind` (`consulting`/`verification`), `status` (`new`/`in_progress`/`done`/`closed`), `priority` (`normal`/`high`/`low`), `source` (`website`), `form_version`, `company_id` (nullable), `contact` (`jsonb`), `message`, `assigned_admin_id` | Nhãn tiếng Việt ("Mới tiếp nhận", "Bình thường") ánh xạ ở giao diện; giá trị trạng thái chính xác chốt ở Giai đoạn 1 theo cột hiện có trên Sheet |
+| `inquiries` | `id`, `code` (`TV-...`/`KD-...`), `kind` (`consulting`/`verification`), `status`, `priority`, `source` (mặc định `website`), `form_version`, `company_id` (nullable), `company_name`, `headcount_tier`, `sector`, `contact_phone`, `contact_email`, `message`, `contact_consent`, `contact_consent_at`, `assigned_admin_id`, `first_contacted_at`, `follow_up_at`, `outcome` | Đã chốt ở Giai đoạn 1 theo các cột và danh sách chọn của Sheet "Đăng ký Tư vấn & Kiểm định". `status` (9 giá trị): `new` (Mới tiếp nhận), `contacting` (Đang liên hệ), `awaiting_customer` (Chờ khách phản hồi), `scheduled` (Đã hẹn tư vấn), `quoted` (Đã gửi báo giá), `in_progress` (Đang thực hiện), `done` (Hoàn tất), `declined` (Không tiếp tục), `invalid` (Trùng / không hợp lệ). `priority`: `normal` (Bình thường), `high` (Cao), `urgent` (Khẩn). `contact_consent`: `yes`/`no`/`unconfirmed` (Có/Không/Chưa xác nhận). Cột `contact jsonb` trong bản thiết kế đầu được thay bằng các cột riêng để lọc và xuất file theo cột Sheet (QĐ-18). Nhãn tiếng Việt ánh xạ ở giao diện |
 | `inquiry_notes` | `id`, `inquiry_id`, `admin_id`, `body` | Ghi chú nội bộ của người xử lý |
 | `feedbacks` | `id`, `report_id`, `export_id`, `token_hash`, `invite_sent_at`, `submitted_at`, `rating`, `comment`, `form_version` | Thư mời gửi sau 5 ngày; token một lần cho liên kết đánh giá |
 | `posts` | `id`, `slug`, `locale`, `title`, `excerpt`, `body` (`jsonb` ProseMirror), `cover_file_id`, `status` (`draft`/`published`), `published_at`, `author_admin_id` | `slug` duy nhất theo `locale` |
@@ -89,7 +89,6 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | `otp_challenges` | Đã hết hạn hoặc đã dùng quá 1 ngày | Hằng giờ |
 | `user_sessions`, `admin_sessions` | Hết hạn | Hằng ngày |
 | `rate_limits` | `window_start` cũ hơn 2 ngày | Hằng ngày |
-| `upload_sessions` và đoạn tạm | Quá 24 giờ chưa hoàn tất (như trigger hiện tại) | Hằng giờ |
 | `files` chưa tham chiếu | `referenced_at` rỗng sau 24 giờ → xóa mềm, 7 ngày sau xóa tệp trên đĩa | Hằng ngày |
 | `report_exports` thừa | Vượt 5 bản mỗi báo cáo → xóa dòng và tệp PDF/Word | Khi lưu bản mới, kèm quét hằng ngày |
 | `files` ảnh bài viết | Không còn trong `post_files` của bài nào (thay `trashUnusedImages_`) | Hằng ngày |
@@ -98,3 +97,20 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | Bản nháp | Người dùng xóa báo cáo → xóa nháp; nháp quá 12 tháng không cập nhật (QĐ-13) | Hằng tuần |
 
 Job kiểm tra thêm hai chiều: tệp trên đĩa không có dòng trong `files` (cảnh báo, không tự xóa), và dòng `files` mà tệp đã mất (ghi cảnh báo, hiện trong trang quản trị).
+
+## 9. Quy tắc xóa khóa ngoại (đã cài ở Giai đoạn 1)
+
+| Quan hệ | Khi xóa bản ghi cha |
+| --- | --- |
+| `user_sessions`, `report_drafts` → `users` | Xóa theo (cascade) |
+| `admin_sessions` → `admin_users` | Xóa theo |
+| `companies.user_id`, `reports.owner_user_id`, `files.owner_user_id`, `evidence_files.uploaded_by_user_id` → `users` | Đặt null; dữ liệu doanh nghiệp, báo cáo, tệp vẫn còn |
+| `inquiries.assigned_admin_id`, `inquiry_notes.admin_id`, `posts.author_admin_id` → `admin_users` | Đặt null |
+| `reports.company_id` → `companies` | Chặn xóa; xóa báo cáo không xóa hồ sơ doanh nghiệp (dữ liệu CRM) |
+| `report_exports`, `evidence_files`, `report_drafts` → `reports` | Xóa theo; tệp trong `files` thành mồ côi và do job dọn |
+| `reports.bank_version_id`, `report_exports.bank_version_id` → `question_banks` | Chặn xóa: không xóa được bản ngân hàng câu hỏi đã có báo cáo dùng |
+| `consents` → `companies` | Xóa theo |
+| `inquiries.company_id`, `feedbacks.report_id`, `feedbacks.export_id` → bảng cha | Đặt null; giữ yêu cầu tư vấn và đánh giá |
+| `companies.logo_file_id`, `posts.cover_file_id`, `report_exports.pdf_file_id`, `report_exports.docx_file_id` → `files` | Đặt null |
+| `evidence_files.file_id`, `post_files.file_id` → `files` | Xóa theo |
+| `question_groups`, `questions`, `question_texts` → ngân hàng câu hỏi/nhóm/câu | Xóa theo |

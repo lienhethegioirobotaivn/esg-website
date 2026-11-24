@@ -43,6 +43,8 @@ Giới hạn (giữ như demo): yêu cầu OTP 6 lần/IP/10 phút và 300/ngày
 
 Giới hạn tần suất giữ như demo: xem 60/IP và 5.000/ngày, xóa 20; tải đoạn 80 và 6.000/ngày; hoàn tất 10 và 600/ngày; gắn 30 và 3.000/ngày.
 
+Ghi chú QĐ-12 (đã chốt theo đề xuất): ba endpoint tải theo đoạn ở đầu bảng (`POST /reports/uploads`, `PUT .../chunks/:n`, `POST .../finish`) là hành vi demo và sẽ được thay bằng một endpoint multipart duy nhất (tối đa 25 MB) ở Giai đoạn 4; bảng `upload_sessions` vì vậy không được tạo.
+
 Quy tắc dữ liệu: tối đa 25 MB mỗi tệp; snapshot không còn giới hạn 600.000 ký tự nhưng có trần hợp lý (đề xuất 5 MB); giữ 5 bản xuất mới nhất mỗi mã báo cáo; nếu `reports.owner_user_id` đã khác người gọi thì trả `409 owner_conflict`.
 
 ## 4. Liên hệ và phản hồi
@@ -61,7 +63,7 @@ Quy tắc dữ liệu: tối đa 25 MB mỗi tệp; snapshot không còn giới 
 | `GET /stats` | Public | Số liệu trang chủ | `listStats` |
 | `GET /translations?locale=en` | Public | Bản dịch (đã gộp chỉnh tay) | Apps Script `listTranslations` |
 | `GET /files/:id` | Public (chỉ ảnh bài viết) | Phục vụ ảnh bài viết với cache dài | (thay URL Drive) |
-| `GET /health` | Public | Kiểm tra sống | (mới) |
+| `GET /health` | Public | Kiểm tra sống và kết nối database. Trả `200 {"status":"ok","database":"up","uptimeSeconds":n}`; khi database không trả lời trong 3 giây trả `503 {"status":"error","database":"down",...}`. Đã làm ở Giai đoạn 1; đường dẫn đầy đủ `/api/v1/health` | (mới) |
 
 ## 6. Quản trị
 

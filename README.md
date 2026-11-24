@@ -13,7 +13,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
 | Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
-| `apps/api` | Chưa có. Bản production v2 sẽ dựng NestJS + PostgreSQL thay Sheet và Apps Script; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md) (đang ở giai đoạn tài liệu, chưa code) |
+| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Mới xong giai đoạn 1: khung dự án, schema, migration, `GET /api/v1/health`. Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
 
@@ -27,8 +27,9 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 
 ## Yêu cầu môi trường
 
-- Node.js 20.9 trở lên.
+- Node.js 24 LTS (`>=24 <25`).
 - pnpm theo `packageManager` ở `package.json` gốc (`corepack enable` nếu chưa có).
+- Docker (chỉ cần khi chạy `apps/api`, để có PostgreSQL 18).
 
 ## Bắt đầu
 
@@ -39,7 +40,28 @@ pnpm dev
 
 Mở `http://localhost:3000`.
 
-## Biến môi trường
+## Chạy `apps/api` (bản v2, đang xây)
+
+```bash
+pnpm db:up
+cp apps/api/.env.example apps/api/.env
+pnpm db:migrate
+pnpm dev:api
+```
+
+Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","database":"up",...}`.
+
+| Biến (`apps/api/.env`) | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `DATABASE_URL` | (bắt buộc) | Địa chỉ PostgreSQL; API không khởi động nếu thiếu hoặc sai |
+| `PORT` | `3001` | Cổng API |
+| `NODE_ENV` | `development` | `development`, `test` hoặc `production` |
+| `DATABASE_POOL_MAX` | `10` | Số kết nối tối đa |
+| `RUN_MIGRATIONS_ON_START` | `false` | `true` để tự chạy migration khi khởi động |
+
+Kiểm thử: `pnpm --filter api test` (không cần database) và `TEST_DATABASE_URL=postgres://esg:esg@localhost:5432/postgres pnpm --filter api test:integration` (cần PostgreSQL 18, tạo và xóa database tạm). Sinh migration sau khi sửa schema: `pnpm db:generate`.
+
+## Biến môi trường (`apps/web`)
 
 Đặt trong `apps/web/.env.local`. Không đưa giá trị thật vào git.
 

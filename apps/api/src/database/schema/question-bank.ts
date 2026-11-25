@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -15,12 +16,16 @@ import { createdAt, oneOf, timestamptz, updatedAt, uuidPk } from "./columns.js";
 import {
   LOCALES,
   QUESTION_BANK_STATUSES,
+  QUESTION_PILLARS,
   QUESTION_REVIEW_STATUSES,
+  QUESTION_SOURCES,
   QUESTION_TIERS,
   QUESTION_TRACKS,
   type Locale,
   type QuestionBankStatus,
+  type QuestionPillar,
   type QuestionReviewStatus,
+  type QuestionSource,
   type QuestionTier,
   type QuestionTrack,
 } from "./enums.js";
@@ -76,11 +81,17 @@ export const questions = pgTable(
       .notNull()
       .references(() => questionGroups.id, { onDelete: "cascade" }),
     code: text().notNull(),
+    source: text().$type<QuestionSource>().notNull(),
+    pillar: text().$type<QuestionPillar>(),
     topic: text(),
     inputType: text().notNull(),
+    unit: text(),
+    required: boolean().notNull().default(true),
     text: text().notNull(),
     guidance: text(),
     evidenceHint: text(),
+    improvementHint: text(),
+    reportSection: text(),
     declarationLevel: text().$type<QuestionTier>().notNull(),
     route: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     evidenceRule: jsonb().$type<Record<string, unknown>>(),
@@ -91,6 +102,11 @@ export const questions = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
+    check("questions_source_check", oneOf(t.source, QUESTION_SOURCES)),
+    check(
+      "questions_pillar_check",
+      sql`${t.pillar} is null or ${t.pillar} in (${sql.raw(QUESTION_PILLARS.map((value) => `'${value}'`).join(", "))})`,
+    ),
     check("questions_declaration_level_check", oneOf(t.declarationLevel, QUESTION_TIERS)),
     check("questions_review_status_check", oneOf(t.reviewStatus, QUESTION_REVIEW_STATUSES)),
     uniqueIndex("questions_bank_code_key").on(t.bankId, t.code),

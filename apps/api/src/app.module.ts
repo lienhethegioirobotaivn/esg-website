@@ -6,6 +6,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { JobsModule } from "./jobs/jobs.module.js";
 import { MailModule } from "./mail/mail.module.js";
+import { QuestionBankModule } from "./question-bank/question-bank.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
 
 @Module({
@@ -16,6 +17,7 @@ import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
     MailModule,
     AuthModule,
     JobsModule,
+    QuestionBankModule,
     HealthModule,
   ],
 })

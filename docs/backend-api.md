@@ -32,7 +32,7 @@ Mã lỗi dùng chung (`error.code`): `invalid_request` (400), `unauthorized` (4
 
 | Phương thức, đường dẫn | Quyền | Mô tả |
 | --- | --- | --- |
-| `GET /survey-bank?locale=vi` | Public | Bộ câu hỏi bản đang xuất bản, kèm số phiên bản (cache theo ETag) |
+| `GET /survey-bank?locale=vi` | Public | Bộ câu hỏi bản đang xuất bản (đã làm ở GĐ 3): `{ version, locale, publishedAt, survey, profile }`; `survey` là `Survey` của `@esg/shared` chỉ gồm câu đã duyệt, `profile` là câu hồ sơ. ETag yếu + `If-None-Match` → 304; `Cache-Control: public, max-age=60, must-revalidate`; 120 lượt/phút/IP; `locale` ngoài `vi/en/fr/zh` → 400 `invalid_locale`; chưa có bản xuất bản → 404 `survey_bank_unavailable` |
 | `POST /companies` | Public | Upsert hồ sơ doanh nghiệp theo mã báo cáo; nhận logo (≤ 2 MB); trả `report code` |
 
 ## 3. Báo cáo, nháp, minh chứng

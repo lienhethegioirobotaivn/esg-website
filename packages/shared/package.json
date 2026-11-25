@@ -5,9 +5,14 @@
   "type": "module",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./node": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts"
   },
@@ -15,7 +20,8 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "tsx": "^4.20.0"
+    "tsdown": "^0.23.7",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3"
   }
 }

@@ -54,7 +54,7 @@ describe("migration đầu tiên trên PostgreSQL", () => {
     );
 
     expect(tables.rowCount).toBe(29);
-    expect(Number(applied.rows[0]?.count)).toBe(1);
+    expect(Number(applied.rows[0]?.count)).toBe(2);
   });
 
   it("hai tiến trình chạy migration cùng lúc không xung đột", async () => {
@@ -64,7 +64,7 @@ describe("migration đầu tiên trên PostgreSQL", () => {
       const applied = await other.pool.query<{ count: string }>(
         "select count(*) from drizzle.__drizzle_migrations",
       );
-      expect(Number(applied.rows[0]?.count)).toBe(1);
+      expect(Number(applied.rows[0]?.count)).toBe(2);
     } finally {
       await other.drop();
     }
@@ -128,13 +128,30 @@ describe("ràng buộc dữ liệu", () => {
     const groupId = group.rows[0]?.id;
     const insertQuestion = () =>
       database.pool.query(
-        "insert into questions (bank_id, group_id, code, input_type, text, declaration_level, position) values ($1, $2, 'P-001', 'TEXT', 'Câu hỏi', 'basic', 1)",
+        "insert into questions (bank_id, group_id, code, source, input_type, text, declaration_level, position) values ($1, $2, 'P-001', 'PROFILE', 'TEXT', 'Câu hỏi', 'basic', 1)",
         [bankId, groupId],
       );
 
     await insertQuestion();
 
     await expectPgError(insertQuestion(), "23505");
+  });
+
+  it("câu hỏi chỉ nhận nguồn và trụ cột hợp lệ", async () => {
+    const bankId = await insertBank("check-source", "draft");
+    const group = await database.pool.query<{ id: string }>(
+      "insert into question_groups (bank_id, code, title, position, track) values ($1, 'C-G01', 'Nhóm', 1, 'core') returning id",
+      [bankId],
+    );
+    const insert = (source: string, pillar: string | null) =>
+      database.pool.query(
+        "insert into questions (bank_id, group_id, code, source, pillar, input_type, text, declaration_level, position) values ($1, $2, 'C-001', $3, $4, 'PRACTICE', 'Câu hỏi', 'basic', 1)",
+        [bankId, group.rows[0]?.id, source, pillar],
+      );
+
+    await expectPgError(insert("KHAC", null), "23514");
+    await expectPgError(insert("COMMON", "X"), "23514");
+    await insert("COMMON", "E");
   });
 
   it("route mặc định là {} và evidence_rule cho phép null", async () => {
@@ -144,7 +161,7 @@ describe("ràng buộc dữ liệu", () => {
       [bankId],
     );
     const question = await database.pool.query<{ route: unknown; evidence_rule: unknown }>(
-      "insert into questions (bank_id, group_id, code, input_type, text, declaration_level, position) values ($1, $2, 'C-001', 'PRACTICE', 'Câu hỏi', 'extended', 1) returning route, evidence_rule",
+      "insert into questions (bank_id, group_id, code, source, input_type, text, declaration_level, position) values ($1, $2, 'C-001', 'COMMON', 'PRACTICE', 'Câu hỏi', 'extended', 1) returning route, evidence_rule",
       [bankId, group.rows[0]?.id],
     );
 

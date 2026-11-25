@@ -13,7 +13,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
 | Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
-| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Mới xong giai đoạn 1: khung dự án, schema, migration, `GET /api/v1/health`. Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
+| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Đã xong giai đoạn 1–3: khung dự án, schema, đăng nhập OTP, gửi thư, ngân hàng câu hỏi (`GET /api/v1/survey-bank`). Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
 
@@ -68,6 +68,15 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 | `MAIL_DAILY_LIMIT` | `300` | Hạn mức thư mỗi 24 giờ của nhà cung cấp (Brevo free: 300) |
 | `TRUSTED_PROXY` | `0` | Số lớp proxy tin cậy phía trước API (Caddy: `1`); 0 là không tin tiêu đề `X-Forwarded-For` |
 | `JOBS_ENABLED` | `true` | `false` để tắt việc nền (gửi lại thư, dọn dữ liệu) |
+
+Nhập bộ câu hỏi từ xlsx (kiểm tra trước, không ghi gì nếu có lỗi):
+
+```bash
+pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.1.xlsx --dry-run
+pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.1.xlsx --version 0.1 --publish
+```
+
+`--version` bỏ trống thì lấy từ cột `content_version` (file v0.1 đang ghi `0.1-draft`). Bản đã xuất bản không bị ghi đè; muốn đổi nội dung hãy dùng số phiên bản mới. Kiểm tra: `http://localhost:3001/api/v1/survey-bank`. `apps/api` dùng `@esg/shared` qua bản build (`@esg/shared/node`); các script `build`, `start`, `start:dev`, `typecheck`, `test` tự build trước, còn chạy thẳng `vitest` hoặc `tsc` thì cần `pnpm --filter @esg/shared build` một lần.
 
 Dùng thử đăng nhập OTP khi dev: để `MAIL_PROVIDER=console`, gọi `POST /api/v1/auth/email/request`, mã 6 số hiện trong log của API.
 

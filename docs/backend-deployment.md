@@ -48,7 +48,7 @@ Yêu cầu bắt buộc:
 
 ## 4. CI/CD
 
-GitHub Actions: kiểm tra kiểu, lint, kiểm thử → build image → đẩy lên GHCR → SSH vào VPS chạy `docker compose pull && docker compose up -d`. Migration chạy bởi `api` khi khởi động; có khóa advisory để tránh hai instance chạy cùng lúc. Có bước quay lui (`docker compose` giữ tag image trước).
+GitHub Actions: build `@esg/shared` (`pnpm --filter @esg/shared build`, các script của `apps/api` tự gọi), kiểm tra kiểu, lint, kiểm thử → build image → đẩy lên GHCR → SSH vào VPS chạy `docker compose pull && docker compose up -d`. Migration chạy bởi `api` khi khởi động; có khóa advisory để tránh hai instance chạy cùng lúc. Có bước quay lui (`docker compose` giữ tag image trước).
 
 ## 5. Tên miền, DNS, Cloudflare
 

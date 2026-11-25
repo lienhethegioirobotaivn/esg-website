@@ -9,7 +9,7 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 0 | Tài liệu (xong 23/11/2026) | Viết bộ tài liệu backend v2, danh sách quyết định, xóa tài liệu lỗi thời | `docs/backend-*.md`, README, bối cảnh dự án cập nhật | Rà liên kết, tên bảng/endpoint nhất quán |
 | 1 | Khung dự án và database (xong 23/11/2026) | Dựng `apps/api` (NestJS 12), cấu hình/validate biến môi trường, Drizzle + migration cho toàn bộ bảng, Docker Compose cho dev, `/health`, CI cơ bản | `apps/api`, schema, migration đầu tiên | Migration chạy sạch từ database rỗng; kiểm thử khởi động |
 | 2 | Xác thực người dùng, email, giới hạn tần suất (xong 24/11/2026) | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
-| 3 | Ngân hàng câu hỏi | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
+| 3 | Ngân hàng câu hỏi (xong 24/11/2026) | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
 | 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
 | 5 | Quản trị: tài khoản, CRM, phản hồi | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
 | 6 | Nội dung | `posts`, ảnh, `post_likes`, `site_stats`, `translation` (Gemini) | `/posts`, `/stats`, `/translations`, `/admin/*` (nội dung) | Chống trùng lượt thích, ưu tiên bản dịch chỉnh tay, dọn ảnh |
@@ -38,7 +38,17 @@ Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đo�
 - Chưa làm (để giai đoạn hạ tầng): xác thực tên miền gửi thư (SPF/DKIM/DMARC), adapter Resend dự phòng, `ADMIN_NOTIFY_EMAIL`.
 - Kiểm thử: 53 đơn vị, 65 tích hợp trong `apps/api`.
 
-**Giai đoạn kế tiếp (GĐ 3):** ngân hàng câu hỏi có phiên bản: bảng đã có, công cụ nhập xlsx v0.1 (175 câu), API đọc `GET /survey-bank` (ETag), kiểm tra hợp lệ; xử lý các kiểu nhập `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` và cách `apps/api` dùng `@esg/shared` (cho nó build ra JS).
+### 1.3 Kết quả giai đoạn 3 (24/11/2026)
+
+- Công cụ nhập: `pnpm --filter api question-bank:import -- --file data/question-bank-v0.1.xlsx [--version 0.1] [--publish] [--dry-run]`. Đọc các tab 01–10 (nội dung), 12 (logic), 18 (quy tắc minh chứng), 19 (ca kiểm thử AI); kiểm tra hợp lệ trước khi ghi (mã câu, tiền tố theo tab, kiểu nhập, route, mức khai báo, trạng thái duyệt, `order`, nhóm lưu tối đa 5 câu, nhất quán giữa tab nội dung và tab Logic); có lỗi thì không ghi gì. Bản nháp nhập lại cùng số phiên bản thì được thay thế; bản đã xuất bản hoặc lưu trữ thì không bao giờ bị ghi đè; `--publish` chuyển bản đang xuất bản trước đó sang lưu trữ.
+- Migration `0001`: thêm vào `questions` các cột `source`, `pillar`, `unit`, `required`, `improvement_hint`, `report_section` (kèm ràng buộc `source`, `pillar`).
+- `GET /api/v1/survey-bank?locale=vi|en|fr|zh`: trả `{ version, locale, publishedAt, survey, profile }`; `survey` đúng kiểu `Survey` của `@esg/shared` (chỉ câu đã duyệt, dựng giống bản demo, đã so khớp từng điểm với `buildSurveyBank` trên file thật); `profile` là 25 câu hồ sơ với các kiểu nhập mở rộng. ETag yếu theo nội dung, `If-None-Match` trả 304, `Cache-Control: public, max-age=60, must-revalidate`, giới hạn 120 lượt/phút/IP. Chưa có bản xuất bản thì 404 `survey_bank_unavailable`. Bản dịch lấy từ `question_texts`, thiếu thì dùng tiếng Việt.
+- `@esg/shared` build ra JS bằng `tsdown` (`dist/`), `apps/api` dùng qua đường dẫn con `@esg/shared/node`; đường dẫn gốc vẫn trỏ vào mã nguồn nên `apps/web` không đổi. Các script `build`, `start`, `start:dev`, `typecheck`, `test` của `apps/api` tự build `@esg/shared` trước.
+- Số liệu v0.1: 175 câu, 40 nhóm lưu (25 hồ sơ, 60 chung, 90 ngành), 173 đã duyệt, 2 chờ duyệt (`C-045`, `ICT-002`, không hiển thị); khảo sát có 148 câu.
+- Quyết định: không mở rộng `INPUT_TYPES` của `@esg/shared` (tránh ảnh hưởng frontend); các kiểu `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS`, `SIZE`, `LEVEL`, `CAPABILITIES`, `REVENUE` chỉ được dùng ở nhóm hồ sơ và được kiểm tra riêng. `route` (kể cả `capability_any`) đã lưu nhưng chưa dùng để lọc; lọc theo ngành và quy mô vẫn do `selectSurvey` như demo, chuyển lên máy chủ ở GĐ 5.
+- Kiểm thử: 74 đơn vị, 80 tích hợp trong `apps/api` (nhập đủ 175 câu; `selectSurvey` đúng tập câu cho cả 8 ngành × 5 quy mô).
+
+**Giai đoạn kế tiếp (GĐ 4):** xem bảng ở mục 1.
 
 ## 2. Nguyên tắc kiểm thử
 

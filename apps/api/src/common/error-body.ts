@@ -42,7 +42,7 @@ export function toErrorResult(exception: unknown): ErrorResult {
     return {
       status: exception.status,
       body: { error: { code: exception.code, message: exception.message, ...exception.extra } },
-      retryAfter: retryAfter ?? null,
+      retryAfter: typeof retryAfter === "number" ? retryAfter : null,
     };
   }
 

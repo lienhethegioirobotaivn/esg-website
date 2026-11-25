@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { Request } from "express";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { AppError } from "../common/app-error.js";
@@ -15,8 +16,10 @@ import {
   AUTH_LIMITS,
   OTP_RULES,
   SESSION_MAX_AGE_MS,
+  USER_COOKIE_NAME,
 } from "./auth.constants.js";
 import type { AuthUser } from "./auth.types.js";
+import { readCookie } from "./cookies.js";
 import { generateOtpCode, hmacHex, newSessionToken, safeEqualHex, sha256Hex } from "./crypto.js";
 
 const USER_AGENT_MAX_LENGTH = 255;
@@ -233,6 +236,11 @@ export class AuthService {
       )
       .limit(1);
     return row ?? null;
+  }
+
+  async userFromRequest(request: Pick<Request, "headers">): Promise<AuthUser | null> {
+    const token = readCookie(request.headers.cookie, USER_COOKIE_NAME);
+    return token === null ? null : this.resolveSession(token);
   }
 
   async endSession(sessionId: string): Promise<void> {

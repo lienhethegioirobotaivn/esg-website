@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { ReportsModule } from "../reports/reports.module.js";
 import { MailModule } from "../mail/mail.module.js";
 import { MailService } from "../mail/mail.service.js";
 import { CleanupService } from "./cleanup.service.js";
@@ -47,11 +48,38 @@ export function buildJobDefinitions(cleanup: CleanupService, mail: MailService):
       track: true,
       run: async () => ({ deleted: await cleanup.sentEmails() }),
     },
+    {
+      name: "cleanup-unattached-exports",
+      intervalMs: HOUR,
+      initialDelayMs: 4 * MINUTE,
+      track: true,
+      run: async () => ({
+        exports: await cleanup.unattachedExports(),
+        reports: await cleanup.abandonedReports(),
+      }),
+    },
+    {
+      name: "cleanup-orphan-files",
+      intervalMs: HOUR,
+      initialDelayMs: 5 * MINUTE,
+      track: true,
+      run: async () => ({
+        softDeleted: await cleanup.orphanFiles(),
+        purged: await cleanup.purgedFiles(),
+      }),
+    },
+    {
+      name: "cleanup-stale-drafts",
+      intervalMs: DAY,
+      initialDelayMs: 6 * MINUTE,
+      track: true,
+      run: async () => ({ deleted: await cleanup.staleDrafts() }),
+    },
   ];
 }
 
 @Module({
-  imports: [MailModule],
+  imports: [MailModule, ReportsModule],
   providers: [
     CleanupService,
     {

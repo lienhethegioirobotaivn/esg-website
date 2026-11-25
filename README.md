@@ -68,6 +68,7 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 | `MAIL_DAILY_LIMIT` | `300` | Hạn mức thư mỗi 24 giờ của nhà cung cấp (Brevo free: 300) |
 | `TRUSTED_PROXY` | `0` | Số lớp proxy tin cậy phía trước API (Caddy: `1`); 0 là không tin tiêu đề `X-Forwarded-For` |
 | `JOBS_ENABLED` | `true` | `false` để tắt việc nền (gửi lại thư, dọn dữ liệu) |
+| `STORAGE_DIR` | `./storage` | Thư mục lưu tệp (logo, minh chứng, PDF/Word); production cần ổ đĩa bền vững |
 
 Nhập bộ câu hỏi từ xlsx (kiểm tra trước, không ghi gì nếu có lỗi):
 

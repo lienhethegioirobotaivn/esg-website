@@ -1,0 +1,2 @@
+ALTER TABLE "report_exports" ADD COLUMN "status" text DEFAULT 'draft' NOT NULL;--> statement-breakpoint
+ALTER TABLE "report_exports" ADD CONSTRAINT "report_exports_status_check" CHECK ("report_exports"."status" in ('draft', 'complete'));

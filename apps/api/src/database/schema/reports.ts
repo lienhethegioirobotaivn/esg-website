@@ -14,8 +14,10 @@ import { companies } from "./companies.js";
 import { createdAt, oneOf, timestamptz, updatedAt, uuidPk } from "./columns.js";
 import {
   LOCALES,
+  EXPORT_STATUSES,
   REPORT_BRANDS,
   REPORT_STATUSES,
+  type ExportStatus,
   type Locale,
   type ReportBrand,
   type ReportStatus,
@@ -64,9 +66,11 @@ export const reportExports = pgTable(
     docxFileId: uuid().references(() => files.id, { onDelete: "set null" }),
     locale: text().$type<Locale>().notNull(),
     brand: text().$type<ReportBrand>().notNull().default("default"),
+    status: text().$type<ExportStatus>().notNull().default("draft"),
     createdAt: createdAt(),
   },
   (t) => [
+    check("report_exports_status_check", oneOf(t.status, EXPORT_STATUSES)),
     check("report_exports_locale_check", oneOf(t.locale, LOCALES)),
     check("report_exports_brand_check", oneOf(t.brand, REPORT_BRANDS)),
     index("report_exports_report_created_at_idx").on(t.reportId, t.createdAt.desc()),

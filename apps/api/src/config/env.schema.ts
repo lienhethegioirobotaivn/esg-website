@@ -42,6 +42,7 @@ const baseEnvSchema = z.object({
   MAIL_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(300),
   TRUSTED_PROXY: nonNegativeInt.default(0),
   JOBS_ENABLED: booleanFromString.default(true),
+  STORAGE_DIR: z.string().min(1).default("./storage"),
 });
 
 export const envSchema = baseEnvSchema

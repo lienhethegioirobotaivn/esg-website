@@ -39,7 +39,7 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | `companies` | `id`, `user_id` (nullable), `legal_name`, `trade_name`, `tax_code`, `legal_form`, `countries`, `primary_sector`, `secondary_sectors` (mảng), `headcount_tier`, `revenue_band`, `contact_name`, `contact_email`, `contact_phone`, `logo_file_id`, `profile` (`jsonb` cho các trường hồ sơ còn lại) | Các trường lọc/tìm kiếm là cột thật; phần còn lại vào `profile` |
 | `consents` | `id`, `company_id`, `kind` (`advisory`/`verification`/`matching`/`research`), `granted`, `granted_at`, `text_version`, `form_version` | Ứng với P-017 đến P-020; lịch sử đổi ý giữ lại (mỗi lần đổi một dòng) |
 | `reports` | `id`, `code` (`ESG-YYYYMMDD-XXXX`), `company_id`, `owner_user_id` (nullable), `status` (`draft`/`exported`), `bank_version_id`, `last_export_at` | `code` duy nhất; `owner_user_id` đặt qua luồng gắn email; nếu chủ khác thì báo xung đột |
-| `report_exports` | `id`, `export_code` (`RX-YYYYMMDD-XXXXXX`), `report_id`, `bank_version_id`, `snapshot` (`jsonb`), `pdf_file_id`, `docx_file_id`, `locale`, `brand` | Giữ tối đa 5 bản mới nhất mỗi `report_id`; bản cũ hơn bị xóa kèm tệp |
+| `report_exports` | `id`, `export_code` (`RX-YYYYMMDD-XXXXXX`), `report_id`, `bank_version_id`, `snapshot` (`jsonb`), `pdf_file_id`, `docx_file_id`, `locale`, `brand`, `status` (`draft`/`complete`, thêm ở migration `0002`: bản xuất này làm từ khảo sát chưa hoàn tất hay đã hoàn tất) | Giữ tối đa 5 bản mới nhất mỗi `report_id`; bản cũ hơn bị xóa kèm tệp |
 | `report_drafts` | `id`, `user_id`, `report_id` (nullable), `data` (`jsonb`, định dạng nháp v2), `schema_version`, `updated_at` | Chỉ cho người dùng đã xác thực; mỗi `(user_id, report_id)` một dòng |
 | ~~`upload_sessions`~~ | (không tạo) | Đã bỏ theo QĐ-12 (chốt theo đề xuất): tải báo cáo một lần qua multipart, không còn tải theo đoạn |
 
@@ -89,12 +89,13 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | `otp_challenges` | Đã hết hạn hoặc đã dùng quá 1 ngày | Hằng giờ (đã làm GĐ 2) |
 | `user_sessions`, `admin_sessions` | Hết hạn | Hằng giờ (đã làm GĐ 2) |
 | `rate_limits` | `window_start` cũ hơn 2 ngày | Hằng ngày (đã làm GĐ 2) |
-| `files` chưa tham chiếu | `referenced_at` rỗng sau 24 giờ → xóa mềm, 7 ngày sau xóa tệp trên đĩa | Hằng ngày |
-| `report_exports` thừa | Vượt 5 bản mỗi báo cáo → xóa dòng và tệp PDF/Word | Khi lưu bản mới, kèm quét hằng ngày |
+| `files` chưa tham chiếu | `referenced_at` rỗng sau 24 giờ → xóa mềm, 7 ngày sau xóa tệp trên đĩa rồi xóa dòng | Hằng giờ (đã làm GĐ 4, `cleanup-orphan-files`) |
+| `report_exports` thừa | Vượt 5 bản mỗi báo cáo → xóa dòng và đánh dấu xóa tệp PDF/Word | Ngay khi lưu bản mới, cùng giao dịch (đã làm GĐ 4) |
+| `report_exports` chưa gắn email | Báo cáo chưa có chủ, bản xuất quá 24 giờ (QĐ-02); báo cáo ẩn danh không có bản xuất quá 7 ngày | Hằng giờ (đã làm GĐ 4, `cleanup-unattached-exports`) |
 | `files` ảnh bài viết | Không còn trong `post_files` của bài nào (thay `trashUnusedImages_`) | Hằng ngày |
 | `evidence_files` | Báo cáo bị xóa → xóa theo, `files` tương ứng thành mồ côi | Cascade, rồi job tệp |
 | `email_outbox` | `sent` quá 30 ngày (thư `failed` được giữ để quản trị xem) | Hằng tuần (đã làm GĐ 2) |
-| Bản nháp | Người dùng xóa báo cáo → xóa nháp; nháp quá 12 tháng không cập nhật (QĐ-13) | Hằng tuần |
+| Bản nháp | Người dùng xóa báo cáo → xóa nháp; nháp quá 12 tháng không cập nhật (QĐ-13) | Hằng ngày (đã làm GĐ 4, `cleanup-stale-drafts`) |
 
 ### 8.1 Cơ chế việc nền (đã làm ở GĐ 2)
 

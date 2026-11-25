@@ -21,3 +21,5 @@ pnpm-debug.log*
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea
+# Tệp tải lên khi chạy api
+apps/api/storage/

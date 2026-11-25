@@ -12,6 +12,7 @@ export const CONSENT_KINDS = ["advisory", "verification", "matching", "research"
 export const LOCALES = ["vi", "en", "fr", "zh"] as const;
 export const TRANSLATION_LOCALES = ["en", "fr", "zh"] as const;
 export const REPORT_STATUSES = ["draft", "exported"] as const;
+export const EXPORT_STATUSES = ["draft", "complete"] as const;
 export const REPORT_BRANDS = ["default", "brand"] as const;
 export const FILE_KINDS = [
   "logo",
@@ -54,6 +55,7 @@ export type ConsentKind = (typeof CONSENT_KINDS)[number];
 export type Locale = (typeof LOCALES)[number];
 export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
+export type ExportStatus = (typeof EXPORT_STATUSES)[number];
 export type ReportBrand = (typeof REPORT_BRANDS)[number];
 export type FileKind = (typeof FILE_KINDS)[number];
 export type InquiryKind = (typeof INQUIRY_KINDS)[number];

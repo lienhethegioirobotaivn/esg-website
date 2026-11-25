@@ -15,6 +15,13 @@
       "when": 1795523124799,
       "tag": "0001_question_bank_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795577539329,
+      "tag": "0002_report_export_status",
+      "breakpoints": true
     }
   ]
 }

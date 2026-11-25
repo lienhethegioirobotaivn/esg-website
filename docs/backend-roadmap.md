@@ -10,7 +10,7 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 1 | Khung dự án và database (xong 23/11/2026) | Dựng `apps/api` (NestJS 12), cấu hình/validate biến môi trường, Drizzle + migration cho toàn bộ bảng, Docker Compose cho dev, `/health`, CI cơ bản | `apps/api`, schema, migration đầu tiên | Migration chạy sạch từ database rỗng; kiểm thử khởi động |
 | 2 | Xác thực người dùng, email, giới hạn tần suất (xong 24/11/2026) | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
 | 3 | Ngân hàng câu hỏi (xong 24/11/2026) | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
-| 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
+| 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng (xong 25/11/2026) | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
 | 5 | Quản trị: tài khoản, CRM, phản hồi | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
 | 6 | Nội dung | `posts`, ảnh, `post_likes`, `site_stats`, `translation` (Gemini) | `/posts`, `/stats`, `/translations`, `/admin/*` (nội dung) | Chống trùng lượt thích, ưu tiên bản dịch chỉnh tay, dọn ảnh |
 | 7 | Giao diện trang quản trị | Làm lại hoặc cập nhật giao diện admin: câu hỏi, CRM, bài viết, bản dịch, tài khoản, trạng thái hệ thống | `apps/web` (admin) | Kiểm thử luồng chính theo vai trò |
@@ -18,7 +18,7 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 9 | Chuyển dữ liệu | `tools/migrate-from-sheet`, chạy khô và chạy thật trên bản thử, đối chiếu số liệu | Công cụ nhập, báo cáo đối chiếu | Số dòng/tệp/dung lượng khớp, mẫu sha256 |
 | 10 | Hạ tầng và cutover | VPS, Docker Compose, Caddy, sao lưu và diễn tập khôi phục, CI/CD, DNS, gửi email thật, chuyển | Hệ thống production | Danh sách ở `backend-deployment.md`, mục 6 |
 
-Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 2.**
+Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 5.**
 
 ### 1.1 Kết quả giai đoạn 1 (23/11/2026)
 
@@ -48,7 +48,22 @@ Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đo�
 - Quyết định: không mở rộng `INPUT_TYPES` của `@esg/shared` (tránh ảnh hưởng frontend); các kiểu `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS`, `SIZE`, `LEVEL`, `CAPABILITIES`, `REVENUE` chỉ được dùng ở nhóm hồ sơ và được kiểm tra riêng. `route` (kể cả `capability_any`) đã lưu nhưng chưa dùng để lọc; lọc theo ngành và quy mô vẫn do `selectSurvey` như demo, chuyển lên máy chủ ở GĐ 5.
 - Kiểm thử: 74 đơn vị, 80 tích hợp trong `apps/api` (nhập đủ 175 câu; `selectSurvey` đúng tập câu cho cả 8 ngành × 5 quy mô).
 
-**Giai đoạn kế tiếp (GĐ 4):** xem bảng ở mục 1.
+### 1.4 Kết quả giai đoạn 4 (25/11/2026)
+
+- Tệp: `StorageService` ghi tệp lên đĩa dưới `STORAGE_DIR` (mặc định `./storage`) theo khóa `năm/tháng/uuid`, chặn khóa thoát khỏi thư mục; `FilesService` kiểm tra loại bằng chữ ký đầu tệp (PNG, JPEG, WEBP, PDF, DOCX) và dung lượng theo từng loại (logo 2 MB, minh chứng 10 MB, PDF/Word 25 MB), tính SHA-256, ghi dòng `files` (chưa tham chiếu), tải về dạng luồng. Tệp bị bỏ đi chỉ đánh dấu `deleted_at`; việc xóa trên đĩa do job làm.
+- `POST /api/v1/companies` (multipart: các trường của `companyProfileSchema`, `reportCode` tùy chọn, `logo` tùy chọn): upsert theo mã báo cáo, tạo `companies` + `reports` gắn bản bộ câu hỏi đang xuất bản (không có thì 503 `survey_bank_unavailable`); trả `{ reportCode, claimToken }`. Ngành ánh xạ sang mã nguồn câu hỏi (`manufacturing` → `MAN`...), quy mô giữ nguyên, các trường còn lại vào `companies.profile`. Đồng ý B2B ghi `consents.kind = matching`, đồng ý tổng hợp dữ liệu ghi `research`; chỉ ghi dòng mới khi đổi ý hoặc khi đồng ý lần đầu (không ghi dòng "chưa đồng ý" ban đầu). Báo cáo đã có chủ thì chỉ chủ mới cập nhật được (403).
+- `POST /api/v1/reports/exports` (multipart: `reportCode`, `locale`, `status` = `draft|complete`, `theme`, `snapshot` là JSON, tệp `pdf` và/hoặc `docx`): kiểm tra snapshot bằng `reportSnapshotSchema`, kiểm tra chữ ký tệp, tạo bản xuất `RX-YYYYMMDD-XXXXXX`, giữ 5 bản mới nhất mỗi báo cáo (bản thừa bị xóa dòng và đánh dấu xóa tệp, trong cùng giao dịch). Người đã đăng nhập thì trở thành chủ ngay; người chưa đăng nhập nhận `attachToken` (HMAC, 6 giờ). Một thay đổi so với bản demo: bỏ cơ chế tải theo đoạn (QĐ-12), một yêu cầu duy nhất mang cả hai tệp.
+- Gắn chủ: `POST /reports/exports/:exportId/attach` (cần đăng nhập, body `{ attachToken }`) trả `attached` hoặc `already`; chủ khác thì 409 `owner_conflict`; token sai hoặc hết hạn thì 403. Thêm `POST /reports/claim` (`{ reportCode, claimToken }`, token HMAC 24 giờ) để người đã xác thực email nhận báo cáo chưa có bản xuất, vì mã báo cáo (khoảng 1 triệu khả năng mỗi ngày) không đủ bí mật để làm chứng quyền sở hữu; cần cho nháp và minh chứng trước khi xuất.
+- `/my-reports` (cần đăng nhập, người không phải chủ luôn nhận 404 `report_not_found` để không lộ sự tồn tại): `GET /` đúng `myReportListSchema` của `@esg/shared`, `GET /:exportId/snapshot`, `GET /:exportId/files/pdf|docx` (luồng, `Cache-Control: private, no-store`, `nosniff`), `DELETE /:exportId`. Xóa bản xuất cuối cùng thì xóa luôn báo cáo, minh chứng, nháp và hồ sơ doanh nghiệp (nếu không còn báo cáo nào dùng) kèm đánh dấu xóa mọi tệp liên quan.
+- `/drafts` (cần đăng nhập, QĐ-03): `GET ?reportCode=`, `PUT` (`{ reportCode|null, schemaVersion: 2, data, baseUpdatedAt?, overwrite? }`), `DELETE ?reportCode=`. `data` kiểm tra bằng `draftSnapshotSchema`. Đã có nháp trên máy chủ mà `baseUpdatedAt` không khớp thì 409 `draft_conflict` kèm `updatedAt`, để giao diện hỏi người dùng rồi gửi lại với `overwrite: true`. Nháp có `reportCode` chỉ dùng được với báo cáo của chính mình; một nháp chung (`reportCode: null`) mỗi người.
+- `/evidence` (cần đăng nhập và là chủ báo cáo, QĐ-01 và QĐ-02): `POST` (multipart `reportCode`, `questionCode`, `file`), `GET ?reportCode=`, `GET /:id/file`, `DELETE /:id`. Tối đa 10 tệp mỗi câu hỏi mỗi báo cáo (409 `evidence_limit`), PDF/PNG/JPEG/WEBP tối đa 10 MB, mã câu phải có trong bộ câu hỏi của báo cáo.
+- Migration `0002`: thêm `report_exports.status` (`draft` hoặc `complete`, mặc định `draft`) cho trạng thái từng bản xuất như demo; `reports.status` giữ 2 mức `draft`/`exported`. Cột chăm sóc khách hàng (trạng thái, ngày liên hệ tiếp, ghi chú, người phụ trách) làm ở GĐ 5.
+- Việc nền mới (tổng cộng 8 việc có theo dõi hoặc không): `cleanup-unattached-exports` (hằng giờ: bản xuất chưa có chủ quá 24 giờ bị xóa, QĐ-02; báo cáo ẩn danh không có bản xuất quá 7 ngày bị xóa), `cleanup-orphan-files` (hằng giờ: tệp chưa tham chiếu quá 24 giờ bị đánh dấu xóa; tệp đã đánh dấu quá 7 ngày bị xóa khỏi đĩa rồi xóa dòng), `cleanup-stale-drafts` (hằng ngày: nháp quá 12 tháng, QĐ-13).
+- Thay đổi chung: thân JSON tối đa 1 MB; `AppError` cho phép phần phụ là chuỗi; `AuthService.userFromRequest` đọc phiên tùy chọn cho các endpoint công khai.
+- Cần làm ở GĐ 8 phía frontend: gọi một endpoint multipart thay vì tải theo đoạn, đường dẫn gắn chủ mới (`/reports/exports/:id/attach`), lưu `claimToken` cùng mã báo cáo.
+- Kiểm thử: 88 đơn vị, 109 tích hợp trong `apps/api` (giữ 5 bản xuất, 409 chủ, tải đúng chủ, dọn mồ côi, nháp và minh chứng).
+
+**Giai đoạn kế tiếp (GĐ 5):** quản trị: tài khoản có vai trò, CRM, phản hồi.
 
 ## 2. Nguyên tắc kiểm thử
 

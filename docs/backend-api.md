@@ -33,32 +33,36 @@ Mã lỗi dùng chung (`error.code`): `invalid_request` (400), `unauthorized` (4
 | Phương thức, đường dẫn | Quyền | Mô tả |
 | --- | --- | --- |
 | `GET /survey-bank?locale=vi` | Public | Bộ câu hỏi bản đang xuất bản (đã làm ở GĐ 3): `{ version, locale, publishedAt, survey, profile }`; `survey` là `Survey` của `@esg/shared` chỉ gồm câu đã duyệt, `profile` là câu hồ sơ. ETag yếu + `If-None-Match` → 304; `Cache-Control: public, max-age=60, must-revalidate`; 120 lượt/phút/IP; `locale` ngoài `vi/en/fr/zh` → 400 `invalid_locale`; chưa có bản xuất bản → 404 `survey_bank_unavailable` |
-| `POST /companies` | Public | Upsert hồ sơ doanh nghiệp theo mã báo cáo; nhận logo (≤ 2 MB); trả `report code` |
+| `POST /companies` | Public (phiên tùy chọn) | Đã làm ở GĐ 4. Multipart: các trường `companyProfileSchema`, `reportCode` tùy chọn, `logo` tùy chọn (PNG/JPG/WEBP ≤ 2 MB, kiểm tra chữ ký). Upsert theo mã báo cáo; trả `{ reportCode, claimToken }`. Báo cáo đã có chủ chỉ chủ mới cập nhật (403). 30 lượt/10 phút/IP |
 
 ## 3. Báo cáo, nháp, minh chứng
 
+Đã làm ở GĐ 4. Mọi endpoint "User" dùng cookie `esg-user`; báo cáo, bản xuất, minh chứng không thuộc người gọi luôn trả 404 để không lộ sự tồn tại.
+
 | Phương thức, đường dẫn | Quyền | Mô tả | Route cũ |
 | --- | --- | --- | --- |
-| `POST /reports/uploads` | Public | Mở phiên tải lên báo cáo, trả token | `reports/upload` |
-| `PUT /reports/uploads/:id/chunks/:n` | Public (token) | Tải từng đoạn (nếu giữ cơ chế đoạn, QĐ-12) | `reports/upload` |
-| `POST /reports/uploads/:id/finish` | Public (token) | Hoàn tất, tạo bản xuất, ghép snapshot | `reports/finish` |
-| `POST /reports/attach` | User | Gắn báo cáo vừa xuất vào email đã xác thực (token gắn hợp lệ 6 giờ) | `reports/attach` |
-| `GET /my-reports` | User | Danh sách báo cáo của tôi | `my-reports` |
-| `GET /my-reports/:id/file` | User | Tải tệp PDF/Word | `my-reports/[id]/file` |
-| `GET /my-reports/:id/snapshot` | User | Lấy snapshot để mở lại/chỉnh | `my-reports/[id]/snapshot` |
-| `DELETE /my-reports/:id` | User | Xóa báo cáo kèm tệp | `my-reports/[id]` |
-| `GET /drafts` | User | Bản nháp trên server | (mới) |
-| `PUT /drafts/:reportCode` | User | Lưu nháp, kiểm tra `schema_version` | (mới) |
-| `DELETE /drafts/:reportCode` | User | Xóa nháp | (mới) |
-| `POST /evidence` | User | Tải một tệp minh chứng gắn với `reportCode` + `questionCode` | (mới, thay lưu trong Drive) |
-| `DELETE /evidence/:id` | User | Gỡ tệp minh chứng | (mới) |
+| `POST /reports/exports` | Public (phiên tùy chọn) | Multipart: `reportCode`, `locale`, `status` (`draft`/`complete`), `theme` (`default`/`brand`), `snapshot` (JSON ≤ 600.000 ký tự), tệp `pdf` và/hoặc `docx` (≤ 25 MB, kiểm tra chữ ký). Trả `{ exportId, reportCode, attachToken }`; `attachToken` là `null` khi người gọi đã đăng nhập hoặc báo cáo đã có chủ. Báo cáo đã có chủ khác người gọi: 403. 20 lượt/giờ/IP | `reports/upload` + `reports/finish` |
+| `POST /reports/exports/:exportId/attach` | User | Body `{ attachToken }` (hợp lệ 6 giờ). Trả `{ status: "attached" \| "already" }`; chủ khác: 409 `owner_conflict`; token sai hoặc hết hạn: 403 `invalid_attach_token` | `reports/attach` |
+| `POST /reports/claim` | User | Body `{ reportCode, claimToken }` (hợp lệ 24 giờ, phát từ `POST /companies`). Cùng kết quả như attach; 403 `invalid_claim_token` | (mới) |
+| `GET /my-reports` | User | `{ reports: MyReport[] }` đúng `myReportListSchema` | `my-reports` |
+| `GET /my-reports/:exportId/files/pdf` hoặc `docx` | User | Tải tệp (luồng, `attachment`, `private, no-store`) | `my-reports/[id]/file` |
+| `GET /my-reports/:exportId/snapshot` | User | `{ snapshot, reportCode }` | `my-reports/[id]/snapshot` |
+| `DELETE /my-reports/:exportId` | User | Xóa bản xuất và tệp; xóa bản cuối thì xóa cả báo cáo, minh chứng, nháp, hồ sơ | `my-reports/[id]` |
+| `GET /drafts?reportCode=` | User | `{ draft: { data, schemaVersion, updatedAt } \| null }`; không có `reportCode` là nháp chung | (mới) |
+| `PUT /drafts` | User | Body `{ reportCode \| null, schemaVersion: 2, data, baseUpdatedAt?, overwrite? }`; trả `{ updatedAt }`. Đã có nháp mà `baseUpdatedAt` lệch: 409 `draft_conflict` kèm `updatedAt`; gửi lại với `overwrite: true` để ghi đè. 120 lượt/phút/người | (mới) |
+| `DELETE /drafts?reportCode=` | User | Xóa nháp | (mới) |
+| `POST /evidence` | User, chủ báo cáo | Multipart `reportCode`, `questionCode`, `file` (PDF/PNG/JPEG/WEBP ≤ 10 MB); tối đa 10 tệp mỗi câu (409 `evidence_limit`); mã câu không có trong bộ câu hỏi của báo cáo: 400 `invalid_question`. 60 lượt/10 phút/người | (mới) |
+| `GET /evidence?reportCode=` | User | `{ evidence: [{ id, questionCode, name, mime, size, createdAt }] }` | (mới) |
 | `GET /evidence/:id/file` | User | Tải lại tệp minh chứng của chính mình | (mới) |
+| `DELETE /evidence/:id` | User | Gỡ tệp minh chứng | (mới) |
 
-Giới hạn tần suất giữ như demo: xem 60/IP và 5.000/ngày, xóa 20; tải đoạn 80 và 6.000/ngày; hoàn tất 10 và 600/ngày; gắn 30 và 3.000/ngày.
+Mã lỗi thêm ở GĐ 4: `invalid_company`, `invalid_file` (400), `file_too_large` và `payload_too_large` (413), `invalid_snapshot`, `invalid_draft`, `invalid_question` (400), `report_not_found`, `evidence_not_found`, `file_not_found` (404), `owner_conflict`, `draft_conflict`, `evidence_limit` (409), `invalid_attach_token`, `invalid_claim_token` (403).
 
-Ghi chú QĐ-12 (đã chốt theo đề xuất): ba endpoint tải theo đoạn ở đầu bảng (`POST /reports/uploads`, `PUT .../chunks/:n`, `POST .../finish`) là hành vi demo và sẽ được thay bằng một endpoint multipart duy nhất (tối đa 25 MB) ở Giai đoạn 4; bảng `upload_sessions` vì vậy không được tạo.
+Giới hạn tần suất của người đã đăng nhập (xem, tải, xóa, gắn): 60 lượt/phút/người; minh chứng đọc 120 lượt/phút/người.
 
-Quy tắc dữ liệu: tối đa 25 MB mỗi tệp; snapshot không còn giới hạn 600.000 ký tự nhưng có trần hợp lý (đề xuất 5 MB); giữ 5 bản xuất mới nhất mỗi mã báo cáo; nếu `reports.owner_user_id` đã khác người gọi thì trả `409 owner_conflict`.
+Ghi chú QĐ-12 (đã chốt theo đề xuất, làm ở GĐ 4): một endpoint multipart duy nhất thay cho tải theo đoạn; không có bảng `upload_sessions`. Thân JSON tối đa 1 MB.
+
+Quy tắc dữ liệu: tối đa 25 MB mỗi tệp; giữ 5 bản xuất mới nhất mỗi mã báo cáo; bản xuất chưa gắn email quá 24 giờ bị xóa (QĐ-02); nháp quá 12 tháng bị xóa (QĐ-13); nếu `reports.owner_user_id` đã khác người gọi thì trả `409 owner_conflict`.
 
 ## 4. Liên hệ và phản hồi
 

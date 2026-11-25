@@ -25,7 +25,7 @@ Kiểm tra bằng schema lúc khởi động. Không có biến nào dùng chung
 | Cơ bản (đã có từ GĐ 1) | `NODE_ENV`, `PORT` (mặc định 3001), `DATABASE_URL` (bắt buộc), `DATABASE_POOL_MAX` (mặc định 10), `RUN_MIGRATIONS_ON_START` (mặc định `false`; bật ở production để `api` tự migrate có khóa advisory) |
 | Database | `DATABASE_URL` |
 | Phiên (đã có từ GĐ 2) | `SESSION_SECRET` (tối thiểu 32 ký tự; băm mã OTP, IP, bắt buộc ở production), `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` (GĐ 5, chỉ để tạo quản trị đầu tiên) |
-| Tệp | `STORAGE_DIR`, `MAX_UPLOAD_BYTES` |
+| Tệp (đã có từ GĐ 4) | `STORAGE_DIR` (mặc định `./storage`; ở production trỏ tới ổ đĩa bền vững và nằm trong kế hoạch sao lưu). Dung lượng tối đa từng loại tệp là hằng số trong mã, không có `MAX_UPLOAD_BYTES` |
 | Email (đã có từ GĐ 2) | `MAIL_PROVIDER` (`console` hoặc `brevo`; production bắt buộc `brevo`), `MAIL_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_DAILY_LIMIT` (mặc định 300); `ADMIN_NOTIFY_EMAIL` (GĐ 5) |
 | Dịch | `GEMINI_API_KEY` (tùy chọn) |
 | Website | `PUBLIC_BASE_URL`; `TRUSTED_PROXY` (đã có từ GĐ 2: số lớp proxy tin cậy, Caddy đặt `1`) |

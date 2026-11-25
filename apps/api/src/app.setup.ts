@@ -12,6 +12,7 @@ export function configureApp(app: NestExpressApplication): void {
   if (env.TRUSTED_PROXY > 0) {
     app.set("trust proxy", env.TRUSTED_PROXY);
   }
+  app.useBodyParser("json", { limit: "1mb" });
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();

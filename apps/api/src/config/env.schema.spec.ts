@@ -20,6 +20,7 @@ describe("loadEnv", () => {
       MAIL_DAILY_LIMIT: 300,
       TRUSTED_PROXY: 0,
       JOBS_ENABLED: true,
+      STORAGE_DIR: "./storage",
     });
     expect(env.SESSION_SECRET.length).toBeGreaterThanOrEqual(32);
   });

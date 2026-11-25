@@ -76,7 +76,7 @@ pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.
 pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.1.xlsx --version 0.1 --publish
 ```
 
-`--version` bỏ trống thì lấy từ cột `content_version` (file v0.1 đang ghi `0.1-draft`). Bản đã xuất bản không bị ghi đè; muốn đổi nội dung hãy dùng số phiên bản mới. Kiểm tra: `http://localhost:3001/api/v1/survey-bank`. `apps/api` dùng `@esg/shared` qua bản build (`@esg/shared/node`); các script `build`, `start`, `start:dev`, `typecheck`, `test` tự build trước, còn chạy thẳng `vitest` hoặc `tsc` thì cần `pnpm --filter @esg/shared build` một lần.
+`--version` bỏ trống thì lấy từ cột `content_version` (file v0.1 đang ghi `0.1-draft`). Bản đã xuất bản không bị ghi đè; muốn đổi nội dung hãy dùng số phiên bản mới. Kiểm tra: `http://localhost:3001/api/v1/survey-bank`. `apps/api` dùng `@esg/shared` qua bản build (`@esg/shared/node`); các script `build`, `start`, `start:dev`, `typecheck`, `test`, `test:integration`, `question-bank:import` tự build trước, còn chạy thẳng `vitest` hoặc `tsc` thì cần `pnpm --filter @esg/shared build` một lần.
 
 Dùng thử đăng nhập OTP khi dev: để `MAIL_PROVIDER=console`, gọi `POST /api/v1/auth/email/request`, mã 6 số hiện trong log của API.
 

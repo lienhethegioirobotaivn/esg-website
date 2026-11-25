@@ -72,8 +72,8 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 Nhập bộ câu hỏi từ xlsx (kiểm tra trước, không ghi gì nếu có lỗi):
 
 ```bash
-pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.1.xlsx --dry-run
-pnpm --filter api question-bank:import -- --file apps/api/data/question-bank-v0.1.xlsx --version 0.1 --publish
+pnpm --filter api question-bank:import -- --file data/question-bank-v0.1.xlsx --dry-run
+pnpm --filter api question-bank:import -- --file data/question-bank-v0.1.xlsx --version 0.1 --publish
 ```
 
 `--version` bỏ trống thì lấy từ cột `content_version` (file v0.1 đang ghi `0.1-draft`). Bản đã xuất bản không bị ghi đè; muốn đổi nội dung hãy dùng số phiên bản mới. Kiểm tra: `http://localhost:3001/api/v1/survey-bank`. `apps/api` dùng `@esg/shared` qua bản build (`@esg/shared/node`); các script `build`, `start`, `start:dev`, `typecheck`, `test`, `test:integration`, `question-bank:import` tự build trước, còn chạy thẳng `vitest` hoặc `tsc` thì cần `pnpm --filter @esg/shared build` một lần.

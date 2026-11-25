@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts"
   },
@@ -20,7 +20,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "tsdown": "^0.23.7",
+    "tsup": "^9.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3"
   }

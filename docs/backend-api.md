@@ -68,8 +68,9 @@ Quy tắc dữ liệu: tối đa 25 MB mỗi tệp; giữ 5 bản xuất mới n
 
 | Phương thức, đường dẫn | Quyền | Mô tả | Route cũ |
 | --- | --- | --- | --- |
-| `POST /inquiries` | Public | Đăng ký Tư vấn hoặc Kiểm định, tạo mã `TV-`/`KD-`, gửi email thông báo | `contact` |
-| `POST /feedback/:token` | Public (token) | Gửi đánh giá từ liên kết trong email mời | (hiện qua Apps Script) |
+| `POST /inquiries` | Public | Đăng ký Tư vấn hoặc Kiểm định, tạo mã `TV-`/`KD-`, gửi email thông báo (đã làm GĐ 5) | `contact` |
+| `POST /feedback` | Public | Gửi đánh giá trực tiếp, điểm 1-5 (đã làm GĐ 5) | (hiện qua Apps Script) |
+| `GET /feedback/invite/:token`, `POST /feedback/invite/:token` | Public (token) | Xem và gửi đánh giá từ liên kết trong email mời, dùng một lần (đã làm GĐ 5) | (hiện qua Apps Script) |
 
 ## 5. Nội dung công khai
 
@@ -88,11 +89,11 @@ Tất cả dưới `/admin`, cần phiên quản trị; ghi `audit_logs`.
 
 | Nhóm | Đường dẫn | Vai trò | Ghi chú |
 | --- | --- | --- | --- |
-| Phiên | `POST /admin/login`, `POST /admin/logout`, `GET /admin/me` | - | Khóa 15 phút sau 5 lần sai (như demo) |
-| Tài khoản | `GET/POST/PATCH /admin/users` | `admin` | Tạo, đổi vai trò, vô hiệu hóa |
+| Phiên (đã làm GĐ 5) | `POST /admin/login`, `POST /admin/logout`, `GET /admin/me` | - | Khóa 15 phút sau 5 lần sai (như demo) |
+| Tài khoản (đã làm GĐ 5) | `GET/POST/PATCH /admin/users` | `admin` | Tạo, đổi vai trò, đổi mật khẩu, vô hiệu hóa |
 | Ngân hàng câu hỏi | `GET /admin/question-banks`, `POST /admin/question-banks` (nhập từ xlsx hoặc nhân bản bản đang xuất bản), `PATCH .../questions/:id`, `POST .../publish`, `POST .../validate` | `admin`, `content` | Có xem trước, kiểm tra hợp lệ trước khi xuất bản |
-| CRM | `GET /admin/customers`, `GET /admin/customers/:id`, `GET /admin/inquiries`, `PATCH /admin/inquiries/:id` (trạng thái, ưu tiên, người phụ trách), `POST /admin/inquiries/:id/notes` | `admin`, `ops` | Lọc, tìm kiếm, phân trang |
-| Xuất file CRM | `GET /admin/customers/export?format=xlsx|csv`, `GET /admin/inquiries/export?...` | `admin`, `ops` | Ghi `audit_logs`; định dạng chốt ở Giai đoạn CRM |
+| CRM (đã làm GĐ 5) | `GET /admin/customers`, `GET/PATCH /admin/customers/:id` (cột chăm sóc), `GET /admin/inquiries`, `GET/PATCH /admin/inquiries/:id` (trạng thái, ưu tiên, người phụ trách, hẹn gọi lại, kết quả), `POST /admin/inquiries/:id/notes`, `GET /admin/feedback` | `admin`, `ops` | Lọc, tìm kiếm, phân trang `limit`/`offset` |
+| Xuất file CRM (đã làm GĐ 5) | `GET /admin/customers/export?format=xlsx|csv`, `GET /admin/inquiries/export?...`, `GET /admin/feedback/export?...` | `admin`, `ops` | Ghi `audit_logs`; mặc định csv (có BOM), theo bộ lọc đang chọn, tối đa 10.000 dòng |
 | Bài viết | `GET/POST/PATCH/DELETE /admin/posts`, `POST /admin/upload` (ảnh) | `admin`, `content` | Thay `admin/posts`, `admin/upload` |
 | Thống kê | `GET/PUT /admin/stats` | `admin`, `content` | Thay `admin/stats` |
 | Bản dịch | `GET/PUT /admin/translations`, `POST /admin/translations/run` | `admin`, `content` | Thay `admin/translations`, `cron/translations` |

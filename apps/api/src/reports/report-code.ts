@@ -22,3 +22,7 @@ export function generateReportCode(now: number = Date.now()): string {
 export function generateExportId(now: number = Date.now()): string {
   return `RX-${vietnamDate(now)}-${randomSuffix(6)}`;
 }
+
+export function generateRecordCode(prefix: string, suffixLength: number, now: number = Date.now()): string {
+  return `${prefix}-${vietnamDate(now)}-${randomSuffix(suffixLength)}`;
+}

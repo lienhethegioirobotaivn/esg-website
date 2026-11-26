@@ -23,3 +23,7 @@ pnpm-debug.log*
 .idea
 # Tệp tải lên khi chạy api
 apps/api/storage/
+
+admin.txt
+yeu-cau.csv
+khach-hang.xlsx

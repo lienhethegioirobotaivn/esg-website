@@ -11,14 +11,14 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 2 | Xác thực người dùng, email, giới hạn tần suất (xong 24/11/2026) | OTP, phiên, `MailService` + `email_outbox`, `rate-limit` trong PostgreSQL, job dọn OTP/phiên | `/auth/*` | Kiểm thử quy tắc OTP (hạn, 5 lần thử, 60 giây, 3/giờ), giới hạn theo IP |
 | 3 | Ngân hàng câu hỏi (xong 24/11/2026) | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
 | 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng (xong 25/11/2026) | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
-| 5 | Quản trị: tài khoản, CRM, phản hồi | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
+| 5 | Quản trị: tài khoản, CRM, phản hồi (xong 26/11/2026) | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
 | 6 | Nội dung | `posts`, ảnh, `post_likes`, `site_stats`, `translation` (Gemini) | `/posts`, `/stats`, `/translations`, `/admin/*` (nội dung) | Chống trùng lượt thích, ưu tiên bản dịch chỉnh tay, dọn ảnh |
 | 7 | Giao diện trang quản trị | Làm lại hoặc cập nhật giao diện admin: câu hỏi, CRM, bài viết, bản dịch, tài khoản, trạng thái hệ thống | `apps/web` (admin) | Kiểm thử luồng chính theo vai trò |
 | 8 | Chuyển frontend sang API v2 | Thay route handler gọi Apps Script bằng gọi `/api/v1`; thêm dialog nhắc xác thực email; giữ nguyên trải nghiệm điền/xuất | `apps/web` | Kiểm thử đầu-cuối: điền → xuất → xác thực → xem lại → xóa |
 | 9 | Chuyển dữ liệu | `tools/migrate-from-sheet`, chạy khô và chạy thật trên bản thử, đối chiếu số liệu | Công cụ nhập, báo cáo đối chiếu | Số dòng/tệp/dung lượng khớp, mẫu sha256 |
 | 10 | Hạ tầng và cutover | VPS, Docker Compose, Caddy, sao lưu và diễn tập khôi phục, CI/CD, DNS, gửi email thật, chuyển | Hệ thống production | Danh sách ở `backend-deployment.md`, mục 6 |
 
-Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 5.**
+Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 6.**
 
 ### 1.1 Kết quả giai đoạn 1 (23/11/2026)
 
@@ -63,7 +63,23 @@ Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đo�
 - Cần làm ở GĐ 8 phía frontend: gọi một endpoint multipart thay vì tải theo đoạn, đường dẫn gắn chủ mới (`/reports/exports/:id/attach`), lưu `claimToken` cùng mã báo cáo.
 - Kiểm thử: 88 đơn vị, 109 tích hợp trong `apps/api` (giữ 5 bản xuất, 409 chủ, tải đúng chủ, dọn mồ côi, nháp và minh chứng).
 
-**Giai đoạn kế tiếp (GĐ 5):** quản trị: tài khoản có vai trò, CRM, phản hồi.
+### 1.5 Kết quả giai đoạn 5 (26/11/2026)
+
+- Tài khoản quản trị: `POST /admin/login` (email + mật khẩu, băm scrypt N=16384 r=8 p=1 chuẩn hóa NFKC, tối thiểu 12 ký tự), `POST /admin/logout`, `GET /admin/me`. Phiên 7 ngày, lưu `admin_sessions` (băm SHA-256 của token), cookie `esg-admin` (httpOnly, sameSite lax, secure ở production), tách hẳn khỏi phiên người dùng. Sai 5 lần thì khóa 15 phút (429 `admin_locked`, ghi `admin.locked`); email lạ và sai mật khẩu trả cùng lỗi 401 `invalid_credentials` và cùng thời gian xử lý; giới hạn 20 lần đăng nhập mỗi 15 phút mỗi IP.
+- Phân quyền: `AdminSessionGuard` + `@Roles(...)`; `admin` được vào mọi nơi, `ops` vào CRM (yêu cầu, khách hàng, phản hồi, xuất file), `content` chưa có endpoint riêng (bài viết, thống kê, dịch ở GĐ 6). Chưa đăng nhập 401 `unauthorized`, sai vai trò 403 `forbidden`.
+- `GET/POST/PATCH /admin/users` (chỉ `admin`): tạo tài khoản, đổi tên, vai trò, mật khẩu, bật/tắt. Đổi vai trò, đổi mật khẩu hoặc vô hiệu hóa thì đóng mọi phiên của người đó; không được tự hạ quyền mình và luôn còn ít nhất một quản trị viên hoạt động (409 `last_admin`). Tài khoản đầu tiên tạo từ `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` khi khởi động, chỉ khi bảng `admin_users` còn trống.
+- `audit_logs`: `AuditService.record` ghi đăng nhập, đăng xuất, khóa, tạo/sửa tài khoản, tạo yêu cầu, cập nhật yêu cầu, ghi chú, cập nhật khách hàng, mọi lần xuất file; IP chỉ lưu dạng HMAC, không ghi mật khẩu.
+- `POST /inquiries` (công khai, 10 yêu cầu/giờ/IP): `kind` consulting|verification, `companyName`, ít nhất `contactEmail` hoặc `contactPhone`, `message`, `headcountTier`, `sector`, `contactConsent`, `reportCode` tùy chọn (để gắn hồ sơ); trả `{ code }` dạng `TV-YYYYMMDD-XXXXX` hoặc `KD-...`; có `ADMIN_NOTIFY_EMAIL` thì xếp thư `inquiry_notice` vào hộp thư đi cùng giao dịch. Quản trị: `GET /admin/inquiries` (lọc `status`, `kind`, `assignedAdminId`, `q`; phân trang `limit`/`offset`), `GET/PATCH /admin/inquiries/:id` (trạng thái, ưu tiên, người phụ trách, hẹn gọi lại, kết quả; lần đầu rời `new` thì ghi `first_contacted_at`), `POST /admin/inquiries/:id/notes`, `GET /admin/inquiries/export`.
+- CRM: `GET /admin/customers` (lọc `careStatus`, `assignedAdminId`, `q`), `GET/PATCH /admin/customers/:id` (cột chăm sóc `care_status`, `next_contact_at`, `first_contacted_at`, `care_note`, `assigned_admin_id` của `companies`), kèm số báo cáo, đồng ý tư vấn gần nhất, lịch sử đồng ý và danh sách báo cáo; `GET /admin/customers/export`.
+- Xuất file: `?format=csv|xlsx` (mặc định csv), tối đa 10.000 dòng, theo đúng bộ lọc đang chọn; CSV có BOM để Excel đọc tiếng Việt, ô bắt đầu bằng `= + - @` được thêm dấu `'` chống chèn công thức; `Cache-Control: private, no-store`.
+- Phản hồi: `POST /feedback` (trực tiếp, điểm 1-5, nhận xét và email tùy chọn, 10 lượt/giờ/IP), `GET /feedback/invite/:token` và `POST /feedback/invite/:token` (liên kết mời, dùng đúng một lần: lần hai 409 `feedback_used`, token lạ hoặc sai định dạng 404), `GET /admin/feedback` (kèm số đã trả lời và điểm trung bình), `GET /admin/feedback/export`. Cập nhật token là một câu lệnh `UPDATE ... WHERE submitted_at IS NULL`, nên hai lượt gửi đồng thời chỉ một lượt thành công. Đường dẫn là `/feedback/invite/:token` thay cho `/feedback/:token` ở bản thiết kế đầu để không đụng `POST /feedback`.
+- Việc nền mới `send-feedback-invites` (hằng giờ): báo cáo đã xuất từ 5 đến 30 ngày trước, có chủ sở hữu có email, chưa có thư mời thì tạo dòng `feedbacks` (kind `invite`) và xếp thư `feedback_invite` theo ngôn ngữ bản xuất gần nhất; chỉ mời một lần cho mỗi báo cáo (chỉ mục duy nhất từng phần `feedbacks_invite_report_key`). Mốc 30 ngày để lần triển khai đầu không gửi hàng loạt cho báo cáo cũ. Thư `feedback_invite` xóa payload sau khi gửi vì chứa liên kết dùng một lần.
+- Migration `0003`: thêm cột chăm sóc vào `companies`; thêm `code`, `kind`, `email`, `source` vào `feedbacks` (kèm ràng buộc, chỉ mục).
+- Biến môi trường mới: `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` (đặt cùng nhau), `ADMIN_NOTIFY_EMAIL`, `PUBLIC_BASE_URL` (mặc định `http://localhost:3000`, dùng dựng liên kết trong thư).
+- Chưa làm (để sau): trang quản trị trên frontend (GĐ 8), `GET /admin/jobs|outbox|files/health` và `GET/PATCH /admin/settings` (GĐ 9), đổi mật khẩu tự phục vụ và đặt lại mật khẩu.
+- Kiểm thử: 102 đơn vị, 143 tích hợp trong `apps/api` (phân quyền theo vai trò, khóa sau 5 lần sai, xuất CSV/XLSX đúng nội dung, nhật ký, liên kết phản hồi một lần, mời đúng một lần).
+
+**Giai đoạn kế tiếp (GĐ 6):** nội dung: bài viết, ảnh, lượt thích, thống kê, bản dịch.
 
 ## 2. Nguyên tắc kiểm thử
 

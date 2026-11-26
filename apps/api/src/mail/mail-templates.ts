@@ -42,6 +42,38 @@ const OTP_MAILS: Record<MailLocale, { subject: string; text: string }> = {
   },
 };
 
+const inquiryNoticePayloadSchema = z.object({
+  code: z.string().min(1).max(40),
+  kind: z.enum(["consulting", "verification"]),
+  companyName: z.string().min(1).max(200),
+  url: z.string().min(1).max(500),
+});
+
+const feedbackInvitePayloadSchema = z.object({
+  url: z.string().min(1).max(600),
+  reportCode: z.string().min(1).max(40),
+  locale: z.enum(MAIL_LOCALES),
+});
+
+const INVITE_MAILS: Record<MailLocale, { subject: string; text: string }> = {
+  vi: {
+    subject: "Báo cáo ESG của bạn thế nào? - ESG Report Online",
+    text: "Cảm ơn bạn đã tạo báo cáo {reportCode} trên ESG Report Online.\n\nChúng tôi rất muốn biết trải nghiệm của bạn. Chỉ mất chưa đến một phút:\n{url}\n\nLiên kết chỉ dùng được một lần. Nếu không muốn trả lời, bạn có thể bỏ qua email này.",
+  },
+  en: {
+    subject: "How was your ESG report? - ESG Report Online",
+    text: "Thank you for creating report {reportCode} on ESG Report Online.\n\nWe would love to hear how it went. It takes under a minute:\n{url}\n\nThis link works only once. If you prefer not to reply, you can ignore this email.",
+  },
+  fr: {
+    subject: "Que pensez-vous de votre rapport ESG ? - ESG Report Online",
+    text: "Merci d'avoir créé le rapport {reportCode} sur ESG Report Online.\n\nNous aimerions connaître votre avis, cela prend moins d'une minute :\n{url}\n\nCe lien ne fonctionne qu'une seule fois. Vous pouvez ignorer cet e-mail si vous ne souhaitez pas répondre.",
+  },
+  zh: {
+    subject: "您觉得 ESG 报告怎么样？- ESG Report Online",
+    text: "感谢您在 ESG Report Online 创建报告 {reportCode}。\n\n我们很想了解您的体验，只需不到一分钟：\n{url}\n\n此链接仅可使用一次。如不想回复，请忽略此邮件。",
+  },
+};
+
 export const MAIL_TEMPLATES = {
   otp: {
     maxAttempts: 1,
@@ -54,6 +86,34 @@ export const MAIL_TEMPLATES = {
         to,
         subject: mail.subject,
         text: mail.text.replace("{code}", parsed.code),
+      };
+    },
+  },
+  inquiry_notice: {
+    maxAttempts: 5,
+    priority: "normal",
+    scrubPayloadAfterSend: false,
+    render(payload, to) {
+      const parsed = inquiryNoticePayloadSchema.parse(payload);
+      const kind = parsed.kind === "consulting" ? "tư vấn" : "thẩm định";
+      return {
+        to,
+        subject: `Yêu cầu ${kind} mới: ${parsed.companyName} (${parsed.code})`,
+        text: `Có yêu cầu ${kind} mới từ ${parsed.companyName}.\nMã yêu cầu: ${parsed.code}\nXem chi tiết: ${parsed.url}`,
+      };
+    },
+  },
+  feedback_invite: {
+    maxAttempts: 3,
+    priority: "normal",
+    scrubPayloadAfterSend: true,
+    render(payload, to) {
+      const parsed = feedbackInvitePayloadSchema.parse(payload);
+      const mail = INVITE_MAILS[parsed.locale];
+      return {
+        to,
+        subject: mail.subject,
+        text: mail.text.replace("{reportCode}", parsed.reportCode).replace("{url}", parsed.url),
       };
     },
   },

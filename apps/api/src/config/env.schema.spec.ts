@@ -21,6 +21,7 @@ describe("loadEnv", () => {
       TRUSTED_PROXY: 0,
       JOBS_ENABLED: true,
       STORAGE_DIR: "./storage",
+      PUBLIC_BASE_URL: "http://localhost:3000",
     });
     expect(env.SESSION_SECRET.length).toBeGreaterThanOrEqual(32);
   });
@@ -139,5 +140,44 @@ describe("loadEnv", () => {
     expect(() => loadEnv({ ...validSource, SESSION_SECRET: "ngan" })).toThrow(
       /SESSION_SECRET: phải dài ít nhất 32 ký tự/,
     );
+  });
+});
+
+describe("biến quản trị", () => {
+  it("chấp nhận khi không đặt tài khoản quản trị đầu tiên", () => {
+    const env = loadEnv({ ...validSource });
+    expect(env.ADMIN_BOOTSTRAP_EMAIL).toBeUndefined();
+    expect(env.ADMIN_NOTIFY_EMAIL).toBeUndefined();
+  });
+
+  it("từ chối khi chỉ đặt email hoặc chỉ đặt mật khẩu", () => {
+    expect(() => loadEnv({ ...validSource, ADMIN_BOOTSTRAP_EMAIL: "a@example.com" })).toThrow(
+      /phải được đặt cùng nhau/,
+    );
+    expect(() =>
+      loadEnv({ ...validSource, ADMIN_BOOTSTRAP_PASSWORD: "mat-khau-rat-dai-123" }),
+    ).toThrow(/phải được đặt cùng nhau/);
+  });
+
+  it("từ chối mật khẩu ngắn hơn 12 ký tự", () => {
+    expect(() =>
+      loadEnv({
+        ...validSource,
+        ADMIN_BOOTSTRAP_EMAIL: "a@example.com",
+        ADMIN_BOOTSTRAP_PASSWORD: "ngan",
+      }),
+    ).toThrow(/ADMIN_BOOTSTRAP_PASSWORD/);
+  });
+
+  it("nhận đủ cặp email và mật khẩu", () => {
+    const env = loadEnv({
+      ...validSource,
+      ADMIN_BOOTSTRAP_EMAIL: "a@example.com",
+      ADMIN_BOOTSTRAP_PASSWORD: "mat-khau-rat-dai-123",
+      ADMIN_NOTIFY_EMAIL: "ops@example.com",
+      PUBLIC_BASE_URL: "https://esg.example.com",
+    });
+    expect(env.ADMIN_BOOTSTRAP_EMAIL).toBe("a@example.com");
+    expect(env.PUBLIC_BASE_URL).toBe("https://esg.example.com");
   });
 });

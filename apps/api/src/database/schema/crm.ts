@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   check,
   index,
@@ -13,12 +14,14 @@ import { companies } from "./companies.js";
 import { createdAt, oneOf, timestamptz, updatedAt, uuidPk } from "./columns.js";
 import {
   CONTACT_CONSENTS,
+  FEEDBACK_KINDS,
   HEADCOUNT_TIERS,
   INQUIRY_KINDS,
   INQUIRY_PRIORITIES,
   INQUIRY_STATUSES,
   SECTOR_CODES,
   type ContactConsent,
+  type FeedbackKind,
   type HeadcountTier,
   type InquiryKind,
   type InquiryPriority,
@@ -85,6 +88,10 @@ export const feedbacks = pgTable(
   "feedbacks",
   {
     id: uuidPk(),
+    code: text().unique("feedbacks_code_key"),
+    kind: text().$type<FeedbackKind>().notNull().default("invite"),
+    email: text(),
+    source: text().notNull().default("website"),
     reportId: uuid().references(() => reports.id, { onDelete: "set null" }),
     exportId: uuid().references(() => reportExports.id, { onDelete: "set null" }),
     tokenHash: text(),
@@ -97,7 +104,13 @@ export const feedbacks = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
+    check("feedbacks_kind_check", oneOf(t.kind, FEEDBACK_KINDS)),
+    check("feedbacks_rating_check", sql`${t.rating} is null or (${t.rating} between 1 and 5)`),
+    index("feedbacks_kind_created_at_idx").on(t.kind, t.createdAt.desc()),
     uniqueIndex("feedbacks_token_hash_key").on(t.tokenHash),
+    uniqueIndex("feedbacks_invite_report_key")
+      .on(t.reportId)
+      .where(sql`${t.kind} = 'invite'`),
     index("feedbacks_report_id_idx").on(t.reportId),
     index("feedbacks_export_id_idx").on(t.exportId),
   ],

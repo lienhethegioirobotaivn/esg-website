@@ -69,6 +69,9 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 | `TRUSTED_PROXY` | `0` | Số lớp proxy tin cậy phía trước API (Caddy: `1`); 0 là không tin tiêu đề `X-Forwarded-For` |
 | `JOBS_ENABLED` | `true` | `false` để tắt việc nền (gửi lại thư, dọn dữ liệu) |
 | `STORAGE_DIR` | `./storage` | Thư mục lưu tệp (logo, minh chứng, PDF/Word); production cần ổ đĩa bền vững |
+| `PUBLIC_BASE_URL` | `http://localhost:3000` | Địa chỉ website, dùng dựng liên kết trong thư mời phản hồi và thư báo yêu cầu |
+| `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` | (trống) | Tạo quản trị viên đầu tiên khi khởi động nếu chưa có ai; đặt cùng nhau, mật khẩu tối thiểu 12 ký tự |
+| `ADMIN_NOTIFY_EMAIL` | (trống) | Nhận thư báo khi có yêu cầu tư vấn/thẩm định mới |
 
 Nhập bộ câu hỏi từ xlsx (kiểm tra trước, không ghi gì nếu có lỗi):
 

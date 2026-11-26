@@ -43,6 +43,13 @@ const baseEnvSchema = z.object({
   TRUSTED_PROXY: nonNegativeInt.default(0),
   JOBS_ENABLED: booleanFromString.default(true),
   STORAGE_DIR: z.string().min(1).default("./storage"),
+  ADMIN_BOOTSTRAP_EMAIL: z.email({ message: "phải là một địa chỉ email" }).optional(),
+  ADMIN_BOOTSTRAP_PASSWORD: z
+    .string()
+    .min(12, { message: "phải dài ít nhất 12 ký tự" })
+    .optional(),
+  ADMIN_NOTIFY_EMAIL: z.email({ message: "phải là một địa chỉ email" }).optional(),
+  PUBLIC_BASE_URL: z.url({ message: "phải là một địa chỉ http(s)://" }).default("http://localhost:3000"),
 });
 
 export const envSchema = baseEnvSchema
@@ -52,6 +59,13 @@ export const envSchema = baseEnvSchema
         code: "custom",
         path: ["SESSION_SECRET"],
         message: "bắt buộc, chưa được đặt (môi trường production)",
+      });
+    }
+    if ((env.ADMIN_BOOTSTRAP_EMAIL === undefined) !== (env.ADMIN_BOOTSTRAP_PASSWORD === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ADMIN_BOOTSTRAP_PASSWORD"],
+        message: "ADMIN_BOOTSTRAP_EMAIL và ADMIN_BOOTSTRAP_PASSWORD phải được đặt cùng nhau",
       });
     }
     if (env.MAIL_PROVIDER === "console" && env.NODE_ENV === "production") {

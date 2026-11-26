@@ -9,12 +9,14 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { users } from "./auth.js";
+import { adminUsers, users } from "./auth.js";
 import { createdAt, oneOf, timestamptz, updatedAt, uuidPk } from "./columns.js";
 import {
+  CARE_STATUSES,
   CONSENT_KINDS,
   HEADCOUNT_TIERS,
   SECTOR_CODES,
+  type CareStatus,
   type ConsentKind,
   type HeadcountTier,
   type SectorCode,
@@ -46,10 +48,18 @@ export const companies = pgTable(
     contactPhone: text(),
     logoFileId: uuid().references(() => files.id, { onDelete: "set null" }),
     profile: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+    careStatus: text().$type<CareStatus>().notNull().default("new"),
+    nextContactAt: timestamptz(),
+    firstContactedAt: timestamptz(),
+    careNote: text(),
+    assignedAdminId: uuid().references(() => adminUsers.id, { onDelete: "set null" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    check("companies_care_status_check", oneOf(t.careStatus, CARE_STATUSES)),
+    index("companies_care_status_idx").on(t.careStatus),
+    index("companies_assigned_admin_id_idx").on(t.assignedAdminId),
     check("companies_primary_sector_check", oneOf(t.primarySector, SECTOR_CODES)),
     check("companies_headcount_tier_check", oneOf(t.headcountTier, HEADCOUNT_TIERS)),
     index("companies_user_id_idx").on(t.userId),

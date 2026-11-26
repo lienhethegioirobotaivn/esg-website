@@ -1,6 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "./auth/auth.module.js";
+import { AdminModule } from "./admin/admin.module.js";
+import { CustomersModule } from "./customers/customers.module.js";
+import { FeedbackModule } from "./feedback/feedback.module.js";
+import { InquiriesModule } from "./inquiries/inquiries.module.js";
+import { AuditModule } from "./audit/audit.module.js";
 import { CompaniesModule } from "./companies/companies.module.js";
 import { ConfigModule } from "./config/config.module.js";
 import { DatabaseModule } from "./database/database.module.js";
@@ -20,6 +25,11 @@ import { ReportsModule } from "./reports/reports.module.js";
     DatabaseModule,
     RateLimitModule,
     FilesModule,
+    AuditModule,
+    AdminModule,
+    InquiriesModule,
+    CustomersModule,
+    FeedbackModule,
     MailModule,
     AuthModule,
     JobsModule,

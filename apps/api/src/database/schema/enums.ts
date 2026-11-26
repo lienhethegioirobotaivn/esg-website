@@ -38,6 +38,8 @@ export const INQUIRY_PRIORITIES = ["normal", "high", "urgent"] as const;
 export const CONTACT_CONSENTS = ["yes", "no", "unconfirmed"] as const;
 export const POST_STATUSES = ["draft", "published"] as const;
 export const EMAIL_STATUSES = ["pending", "sent", "failed"] as const;
+export const CARE_STATUSES = ["new", "contacting", "following_up", "converted", "closed"] as const;
+export const FEEDBACK_KINDS = ["direct", "invite"] as const;
 export const ACTOR_TYPES = ["user", "admin", "system"] as const;
 export const JOB_STATUSES = ["running", "succeeded", "failed"] as const;
 
@@ -64,5 +66,7 @@ export type InquiryPriority = (typeof INQUIRY_PRIORITIES)[number];
 export type ContactConsent = (typeof CONTACT_CONSENTS)[number];
 export type PostStatus = (typeof POST_STATUSES)[number];
 export type EmailStatus = (typeof EMAIL_STATUSES)[number];
+export type CareStatus = (typeof CARE_STATUSES)[number];
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 export type ActorType = (typeof ACTOR_TYPES)[number];
 export type JobStatus = (typeof JOB_STATUSES)[number];

@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { FeedbackInviteService } from "../feedback/feedback-invite.service.js";
+import { FeedbackModule } from "../feedback/feedback.module.js";
 import { ReportsModule } from "../reports/reports.module.js";
 import { MailModule } from "../mail/mail.module.js";
 import { MailService } from "../mail/mail.service.js";
@@ -11,7 +13,11 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-export function buildJobDefinitions(cleanup: CleanupService, mail: MailService): JobDefinition[] {
+export function buildJobDefinitions(
+  cleanup: CleanupService,
+  mail: MailService,
+  invites: FeedbackInviteService,
+): JobDefinition[] {
   return [
     {
       name: "deliver-outbox",
@@ -19,6 +25,13 @@ export function buildJobDefinitions(cleanup: CleanupService, mail: MailService):
       initialDelayMs: 10 * SECOND,
       track: false,
       run: async () => ({ ...(await mail.deliverDue()) }),
+    },
+    {
+      name: "send-feedback-invites",
+      intervalMs: HOUR,
+      initialDelayMs: 7 * MINUTE,
+      track: true,
+      run: async () => ({ ...(await invites.sendDue()) }),
     },
     {
       name: "cleanup-otp-challenges",
@@ -79,12 +92,12 @@ export function buildJobDefinitions(cleanup: CleanupService, mail: MailService):
 }
 
 @Module({
-  imports: [MailModule, ReportsModule],
+  imports: [MailModule, ReportsModule, FeedbackModule],
   providers: [
     CleanupService,
     {
       provide: JOB_DEFINITIONS,
-      inject: [CleanupService, MailService],
+      inject: [CleanupService, MailService, FeedbackInviteService],
       useFactory: buildJobDefinitions,
     },
     JobScheduler,

@@ -1,0 +1,11 @@
+export const CONTENT_READ_RATE_LIMIT = { limit: 600, windowSeconds: 60 } as const;
+export const CONTENT_CACHE_CONTROL = "public, max-age=60, must-revalidate";
+export const POST_IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+export const POST_IMAGE_UPLOAD_RATE_LIMIT = { limit: 120, windowSeconds: 600 } as const;
+export const LIKE_IP_RATE_LIMIT = { limit: 60, windowSeconds: 600 } as const;
+export const LIKE_IP_POST_RATE_LIMIT = { limit: 20, windowSeconds: 86_400 } as const;
+export const VIEWER_COOKIE_NAME = "esg-viewer";
+export const VIEWER_COOKIE_MAX_AGE_MS = 365 * 86_400_000;
+export const POST_IMAGE_REVIVE_DAYS = 6;
+export const POST_IMAGE_RELEASE_GRACE_HOURS = 1;
+export const POST_TIME_ZONE_OFFSET_MINUTES = 7 * 60;

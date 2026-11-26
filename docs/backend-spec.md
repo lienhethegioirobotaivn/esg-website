@@ -1,6 +1,6 @@
 # ESGstudio v2: Tài liệu tổng quan Backend
 
-Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 (khung `apps/api` và database, 23/11/2026) và giai đoạn 2 (đăng nhập OTP, email, giới hạn tần suất, việc nền, 24/11/2026) đã code; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
+Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 đến 6 (khung và database, đăng nhập OTP, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, nội dung và dịch; 23–26/11/2026) đã code; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
 
 Bộ tài liệu backend v2 gồm:
 

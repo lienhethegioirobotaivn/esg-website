@@ -1,4 +1,4 @@
-export type ErrorExtra = Readonly<Record<string, number | string>>;
+export type ErrorExtra = Readonly<Record<string, number | string | Readonly<Record<string, string>>>>;
 
 export class AppError extends Error {
   readonly status: number;

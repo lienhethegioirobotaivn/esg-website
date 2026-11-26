@@ -12,13 +12,13 @@ Làm theo từng giai đoạn. **Trước khi bạn ra lệnh "làm giai đoạn
 | 3 | Ngân hàng câu hỏi (xong 24/11/2026) | Bảng có phiên bản, công cụ nhập xlsx v0.1, API đọc, kiểm tra hợp lệ | `/survey-bank`, công cụ nhập | Nhập đủ 175 câu, `selectSurvey` cho kết quả khớp bản demo |
 | 4 | Hồ sơ, báo cáo, tệp, nháp, minh chứng (xong 25/11/2026) | `companies`, `reports`, `report_exports`, `StorageService`, `files`, gắn chủ, nháp, minh chứng, job dọn mồ côi | `/companies`, `/reports/*`, `/my-reports/*`, `/drafts/*`, `/evidence/*` | Giữ 5 bản xuất, xung đột chủ 409, tải tệp đúng chủ, dọn mồ côi |
 | 5 | Quản trị: tài khoản, CRM, phản hồi (xong 26/11/2026) | `admin-auth` có vai trò, `inquiries`, ghi chú, xuất file, `feedback` + job mời 5 ngày, `audit_logs` | `/admin/*` (CRM), `/inquiries`, `/feedback/*` | Phân quyền theo vai trò, xuất file đúng nội dung, ghi nhật ký |
-| 6 | Nội dung | `posts`, ảnh, `post_likes`, `site_stats`, `translation` (Gemini) | `/posts`, `/stats`, `/translations`, `/admin/*` (nội dung) | Chống trùng lượt thích, ưu tiên bản dịch chỉnh tay, dọn ảnh |
+| 6 | Nội dung (xong 26/11/2026) | `posts`, ảnh, `post_likes`, `site_stats`, `translation` (Gemini) | `/posts`, `/stats`, `/translations`, `/admin/*` (nội dung) | Chống trùng lượt thích, ưu tiên bản dịch chỉnh tay, dọn ảnh |
 | 7 | Giao diện trang quản trị | Làm lại hoặc cập nhật giao diện admin: câu hỏi, CRM, bài viết, bản dịch, tài khoản, trạng thái hệ thống | `apps/web` (admin) | Kiểm thử luồng chính theo vai trò |
 | 8 | Chuyển frontend sang API v2 | Thay route handler gọi Apps Script bằng gọi `/api/v1`; thêm dialog nhắc xác thực email; giữ nguyên trải nghiệm điền/xuất | `apps/web` | Kiểm thử đầu-cuối: điền → xuất → xác thực → xem lại → xóa |
 | 9 | Chuyển dữ liệu | `tools/migrate-from-sheet`, chạy khô và chạy thật trên bản thử, đối chiếu số liệu | Công cụ nhập, báo cáo đối chiếu | Số dòng/tệp/dung lượng khớp, mẫu sha256 |
 | 10 | Hạ tầng và cutover | VPS, Docker Compose, Caddy, sao lưu và diễn tập khôi phục, CI/CD, DNS, gửi email thật, chuyển | Hệ thống production | Danh sách ở `backend-deployment.md`, mục 6 |
 
-Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 6.**
+Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đoạn kế tiếp là GĐ 7.**
 
 ### 1.1 Kết quả giai đoạn 1 (23/11/2026)
 
@@ -79,7 +79,23 @@ Thứ tự 2-6 có thể đổi nếu bạn muốn ưu tiên khác. **Giai đo�
 - Chưa làm (để sau): trang quản trị trên frontend (GĐ 8), `GET /admin/jobs|outbox|files/health` và `GET/PATCH /admin/settings` (GĐ 9), đổi mật khẩu tự phục vụ và đặt lại mật khẩu.
 - Kiểm thử: 102 đơn vị, 143 tích hợp trong `apps/api` (phân quyền theo vai trò, khóa sau 5 lần sai, xuất CSV/XLSX đúng nội dung, nhật ký, liên kết phản hồi một lần, mời đúng một lần).
 
-**Giai đoạn kế tiếp (GĐ 6):** nội dung: bài viết, ảnh, lượt thích, thống kê, bản dịch.
+### 1.6 Kết quả giai đoạn 6 (26/11/2026)
+
+- Bài viết: `GET /posts`, `GET /posts/:section/:slug`, quản trị `/admin/posts` và `/admin/upload` cho vai trò `content` và `admin`, kiểm tra bằng `postInputSchema` của `@esg/shared`, ghi `audit_logs`. Slug duy nhất theo mục; `publishedAt` giữ dạng `YYYY-MM-DD` theo giờ Việt Nam. Thân JSON của riêng endpoint bài viết tối đa 2 MB, nơi khác vẫn 1 MB.
+- Ảnh: `files` loại `post_image` (PNG/JPEG/WEBP ≤ 3 MB), phục vụ công khai ở `GET /files/:id`. `post_files` ghi ảnh đang dùng; gỡ ảnh hoặc xóa bài thì đánh dấu xóa ảnh không còn bài nào dùng, gắn lại trong 6 ngày thì khôi phục. `@esg/shared` chấp nhận đường dẫn ảnh `/api/v1/files/<uuid>` ngoài địa chỉ `https` (file mới `post-image.ts`); `apps/web` không đổi.
+- Lượt thích: mỗi cookie `esg-viewer` một lần cho mỗi bài, bỏ thích được, chỉ lưu HMAC của mã cookie, giới hạn theo IP (QĐ-06). Số lượt thích cũ giữ ở `posts.like_base`.
+- Số liệu: `GET /stats`, `GET/PUT /admin/stats`.
+- Dịch (`translation`): Gemini `generateContent` với đầu ra JSON theo schema (`generationConfig.responseFormat`), mặc định `gemini-3.5-flash-lite`. Giữ nguyên khóa băm của bản demo; ưu tiên chỉnh tay > thuật ngữ cố định > máy dịch > tiếng Việt. Gom câu từ bộ câu hỏi đang xuất bản (cả câu hồ sơ), bài đã đăng và số liệu; chia lô tối đa 40 câu hoặc khoảng 6.000 ký tự; bản trả về bị loại nếu rỗng, sai biến `{...}`, mất từ phải giữ nguyên hoặc dài bất thường, rồi thử lại có giãn cách. Có giới hạn số lượt gọi mỗi ngày. Request công khai chỉ đọc bản đã có, không chờ Gemini.
+- `/survey-bank` với `en`/`fr`/`zh` nay lấy bản dịch từ `translations` khi `question_texts` chưa có.
+- Bảng thuật ngữ chép sang `apps/api/data/glossary.json`. Bản ở `apps/web/src/i18n/glossary.json` vẫn dùng cho chữ giao diện; GĐ 8 cần quyết định còn giữ một hay hai bản, trong lúc đó sửa thì sửa cả hai.
+- Việc nền mới: `cleanup-post-images`, `translate-content`, `prune-translations` (tổng cộng 12).
+- Migration `0004`: thêm cột bài viết và `translations.failed_attempts`, `retry_after`; đổi chỉ mục duy nhất của `posts` thành `(locale, section, slug)`.
+- Biến mới (đều tùy chọn): `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_API_BASE_URL`, `TRANSLATION_DAILY_LIMIT`.
+- Chưa làm: giao diện quản trị (GĐ 7); API quản trị ngân hàng câu hỏi (`/admin/question-banks...`) chưa được xếp vào giai đoạn nào dù giao diện GĐ 7 cần, phải chốt trước khi làm GĐ 7; chưa thử gọi Gemini thật trong kiểm thử tự động (dùng bộ dịch giả).
+- Cần làm ở GĐ 8 phía frontend: đường dẫn đọc bài `/posts/:section/:slug`, thích/bỏ thích bằng `POST`/`DELETE /posts/:id/like`, ảnh tải qua `/admin/upload` với trường `image`.
+- Kiểm thử: 121 đơn vị, 172 tích hợp trong `apps/api`; 81 kiểm thử của `@esg/shared`.
+
+**Giai đoạn kế tiếp (GĐ 7):** giao diện trang quản trị trong `apps/web`: câu hỏi, CRM, bài viết, bản dịch, tài khoản, trạng thái hệ thống.
 
 ## 2. Nguyên tắc kiểm thử
 

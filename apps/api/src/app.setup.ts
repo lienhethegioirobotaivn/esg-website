@@ -1,3 +1,5 @@
+import type { IncomingMessage } from "node:http";
+
 import type { NestExpressApplication } from "@nestjs/platform-express";
 
 import { AllExceptionsFilter } from "./common/all-exceptions.filter.js";
@@ -6,12 +8,20 @@ import type { AppEnv } from "./config/env.schema.js";
 
 export const API_PREFIX = "api/v1";
 
+function isPostWrite(request: IncomingMessage): boolean {
+  return (
+    (request.url ?? "").startsWith(`/${API_PREFIX}/admin/posts`) &&
+    (request.headers["content-type"] ?? "").includes("application/json")
+  );
+}
+
 export function configureApp(app: NestExpressApplication): void {
   const env = app.get<AppEnv>(APP_ENV);
   app.disable("x-powered-by");
   if (env.TRUSTED_PROXY > 0) {
     app.set("trust proxy", env.TRUSTED_PROXY);
   }
+  app.useBodyParser("json", { limit: "2mb", type: isPostWrite });
   app.useBodyParser("json", { limit: "1mb" });
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalFilters(new AllExceptionsFilter());

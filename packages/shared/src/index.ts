@@ -11,6 +11,7 @@ export * from "./form-errors";
 export * from "./inquiry";
 export * from "./my-reports";
 export * from "./pillars";
+export * from "./post-image";
 export * from "./profile";
 export * from "./rich-text";
 export * from "./report-archive";

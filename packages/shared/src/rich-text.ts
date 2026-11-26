@@ -1,4 +1,5 @@
 import type { PostBlock } from "./about";
+import { isPostImageUrl } from "./post-image";
 
 export type RichAlign = "left" | "center" | "right" | "justify";
 export type ImageAlign = "left" | "center" | "right";
@@ -96,7 +97,6 @@ const MAX_ALT = 200;
 const MAX_HREF = 500;
 const ALIGNS: readonly RichAlign[] = ["left", "center", "right", "justify"];
 const IMAGE_ALIGNS: readonly ImageAlign[] = ["left", "center", "right"];
-const IMAGE_URL = /^https:\/\/[^\s"'()<>\\]+$/;
 const LINK_URL = /^(https?:\/\/|mailto:)[^\s"'<>\\]+$/;
 
 export const EMPTY_RICH_DOC: RichDoc = { type: "doc", content: [] };
@@ -170,7 +170,7 @@ function cleanInline(raw: unknown): RichInline[] {
 function cleanImage(item: Record<string, unknown>): RichImage | null {
   const attrs = isRecord(item["attrs"]) ? item["attrs"] : {};
   const src = attrs["src"];
-  if (typeof src !== "string" || src.length > 500 || !IMAGE_URL.test(src)) {
+  if (typeof src !== "string" || src.length > 500 || !isPostImageUrl(src)) {
     return null;
   }
   const alt =

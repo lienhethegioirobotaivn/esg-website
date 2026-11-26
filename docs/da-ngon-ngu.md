@@ -1,6 +1,6 @@
 # Đa ngôn ngữ (vi, en, fr, zh)
 
-Tài liệu bàn giao cho người phát triển và người quản trị. Cài Apps Script ở [huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Lưu ý: phần dịch bằng Apps Script (`LanguageApp`, tab "Bản dịch") chỉ đúng với bản demo; ở v2, bản dịch nằm ở bảng `translations`, dịch bằng Gemini, giữ nguyên khóa băm và quy tắc chỉnh tay thắng (xem [backend-database.md](backend-database.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md) mục QĐ-08).
+Tài liệu bàn giao cho người phát triển và người quản trị. Cài Apps Script ở [huong-dan-cai-dat-apps-script.md](huong-dan-cai-dat-apps-script.md). Lưu ý: phần dịch bằng Apps Script (`LanguageApp`, tab "Bản dịch") chỉ đúng với bản demo; ở v2, bản dịch nằm ở bảng `translations`, dịch bằng Gemini, giữ nguyên khóa băm và quy tắc chỉnh tay thắng (xem [backend-database.md](backend-database.md), [backend-api.md](backend-api.md) mục 5 và 6.1, [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md) mục QĐ-08). Bảng thuật ngữ của v2 là `apps/api/data/glossary.json`, đang là bản sao của `apps/web/src/i18n/glossary.json`.
 
 ## 1. Nguyên tắc
 

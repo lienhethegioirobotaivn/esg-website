@@ -2,22 +2,22 @@ import { createHash } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
 import type { Survey } from "@esg/shared/node";
-import { and, asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { AppError } from "../common/app-error.js";
 import type { Database } from "../database/client.js";
 import { DATABASE } from "../database/database.constants.js";
+import { questionBanks, type Locale } from "../database/schema/index.js";
 import {
-  questionBanks,
-  questionGroups,
-  questionTexts,
-  questions,
-  type Locale,
-} from "../database/schema/index.js";
+  applySurveyContentTexts,
+  collectSurveyContentTexts,
+} from "../translation/survey-texts.js";
+import { TranslationMemoryService } from "../translation/translation-memory.service.js";
+import { loadBankRecords } from "./load-bank-records.js";
 import {
   buildSurveyContent,
-  type BankQuestionRecord,
   type ProfileQuestion,
+  type SurveyBankContent,
 } from "./survey-bank.builder.js";
 
 export interface SurveyBankResponse {
@@ -33,11 +33,12 @@ export interface SurveyBankPayload {
   etag: string;
 }
 
-const DEFAULT_LOCALE: Locale = "vi";
-
 @Injectable()
 export class SurveyBankService {
-  constructor(@Inject(DATABASE) private readonly db: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly db: Database,
+    @Inject(TranslationMemoryService) private readonly memory: TranslationMemoryService,
+  ) {}
 
   async read(locale: Locale): Promise<SurveyBankPayload> {
     const [bank] = await this.db
@@ -52,55 +53,8 @@ export class SurveyBankService {
       throw new AppError(404, "survey_bank_unavailable", "Chưa có bộ câu hỏi nào được xuất bản.");
     }
 
-    const rows = await this.db
-      .select({
-        code: questions.code,
-        source: questions.source,
-        track: questionGroups.track,
-        groupCode: questionGroups.code,
-        pillar: questions.pillar,
-        topic: questions.topic,
-        inputType: questions.inputType,
-        unit: questions.unit,
-        required: questions.required,
-        text: questions.text,
-        guidance: questions.guidance,
-        evidenceHint: questions.evidenceHint,
-        improvementHint: questions.improvementHint,
-        declarationLevel: questions.declarationLevel,
-        position: questions.position,
-        translatedText: questionTexts.text,
-        translatedGuidance: questionTexts.guidance,
-      })
-      .from(questions)
-      .innerJoin(questionGroups, eq(questionGroups.id, questions.groupId))
-      .leftJoin(
-        questionTexts,
-        and(eq(questionTexts.questionId, questions.id), eq(questionTexts.locale, locale)),
-      )
-      .where(and(eq(questions.bankId, bank.id), eq(questions.reviewStatus, "approved")))
-      .orderBy(asc(questionGroups.position), asc(questions.position));
-
-    const useTranslation = locale !== DEFAULT_LOCALE;
-    const records: BankQuestionRecord[] = rows.map((row) => ({
-      code: row.code,
-      source: row.source,
-      track: row.track,
-      groupCode: row.groupCode,
-      pillar: row.pillar,
-      topic: row.topic,
-      inputType: row.inputType,
-      unit: row.unit,
-      required: row.required,
-      text: useTranslation && row.translatedText !== null ? row.translatedText : row.text,
-      guidance: useTranslation && row.translatedGuidance !== null ? row.translatedGuidance : row.guidance,
-      evidenceHint: row.evidenceHint,
-      improvementHint: row.improvementHint,
-      declarationLevel: row.declarationLevel,
-      position: row.position,
-    }));
-
-    const content = buildSurveyContent(records);
+    const records = await loadBankRecords(this.db, bank.id, locale);
+    const content = await this.localize(buildSurveyContent(records), locale);
     const body: SurveyBankResponse = {
       version: bank.version,
       locale,
@@ -110,5 +64,13 @@ export class SurveyBankService {
     };
     const digest = createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 20);
     return { body, etag: `W/"${bank.version}-${locale}-${digest}"` };
+  }
+
+  private async localize(content: SurveyBankContent, locale: Locale): Promise<SurveyBankContent> {
+    if (locale === "vi") {
+      return content;
+    }
+    const map = await this.memory.lookup(locale, collectSurveyContentTexts(content));
+    return map.size === 0 ? content : applySurveyContentTexts(content, map);
   }
 }

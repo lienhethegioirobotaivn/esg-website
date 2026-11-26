@@ -21,7 +21,10 @@ export const FILE_EXTENSIONS: Readonly<Record<FileMime, string>> = {
   [MIME_DOCX]: "docx",
 };
 
-export type UploadKind = Extract<FileKind, "logo" | "evidence" | "export_pdf" | "export_docx">;
+export type UploadKind = Extract<
+  FileKind,
+  "logo" | "evidence" | "export_pdf" | "export_docx" | "post_image"
+>;
 
 export interface FileRule {
   readonly mimes: readonly FileMime[];
@@ -35,6 +38,7 @@ export const FILE_RULES: Readonly<Record<UploadKind, FileRule>> = {
   evidence: { mimes: [MIME_PDF, MIME_PNG, MIME_JPEG, MIME_WEBP], maxBytes: 10 * MB },
   export_pdf: { mimes: [MIME_PDF], maxBytes: 25 * MB },
   export_docx: { mimes: [MIME_DOCX], maxBytes: 25 * MB },
+  post_image: { mimes: [MIME_PNG, MIME_JPEG, MIME_WEBP], maxBytes: 3 * MB },
 };
 
 export const MAX_UPLOAD_BYTES = 25 * MB;

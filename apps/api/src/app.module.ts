@@ -17,7 +17,10 @@ import { JobsModule } from "./jobs/jobs.module.js";
 import { MailModule } from "./mail/mail.module.js";
 import { QuestionBankModule } from "./question-bank/question-bank.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
+import { PostsModule } from "./posts/posts.module.js";
 import { ReportsModule } from "./reports/reports.module.js";
+import { StatsModule } from "./stats/stats.module.js";
+import { TranslationModule } from "./translation/translation.module.js";
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { ReportsModule } from "./reports/reports.module.js";
     FeedbackModule,
     MailModule,
     AuthModule,
+    TranslationModule,
+    PostsModule,
+    StatsModule,
     JobsModule,
     QuestionBankModule,
     CompaniesModule,

@@ -34,7 +34,7 @@ Các quy tắc đã đúc kết trong `ke-hoach-luu-bao-cao-va-xac-thuc-email.md
 | Sheet đánh giá/phản hồi | `feedbacks` | |
 | Sheet bản xuất báo cáo, snapshot chia ô | `report_exports` | Ghép lại các ô thành `jsonb`; kiểm tra JSON hợp lệ |
 | Sheet người sở hữu báo cáo (email gắn với mã) | `users`, `reports.owner_user_id` | Tạo `users` từ email duy nhất; `email_verified_at` lấy từ thời điểm gắn |
-| Sheet bài viết, thống kê | `posts`, `site_stats` | |
+| Sheet bài viết, thống kê | `posts`, `site_stats` | Mã bài cũ → `legacy_code`; mục, chuyên mục, tác giả, phút đọc, cờ nổi bật → cột tương ứng; ngày đăng `YYYY-MM-DD` hiểu theo giờ Việt Nam; số lượt thích cũ → `like_base`; ảnh bìa ngoài → `cover_url`; nội dung dạng khối cũ chuyển sang ProseMirror bằng `sanitizeRichDoc`; thống kê lưu ở khóa `achievements` |
 | Tab "Bản dịch" (khóa băm) | `translations` | Giữ nguyên `source_hash`, cột chỉnh tay → `manual_text` |
 | Bộ câu hỏi v0.1 (xlsx, 175 câu, 173 "Đã duyệt") | `question_banks` (bản v0.1 `published`), `question_groups`, `questions` | Công cụ nhập đọc đúng cấu trúc xlsx, gồm cột `route` và các quy tắc minh chứng (tab 18/19) |
 | Tệp trên Drive: logo, PDF/Word báo cáo, ảnh bài viết | Ổ đĩa VPS + `files` | Tải về, tính sha256, lưu `storage_key` |
@@ -45,7 +45,7 @@ Các quy tắc đã đúc kết trong `ke-hoach-luu-bao-cao-va-xac-thuc-email.md
 2. **Công cụ nhập** (`tools/migrate-from-sheet`): chạy được nhiều lần (idempotent theo mã báo cáo, mã inquiry, hash bản dịch).
 3. **Chạy khô** (dry-run): in ra báo cáo đếm dòng nguồn so với dòng đích, danh sách dòng bị bỏ qua và lý do (email sai định dạng, JSON hỏng, tệp Drive mất).
 4. **Chạy thật** vào database thử, so sánh số liệu: số công ty, số inquiry, số bản xuất, số tệp, tổng dung lượng, kiểm tra sha256 mẫu.
-5. **Viết lại URL ảnh** trong nội dung bài viết từ Drive sang `/api/v1/files/:id` (QĐ-11).
+5. **Viết lại URL ảnh** trong nội dung bài viết và ảnh bìa từ Drive sang `/api/v1/files/:id` (QĐ-11): tạo dòng `files` loại `post_image`, ghi `post_files` và `referenced_at`, nếu không việc dọn tệp sẽ coi ảnh là mồ côi.
 6. **Chạy cuối lúc cutover**: đóng băng Sheet (chỉ đọc), chạy nhập lần cuối để lấy dữ liệu phát sinh, rồi mở bản v2.
 7. Dòng bị bỏ qua không bị xóa: xuất ra file `migration-rejects.xlsx` để xử lý tay.
 

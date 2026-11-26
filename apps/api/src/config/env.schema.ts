@@ -50,6 +50,13 @@ const baseEnvSchema = z.object({
     .optional(),
   ADMIN_NOTIFY_EMAIL: z.email({ message: "phải là một địa chỉ email" }).optional(),
   PUBLIC_BASE_URL: z.url({ message: "phải là một địa chỉ http(s)://" }).default("http://localhost:3000"),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9.-]*$/, { message: "tên model không hợp lệ" })
+    .default("gemini-3.5-flash-lite"),
+  GEMINI_API_BASE_URL: z.url({ message: "phải là một địa chỉ http(s)://" }).optional(),
+  TRANSLATION_DAILY_LIMIT: z.coerce.number().int().min(0).max(100_000).default(200),
 });
 
 export const envSchema = baseEnvSchema

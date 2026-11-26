@@ -5,6 +5,13 @@ import { FeedbackModule } from "../feedback/feedback.module.js";
 import { ReportsModule } from "../reports/reports.module.js";
 import { MailModule } from "../mail/mail.module.js";
 import { MailService } from "../mail/mail.service.js";
+import { PostImagesService } from "../posts/post-images.service.js";
+import { PostsModule } from "../posts/posts.module.js";
+import {
+  TRANSLATION_JOB_BUDGET_MS,
+  TRANSLATION_PRUNE_GRACE_HOURS,
+} from "../translation/translation.constants.js";
+import { TranslationService } from "../translation/translation.service.js";
 import { CleanupService } from "./cleanup.service.js";
 import { JOB_DEFINITIONS, JobScheduler, type JobDefinition } from "./job-scheduler.js";
 
@@ -17,6 +24,8 @@ export function buildJobDefinitions(
   cleanup: CleanupService,
   mail: MailService,
   invites: FeedbackInviteService,
+  images: PostImagesService,
+  translation: TranslationService,
 ): JobDefinition[] {
   return [
     {
@@ -88,16 +97,49 @@ export function buildJobDefinitions(
       track: true,
       run: async () => ({ deleted: await cleanup.staleDrafts() }),
     },
+    {
+      name: "cleanup-post-images",
+      intervalMs: DAY,
+      initialDelayMs: 150 * SECOND,
+      track: true,
+      run: async () => ({ released: await images.releaseUnused() }),
+    },
+    {
+      name: "translate-content",
+      intervalMs: 15 * MINUTE,
+      initialDelayMs: 8 * MINUTE,
+      track: true,
+      run: async () => {
+        const result = await translation.run({ budgetMs: TRANSLATION_JOB_BUDGET_MS });
+        return result === null ? { busy: true } : { ...result };
+      },
+    },
+    {
+      name: "prune-translations",
+      intervalMs: DAY,
+      initialDelayMs: 9 * MINUTE,
+      track: true,
+      run: async () => {
+        const result = await translation.prune(TRANSLATION_PRUNE_GRACE_HOURS);
+        return result === null ? { busy: true } : { ...result };
+      },
+    },
   ];
 }
 
 @Module({
-  imports: [MailModule, ReportsModule, FeedbackModule],
+  imports: [MailModule, ReportsModule, FeedbackModule, PostsModule],
   providers: [
     CleanupService,
     {
       provide: JOB_DEFINITIONS,
-      inject: [CleanupService, MailService, FeedbackInviteService],
+      inject: [
+        CleanupService,
+        MailService,
+        FeedbackInviteService,
+        PostImagesService,
+        TranslationService,
+      ],
       useFactory: buildJobDefinitions,
     },
     JobScheduler,

@@ -54,7 +54,7 @@ describe("migration đầu tiên trên PostgreSQL", () => {
     );
 
     expect(tables.rowCount).toBe(29);
-    expect(Number(applied.rows[0]?.count)).toBe(4);
+    expect(Number(applied.rows[0]?.count)).toBe(5);
   });
 
   it("hai tiến trình chạy migration cùng lúc không xung đột", async () => {
@@ -64,7 +64,7 @@ describe("migration đầu tiên trên PostgreSQL", () => {
       const applied = await other.pool.query<{ count: string }>(
         "select count(*) from drizzle.__drizzle_migrations",
       );
-      expect(Number(applied.rows[0]?.count)).toBe(4);
+      expect(Number(applied.rows[0]?.count)).toBe(5);
     } finally {
       await other.drop();
     }

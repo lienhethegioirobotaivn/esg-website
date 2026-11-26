@@ -1,9 +1,9 @@
 import { HttpException } from "@nestjs/common";
 
-import { AppError } from "./app-error.js";
+import { AppError, type ErrorExtra } from "./app-error.js";
 
 export interface ErrorBody {
-  error: { code: string; message: string } & Record<string, number | string>;
+  error: { code: string; message: string } & ErrorExtra;
 }
 
 export interface ErrorResult {

@@ -180,4 +180,20 @@ describe("biến quản trị", () => {
     expect(env.ADMIN_BOOTSTRAP_EMAIL).toBe("a@example.com");
     expect(env.PUBLIC_BASE_URL).toBe("https://esg.example.com");
   });
+
+  it("để trống khóa Gemini thì dùng mặc định cho phần dịch", () => {
+    const env = loadEnv({ ...validSource, GEMINI_API_KEY: "", GEMINI_MODEL: "", GEMINI_API_BASE_URL: "" });
+    expect(env.GEMINI_API_KEY).toBeUndefined();
+    expect(env.GEMINI_API_BASE_URL).toBeUndefined();
+    expect(env.GEMINI_MODEL).toBe("gemini-3.5-flash-lite");
+    expect(env.TRANSLATION_DAILY_LIMIT).toBe(200);
+  });
+
+  it("từ chối tên model và giới hạn dịch sai", () => {
+    expect(() => loadEnv({ ...validSource, GEMINI_MODEL: "../models" })).toThrow(/GEMINI_MODEL/);
+    expect(() => loadEnv({ ...validSource, TRANSLATION_DAILY_LIMIT: "-1" })).toThrow(
+      /TRANSLATION_DAILY_LIMIT/,
+    );
+    expect(loadEnv({ ...validSource, TRANSLATION_DAILY_LIMIT: "0" }).TRANSLATION_DAILY_LIMIT).toBe(0);
+  });
 });

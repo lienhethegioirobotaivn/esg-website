@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isPostImageUrl } from "./post-image";
 import {
   RICH_DOC_MAX_BLOCKS,
   RICH_DOC_MAX_BYTES,
@@ -16,7 +17,6 @@ export const POST_STATUSES = ["published", "draft"] as const;
 export type PostStatus = (typeof POST_STATUSES)[number];
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const IMAGE_URL_PATTERN = /^https:\/\/[^\s"'()<>\\]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const postBlockSchema = z.discriminatedUnion("type", [
@@ -53,7 +53,7 @@ export const postInputSchema = z.object({
     .string()
     .trim()
     .max(500)
-    .refine((value) => value === "" || IMAGE_URL_PATTERN.test(value), "Liên kết ảnh không hợp lệ"),
+    .refine((value) => value === "" || isPostImageUrl(value), "Liên kết ảnh không hợp lệ"),
   author: z.string().trim().min(1, "Vui lòng nhập tác giả").max(100),
   readMinutes: z.number().int("Phút đọc phải là số nguyên").min(1, "Tối thiểu 1 phút").max(120),
   publishedAt: z.string().regex(DATE_PATTERN, "Ngày đăng không hợp lệ"),

@@ -42,9 +42,15 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
+export interface ProviderOverride {
+  token: symbol;
+  value: unknown;
+}
+
 export async function createTestApp(
   databaseUrl: string,
   overrides: Record<string, string> = {},
+  providers: readonly ProviderOverride[] = [],
 ): Promise<TestApp> {
   const env: Record<string, string> = {
     DATABASE_URL: databaseUrl,
@@ -54,6 +60,10 @@ export async function createTestApp(
     MAIL_PROVIDER: "console",
     MAIL_DAILY_LIMIT: "300",
     TRUSTED_PROXY: "0",
+    GEMINI_API_KEY: "",
+    GEMINI_MODEL: "",
+    GEMINI_API_BASE_URL: "",
+    TRANSLATION_DAILY_LIMIT: "200",
     ...overrides,
   };
   for (const [key, value] of Object.entries(env)) {
@@ -61,10 +71,13 @@ export async function createTestApp(
   }
 
   const mail = new CapturingMailProvider();
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  const builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(MAIL_PROVIDER)
-    .useValue(mail)
-    .compile();
+    .useValue(mail);
+  for (const provider of providers) {
+    builder.overrideProvider(provider.token).useValue(provider.value);
+  }
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>();
   configureApp(app);
   await app.init();
@@ -73,6 +86,6 @@ export async function createTestApp(
 
 export async function resetState(pool: pg.Pool): Promise<void> {
   await pool.query(
-    "truncate rate_limits, otp_challenges, email_outbox, user_sessions, job_runs, audit_logs, inquiries, feedbacks, admin_sessions, admin_users, users, companies, files, question_banks restart identity cascade",
+    "truncate rate_limits, otp_challenges, email_outbox, user_sessions, job_runs, audit_logs, inquiries, feedbacks, admin_sessions, admin_users, users, companies, files, question_banks, posts, site_stats, translations restart identity cascade",
   );
 }

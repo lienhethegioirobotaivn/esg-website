@@ -13,7 +13,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
 | Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
-| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Đã xong giai đoạn 1–3: khung dự án, schema, đăng nhập OTP, gửi thư, ngân hàng câu hỏi (`GET /api/v1/survey-bank`). Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
+| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Đã xong giai đoạn 1–6: khung dự án, schema, đăng nhập OTP, gửi thư, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, bài viết, thống kê, bản dịch. Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
 
@@ -72,6 +72,10 @@ Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","databas
 | `PUBLIC_BASE_URL` | `http://localhost:3000` | Địa chỉ website, dùng dựng liên kết trong thư mời phản hồi và thư báo yêu cầu |
 | `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` | (trống) | Tạo quản trị viên đầu tiên khi khởi động nếu chưa có ai; đặt cùng nhau, mật khẩu tối thiểu 12 ký tự |
 | `ADMIN_NOTIFY_EMAIL` | (trống) | Nhận thư báo khi có yêu cầu tư vấn/thẩm định mới |
+| `GEMINI_API_KEY` | (trống) | API key Gemini để dịch nội dung sang `en`, `fr`, `zh`; bỏ trống thì không dịch máy |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Model dịch |
+| `GEMINI_API_BASE_URL` | (trống) | Chỉ đặt khi gọi Gemini qua proxy |
+| `TRANSLATION_DAILY_LIMIT` | `200` | Số lượt gọi Gemini tối đa mỗi 24 giờ; `0` là tắt |
 
 Nhập bộ câu hỏi từ xlsx (kiểm tra trước, không ghi gì nếu có lỗi):
 

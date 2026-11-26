@@ -1,0 +1,17 @@
+export const TRANSLATION_LOCK_NAME = "translation:run";
+export const TRANSLATION_BUDGET_KEY = "translation:requests";
+export const TRANSLATION_BUDGET_WINDOW_SECONDS = 86_400;
+export const TRANSLATION_BATCH_SIZE = 40;
+export const TRANSLATION_BATCH_CHARS = 6000;
+export const TRANSLATION_MAX_FAILED_ATTEMPTS = 5;
+export const TRANSLATION_BACKOFF_HOURS: readonly number[] = [1, 6, 24, 72, 168];
+export const TRANSLATION_QUERY_CHUNK = 500;
+export const TRANSLATION_PRUNE_GRACE_HOURS = 24;
+export const TRANSLATION_ADMIN_BUDGET_MS = 40_000;
+export const TRANSLATION_JOB_BUDGET_MS = 60_000;
+export const TRANSLATION_RUN_RATE_LIMIT = { limit: 30, windowSeconds: 600 } as const;
+export const MANUAL_TEXT_MAX_LENGTH = 20_000;
+export const MANUAL_ITEMS_MAX = 100;
+export const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com";
+export const GEMINI_TIMEOUT_MS = 30_000;
+export const GEMINI_MAX_OUTPUT_TOKENS = 16_384;

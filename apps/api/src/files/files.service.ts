@@ -58,6 +58,10 @@ const FILE_MESSAGES: Readonly<Record<UploadKind, { type: string; size: string }>
     type: "Tệp Word không hợp lệ.",
     size: "Tệp Word không được lớn hơn 25 MB.",
   },
+  post_image: {
+    type: "Ảnh phải là JPG, PNG hoặc WEBP.",
+    size: "Ảnh không được lớn hơn 3 MB.",
+  },
 };
 
 @Injectable()

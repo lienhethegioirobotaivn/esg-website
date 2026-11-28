@@ -1,4 +1,12 @@
-import { INPUT_TYPES } from "@esg/shared/node";
+import {
+  BANK_AI_CASE_FIELDS,
+  BANK_EVIDENCE_FIELDS,
+  BANK_REVIEW_LABELS,
+  BANK_REVIEW_STATUSES,
+  BANK_ROLLOUT_LABELS,
+  BANK_ROLLOUT_STATUSES,
+  INPUT_TYPES,
+} from "@esg/shared/node";
 import { z } from "zod";
 
 import {
@@ -6,12 +14,12 @@ import {
   SECTOR_CODES,
   type QuestionPillar,
   type QuestionReviewStatus,
+  type QuestionRolloutStatus,
   type QuestionTier,
 } from "../database/schema/index.js";
 import {
   AI_CASES_FIRST_HEADER,
   AI_CASES_TAB_NAME,
-  APPROVED_LABEL,
   BANK_TABS,
   BASIC_LABEL,
   CONTENT_FIRST_HEADER,
@@ -21,7 +29,6 @@ import {
   LOGIC_FIRST_HEADER,
   LOGIC_TAB_NAME,
   OPTIONAL_LABEL,
-  PENDING_LABEL,
   PROFILE_EXTRA_INPUT_TYPES,
   QUESTION_CODE_PATTERN,
   REQUIRED_LABEL,
@@ -34,6 +41,7 @@ import type {
   ParsedGroup,
   ParsedQuestion,
 } from "./question-bank.types.js";
+import { normalizeSheetDate } from "./sheet-date.js";
 import type { SheetRow, SheetTable, WorkbookTables } from "./xlsx-tables.js";
 
 export interface ParseOptions {
@@ -240,11 +248,19 @@ function parseQuestionRow(context: RowContext): ParsedQuestion | null {
   }
 
   const reviewLabel = cell(row, "Duyệt nội dung");
-  let reviewStatus: QuestionReviewStatus = "pending";
-  if (reviewLabel === APPROVED_LABEL) {
-    reviewStatus = "approved";
-  } else if (reviewLabel !== PENDING_LABEL) {
-    reject(`Trạng thái duyệt phải là "${APPROVED_LABEL}" hoặc "${PENDING_LABEL}", đang là "${reviewLabel}".`);
+  const matchedStatus = BANK_REVIEW_STATUSES.find(
+    (status) => BANK_REVIEW_LABELS[status] === reviewLabel,
+  );
+  const reviewStatus: QuestionReviewStatus = matchedStatus ?? "pending";
+  if (matchedStatus === undefined) {
+    const allowed = BANK_REVIEW_STATUSES.map((status) => `"${BANK_REVIEW_LABELS[status]}"`).join(", ");
+    reject(`Trạng thái duyệt phải là một trong ${allowed}; đang là "${reviewLabel}".`);
+  }
+
+  const reviewedOnText = cell(row, "Ngày duyệt");
+  const reviewedOn = normalizeSheetDate(reviewedOnText);
+  if (reviewedOnText !== "" && reviewedOn === null) {
+    report("warning", tab.tabName, row, code, `Không đọc được ngày duyệt "${reviewedOnText}", đã để trống.`);
   }
 
   const tierLabel = cell(row, "Mức khai báo");
@@ -310,6 +326,15 @@ function parseQuestionRow(context: RowContext): ParsedQuestion | null {
 
   const route = parseRoute(cell(logicRow, "route (OR)"), tab, (message) => logicFail(message));
 
+  const rolloutLabel = cell(logicRow, "Triển khai");
+  const matchedRollout = BANK_ROLLOUT_STATUSES.find(
+    (status) => BANK_ROLLOUT_LABELS[status] === rolloutLabel,
+  );
+  const rolloutStatus: QuestionRolloutStatus = matchedRollout ?? "not_started";
+  if (rolloutLabel !== "" && matchedRollout === undefined) {
+    report("warning", LOGIC_TAB_NAME, logicRow, code, `Không hiểu trạng thái triển khai "${rolloutLabel}".`);
+  }
+
   if (!valid) {
     return null;
   }
@@ -335,6 +360,10 @@ function parseQuestionRow(context: RowContext): ParsedQuestion | null {
     route,
     evidenceRule: buildEvidenceRule(evidenceCode, evidence.get(code), aiCases.get(code)),
     reviewStatus,
+    reviewNote: orNull(cell(row, "Nhân · góp ý / cần sửa")),
+    reviewedBy: orNull(cell(row, "Người duyệt")),
+    reviewedOn,
+    rolloutStatus,
     reportSection: orNull(cell(logicRow, "report_section")),
     sourceRef: orNull(cell(row, "Mã nguồn")),
   };
@@ -377,28 +406,6 @@ interface EvidenceEntry {
   readonly fields: Record<string, string>;
 }
 
-const EVIDENCE_FIELDS: ReadonlyArray<readonly [string, string]> = [
-  ["accepted", "Minh chứng chấp nhận"],
-  ["minimum", "Điều kiện tối thiểu"],
-  ["scope", "Phạm vi & thời gian"],
-  ["supplementWhen", "Cần bổ sung khi"],
-  ["limits", "Giới hạn kết luận"],
-  ["aiHandoff", "AI & chuyển người duyệt"],
-  ["apply", "Cách áp dụng"],
-  ["ruleVersion", "Phiên bản quy tắc"],
-  ["approval", "Duyệt quy tắc"],
-];
-
-const AI_CASE_FIELDS: ReadonlyArray<readonly [string, string]> = [
-  ["id", "Mã ca"],
-  ["scenario", "Tình huống"],
-  ["input", "Đầu vào giả lập"],
-  ["expected", "Đầu ra mong đợi"],
-  ["needsReview", "Cần người duyệt?"],
-  ["basis", "Căn cứ / việc cần làm"],
-  ["forbidden", "Không được suy diễn"],
-];
-
 function readEvidenceTable(
   table: SheetTable | undefined,
   report: RowContext["report"],
@@ -417,8 +424,9 @@ function readEvidenceTable(
       continue;
     }
     const fields: Record<string, string> = {};
-    for (const [key, header] of EVIDENCE_FIELDS) {
-      const value = cell(row, header);
+    for (const [key, header] of BANK_EVIDENCE_FIELDS) {
+      const raw = cell(row, header);
+      const value = key === "reviewedOn" ? (normalizeSheetDate(raw) ?? raw) : raw;
       if (value !== "") {
         fields[key] = value;
       }
@@ -440,8 +448,9 @@ function readAiCases(table: SheetTable | undefined): ReadonlyMap<string, Record<
       continue;
     }
     const fields: Record<string, string> = {};
-    for (const [key, header] of AI_CASE_FIELDS) {
-      const value = cell(row, header);
+    for (const [key, header] of BANK_AI_CASE_FIELDS) {
+      const raw = cell(row, header);
+      const value = key === "runDate" ? (normalizeSheetDate(raw) ?? raw) : raw;
       if (value !== "") {
         fields[key] = value;
       }

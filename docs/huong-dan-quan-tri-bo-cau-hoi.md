@@ -1,5 +1,7 @@
 # Hướng dẫn quản trị bộ câu hỏi ESG
 
+> Tài liệu này dùng cho website đang chạy (đọc Google Sheet). Cách quản trị bộ câu hỏi ở bản v2: [huong-dan-trang-quan-tri.md](huong-dan-trang-quan-tri.md), mục 4.
+
 Bộ câu hỏi trên website được lấy trực tiếp từ file Google Sheet **"Bộ câu hỏi ESG"**. Bạn chỉ cần sửa trong Sheet, không cần sửa code. Sau khoảng **5 phút**, website tự cập nhật.
 
 ## 1. Bạn làm việc ở đâu

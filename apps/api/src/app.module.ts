@@ -19,7 +19,9 @@ import { QuestionBankModule } from "./question-bank/question-bank.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
 import { PostsModule } from "./posts/posts.module.js";
 import { ReportsModule } from "./reports/reports.module.js";
+import { SettingsModule } from "./settings/settings.module.js";
 import { StatsModule } from "./stats/stats.module.js";
+import { SystemModule } from "./system/system.module.js";
 import { TranslationModule } from "./translation/translation.module.js";
 
 @Module({
@@ -29,6 +31,7 @@ import { TranslationModule } from "./translation/translation.module.js";
     RateLimitModule,
     FilesModule,
     AuditModule,
+    SettingsModule,
     AdminModule,
     InquiriesModule,
     CustomersModule,
@@ -40,6 +43,7 @@ import { TranslationModule } from "./translation/translation.module.js";
     StatsModule,
     JobsModule,
     QuestionBankModule,
+    SystemModule,
     CompaniesModule,
     ReportsModule,
     DraftsModule,

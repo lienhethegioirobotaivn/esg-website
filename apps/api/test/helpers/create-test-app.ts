@@ -86,6 +86,6 @@ export async function createTestApp(
 
 export async function resetState(pool: pg.Pool): Promise<void> {
   await pool.query(
-    "truncate rate_limits, otp_challenges, email_outbox, user_sessions, job_runs, audit_logs, inquiries, feedbacks, admin_sessions, admin_users, users, companies, files, question_banks, posts, site_stats, translations restart identity cascade",
+    "truncate rate_limits, otp_challenges, email_outbox, user_sessions, job_runs, audit_logs, inquiries, feedbacks, admin_sessions, admin_users, users, companies, files, question_banks, posts, site_stats, translations, settings restart identity cascade",
   );
 }

@@ -17,6 +17,13 @@ export const adminLoginSchema = z.object({
   password: z.string().min(1).max(ADMIN_PASSWORD_MAX_LENGTH),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1).max(ADMIN_PASSWORD_MAX_LENGTH),
+    newPassword: password,
+  })
+  .refine((value) => value.currentPassword !== value.newPassword);
+
 export const createAdminSchema = z.object({
   email,
   name: z.string().trim().min(1).max(100),

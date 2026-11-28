@@ -27,7 +27,7 @@ Quy ước chung:
 | --- | --- | --- |
 | `question_banks` | `id`, `version`, `status` (`draft`/`published`/`archived`), `published_at`, `note` | Chỉ một bản `published` tại một thời điểm (chỉ mục duy nhất từng phần) |
 | `question_groups` | `id`, `bank_id`, `code` (ví dụ `P-G01`), `title`, `position`, `track` (`profile`/`core`/`sector`) | Nhóm lưu theo từng 5 câu cho việc lưu nháp; `(bank_id, code)` duy nhất |
-| `questions` | `id`, `bank_id`, `group_id`, `code` (ví dụ `P-001`, `C-001`), `source` (`PROFILE`/`COMMON`/mã ngành), `pillar` (`E`/`S`/`G`, null ở hồ sơ), `topic`, `input_type`, `unit`, `required`, `text`, `guidance`, `evidence_hint`, `improvement_hint`, `report_section`, `declaration_level`, `route` (`jsonb`), `evidence_rule` (`jsonb`, nullable), `review_status`, `position`, `source_ref` | `(bank_id, code)` duy nhất; `route` dạng `{"sector_any":[...],"capability_any":[...]}`, giá trị `{}` nghĩa là hiển thị cho mọi doanh nghiệp (cột `ALL` trong xlsx); `declaration_level` là `basic`/`extended`; `review_status` là `pending`/`approved` ("Chờ duyệt"/"Đã duyệt"); `input_type` **không** ràng buộc `check`, vì bộ v0.1 còn có `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` ngoài 8 kiểu của `@esg/shared` (kiểm tra ở công cụ nhập: ngoài hồ sơ chỉ được dùng 8 kiểu của `@esg/shared`); `evidence_rule` nạp từ tab 18 (quy tắc) và tab 19 (`testCases`), chưa dùng; `pillar` và `topic` tách từ cột "Chủ đề" (`E · Quản lý` → `E`, `Quản lý`), chủ đề không có tiền tố E/S/G xếp vào `G` như bản demo (thêm ở migration `0001`) |
+| `questions` | `id`, `bank_id`, `group_id`, `code` (ví dụ `P-001`, `C-001`), `source` (`PROFILE`/`COMMON`/mã ngành), `pillar` (`E`/`S`/`G`, null ở hồ sơ), `topic`, `input_type`, `unit`, `required`, `text`, `guidance`, `evidence_hint`, `improvement_hint`, `report_section`, `declaration_level`, `route` (`jsonb`), `evidence_rule` (`jsonb`, nullable), `review_status`, `review_note`, `reviewed_by`, `reviewed_on`, `rollout_status`, `position`, `source_ref` | `(bank_id, code)` duy nhất; `route` dạng `{"sector_any":[...],"capability_any":[...]}`, giá trị `{}` nghĩa là hiển thị cho mọi doanh nghiệp (cột `ALL` trong xlsx); `declaration_level` là `basic`/`extended`; `review_status` là `pending`/`changes`/`approved`/`rejected` ("Chờ duyệt"/"Cần sửa"/"Đã duyệt"/"Loại bỏ"), chỉ `approved` vào khảo sát; `rollout_status` là `not_started`/`in_progress`/`testing`/`done`, chỉ để theo dõi (bốn cột duyệt và triển khai, hai trạng thái mới thêm ở migration `0005`); `input_type` **không** ràng buộc `check`, vì bộ v0.1 còn có `CONSENT`, `PERIOD`, `SECTOR`, `SECTORS` ngoài 8 kiểu của `@esg/shared` (kiểm tra ở công cụ nhập: ngoài hồ sơ chỉ được dùng 8 kiểu của `@esg/shared`); `evidence_rule` nạp từ tab 18 (quy tắc) và tab 19 (`testCases`), chưa dùng; `pillar` và `topic` tách từ cột "Chủ đề" (`E · Quản lý` → `E`, `Quản lý`), chủ đề không có tiền tố E/S/G xếp vào `G` như bản demo (thêm ở migration `0001`) |
 | `question_texts` | `question_id`, `locale`, `text`, `guidance` | Bản dịch chỉnh tay theo câu; bản tự động nằm ở `translations` |
 
 Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp lệ (id không trùng, route đúng cú pháp, nhóm không rỗng) rồi chuyển bản cũ sang `archived`. Báo cáo cũ vẫn tham chiếu được đúng bản đã dùng.
@@ -71,7 +71,7 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 | `email_outbox` | `id`, `to_email`, `template`, `payload` (`jsonb`), `status` (`pending`/`sent`/`failed`), `attempts`, `next_attempt_at`, `sent_at`, `error` | Thử lại có giãn cách; OTP không ghi mã rõ vào `payload` ngoài thời gian cần gửi |
 | `audit_logs` | `id`, `actor_type`, `actor_id`, `action`, `entity`, `entity_id`, `meta` (`jsonb`), `ip_hash` | Ghi mọi thao tác quản trị đổi dữ liệu và xuất file CRM |
 | `job_runs` | `id`, `job`, `started_at`, `finished_at`, `status`, `detail` | Theo dõi việc nền, kèm advisory lock |
-| `settings` | `key`, `value` (`jsonb`) | Cấu hình sửa được từ admin (ví dụ số ngày mời đánh giá) |
+| `settings` | `key`, `value` (`jsonb`) | Cấu hình sửa được từ admin (đã làm GĐ 7): `feedback.invite_delay_days` (1–29), `inquiry.notify_email`; không có dòng thì dùng mặc định (5 ngày, `ADMIN_NOTIFY_EMAIL`) |
 
 ## 7. Chỉ mục quan trọng
 
@@ -107,7 +107,9 @@ Khi admin xuất bản một bản nháp, hệ thống kiểm tra tính hợp l�
 - Hộp thư đi: thư được ghi vào `email_outbox` rồi gửi ngay; việc `deliver-outbox` gửi lại thư còn `pending` đến hạn. Mỗi lần lấy thư, `attempts` tăng và `next_attempt_at` lùi 120 giây (thuê tạm) để hai tiến trình không gửi trùng. Thử lại sau 30 giây, 2 phút, 10 phút, 1 giờ; quá số lần của mẫu thư hoặc gặp lỗi không thử lại được (ví dụ sai khóa API) thì `failed`. Mẫu `otp` chỉ thử một lần (mã quá hạn nhanh) và xóa mã khỏi `payload` sau khi gửi xong hoặc thất bại.
 - Hạn mức thư: đếm thư `sent` trong 24 giờ gần nhất so với `MAIL_DAILY_LIMIT`. Hết hạn mức thì không tạo thêm OTP (`503 mail_daily_limit`); thư không phải OTP chỉ được gửi khi còn lại nhiều hơn 20% hạn mức dành cho OTP.
 
-Job kiểm tra thêm hai chiều: tệp trên đĩa không có dòng trong `files` (cảnh báo, không tự xóa), và dòng `files` mà tệp đã mất (ghi cảnh báo, hiện trong trang quản trị).
+Kiểm tra hai chiều chạy khi quản trị viên mở mục **Trạng thái và cài đặt** (đã làm GĐ 7, không phải việc nền): dòng `files` mà tệp đã mất được liệt kê; tệp trên đĩa không có dòng trong `files` không tự xóa, quản trị viên bấm xóa các tệp cũ hơn 24 giờ. Chỉ xét tên tệp đúng dạng `năm/tháng/uuid` trong `STORAGE_DIR`.
+
+Bản ngân hàng câu hỏi nháp xóa được từ trang quản trị (nhóm, câu, bản dịch riêng xóa theo); bản đã xuất bản hoặc lưu trữ được giữ.
 
 ## 9. Quy tắc xóa khóa ngoại (đã cài ở Giai đoạn 1)
 

@@ -2,7 +2,7 @@
 
 Đọc file này trước khi làm. Tình trạng: phần 1–11 cập nhật đến ngày 05/11/2026, phần 12 (trang Về ESG Report Online, trang quản trị, Tư vấn, SEO) cập nhật đến ngày 08/11/2026. Mục nào ghi "cần kiểm tra" là điều chưa được xác nhận trong mã nguồn lúc viết.
 
-> **Cập nhật 23/11/2026: hướng đi mới là bản production v2** (NestJS + PostgreSQL tự host trên một VPS, bỏ Google Sheet, Apps Script, Drive, Vercel và hướng Cloudflare). Các mục 2, 3, 4, 13 và phần Apps Script ở mục 12 mô tả **bản demo hiện tại** và sẽ lỗi thời khi chuyển. Thiết kế v2 ở mục 14 và `docs/backend-*.md`. Giai đoạn 0 (tài liệu) đến 6 (nội dung và dịch) đã xong; xem mục 14.
+> **Cập nhật 23/11/2026: hướng đi mới là bản production v2** (NestJS + PostgreSQL tự host trên một VPS, bỏ Google Sheet, Apps Script, Drive, Vercel và hướng Cloudflare). Các mục 2, 3, 4, 13 và phần Apps Script ở mục 12 mô tả **bản demo hiện tại** và sẽ lỗi thời khi chuyển. Thiết kế v2 ở mục 14 và `docs/backend-*.md`. Giai đoạn 0 (tài liệu) đến 7 (giao diện quản trị) đã xong; xem mục 14.
 
 ## 1. Cách làm việc với người dùng (Bình)
 
@@ -22,7 +22,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 
 - `apps/web`: Next.js (App Router, Turbopack), Tailwind v4, @react-pdf/renderer, zod 4.
 - `packages/shared` (`@esg/shared`): kiểu dữ liệu, quy tắc câu trả lời, `buildReportModel`, test bằng `tsx --test`.
-- `apps/api`: bản v2 (NestJS 12 + Drizzle + PostgreSQL 18), đã xong giai đoạn 1 đến 6 (khung, database, đăng nhập OTP email, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, bài viết, thống kê, dịch bằng Gemini). Frontend vẫn dùng Google Sheet + Apps Script cho tới giai đoạn 8.
+- `apps/api`: bản v2 (NestJS 12 + Drizzle + PostgreSQL 18), đã xong giai đoạn 1 đến 7 (khung, database, đăng nhập OTP email, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, bài viết, thống kê, dịch bằng Gemini, giao diện quản trị). Website công khai vẫn dùng Google Sheet + Apps Script cho tới giai đoạn 8; riêng `/quan-tri` đã gọi API v2.
 
 Không còn mock data và không còn bộ câu hỏi do admin nhập trong web. `/admin` được ẩn nhưng giữ code.
 
@@ -157,6 +157,8 @@ Phần này do các phiên làm giao diện (frontend) bổ sung. Quy trình là
 
 ### 12.3 Trang quản trị `/quan-tri`
 
+> Mục này mô tả bản demo. Từ giai đoạn 7 của v2 (28/11/2026), mã trong repo đã thay trang quản trị này bằng bản gọi API v2 (đăng nhập bằng tài khoản riêng, bỏ `ADMIN_PASSWORD` và các route `api/admin/*`): xem [huong-dan-trang-quan-tri.md](huong-dan-trang-quan-tri.md). Bản demo đang chạy giữ trang cũ cho tới khi cutover.
+
 - Đăng nhập bằng **một mật khẩu chung** ở biến `ADMIN_PASSWORD` (từ 8 ký tự); phiên lưu cookie `esg-admin` (httpOnly, ký HMAC bằng `ADMIN_SESSION_SECRET`, nếu thiếu thì dùng `ADMIN_PASSWORD`; 7 ngày); sai quá 5 lần trong 15 phút thì khóa tạm theo IP. Chưa đặt `ADMIN_PASSWORD` thì trang báo chưa cấu hình.
 - Chức năng: danh sách bài, đăng, lưu nháp, sửa, xóa (hộp thoại xác nhận có trạng thái chờ), sửa dải số liệu thành tựu (tối đa 8 mục) ở `/quan-tri/so-lieu`. Trang đặt `noindex`.
 - Mã: `apps/web/src/features/about-admin/` (components, lib), `apps/web/src/app/quan-tri/`, API `apps/web/src/app/api/admin/{login,logout,posts,posts/[id],stats,upload}` và `api/likes`; lớp máy chủ `apps/web/src/server/about/bridge.ts`, `server/admin/`.
@@ -203,7 +205,7 @@ Các quy tắc chi tiết đã được gộp vào [docs/backend-migration.md](b
 
 ## 14. Cập nhật 23/11/2026: bản production v2 (NestJS + PostgreSQL trên VPS)
 
-Thay hướng Cloudflare (đã bỏ, file kế hoạch đã xóa). Tài liệu: [backend-spec.md](backend-spec.md), [backend-database.md](backend-database.md), [backend-api.md](backend-api.md), [backend-migration.md](backend-migration.md), [backend-deployment.md](backend-deployment.md), [backend-roadmap.md](backend-roadmap.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md). **Giai đoạn 1 đến 6 (23–26/11/2026) đã code, từ giai đoạn 7 chưa** (trạng thái chi tiết ở `backend-roadmap.md`); phiên làm việc về v2 phải đọc các tài liệu này trước và **không tự code** khi Bình chưa nói "làm giai đoạn tiếp theo". Trước mỗi giai đoạn phải nói rõ giai đoạn đó sẽ làm gì.
+Thay hướng Cloudflare (đã bỏ, file kế hoạch đã xóa). Tài liệu: [backend-spec.md](backend-spec.md), [backend-database.md](backend-database.md), [backend-api.md](backend-api.md), [backend-migration.md](backend-migration.md), [backend-deployment.md](backend-deployment.md), [backend-roadmap.md](backend-roadmap.md), [backend-quyet-dinh-can-chot.md](backend-quyet-dinh-can-chot.md). **Giai đoạn 1 đến 7 (23–28/11/2026) đã code, từ giai đoạn 8 chưa** (trạng thái chi tiết ở `backend-roadmap.md`); phiên làm việc về v2 phải đọc các tài liệu này trước và **không tự code** khi Bình chưa nói "làm giai đoạn tiếp theo". Trước mỗi giai đoạn phải nói rõ giai đoạn đó sẽ làm gì.
 
 - Đã chốt 23/11/2026: theo cột "Đề xuất" cho mọi QĐ; QĐ-01 giữ như demo; QĐ-20 Node 24 LTS. Phiên bản khóa: NestJS 12.6.0, Drizzle ORM 0.45.4, drizzle-kit 0.31.11, TypeScript 6.0.3 cho `apps/api`, PostgreSQL 18.7.
 - Công nghệ: NestJS 12, PostgreSQL 18 tự host, Drizzle ORM 0.45.x, Docker Compose, Caddy; frontend, backend, database cùng một VPS, triển khai một lần khi viết lại xong. Bỏ hẳn Google Sheet, Apps Script, Drive, Vercel; trang quản trị tự xây.

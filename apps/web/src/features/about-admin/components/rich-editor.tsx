@@ -33,11 +33,12 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button, IconButton, Input } from "@/components/ui";
+import { ApiError } from "@/features/backoffice/lib/api";
 import { cn } from "@/lib/cn";
 
-import { AdminApiError, uploadImage } from "../lib/admin-api";
 import { ImageBlock } from "../lib/image-block";
 import { resizeImage } from "../lib/resize-image";
+import { uploadImage } from "../lib/upload-image";
 
 interface RichEditorProps {
   value: RichDoc;
@@ -546,7 +547,7 @@ export function RichEditor({
           })
           .catch((caught: unknown) => {
             setError(
-              caught instanceof AdminApiError
+              caught instanceof ApiError
                 ? caught.message
                 : "Không tải được ảnh. Vui lòng dùng ảnh JPG, PNG hoặc WEBP khác.",
             );

@@ -49,6 +49,8 @@ Các quy tắc đã đúc kết trong `ke-hoach-luu-bao-cao-va-xac-thuc-email.md
 6. **Chạy cuối lúc cutover**: đóng băng Sheet (chỉ đọc), chạy nhập lần cuối để lấy dữ liệu phát sinh, rồi mở bản v2.
 7. Dòng bị bỏ qua không bị xóa: xuất ra file `migration-rejects.xlsx` để xử lý tay.
 
+Từ GĐ 7 trang quản trị v2 ghi thẳng vào PostgreSQL trong khi website demo vẫn dùng Sheet. Cho tới cutover, nội dung thật chỉ sửa ở phía demo; dữ liệu nhập ở trang quản trị v2 coi là dữ liệu thử. Riêng bộ câu hỏi: lúc cutover tải Sheet mới nhất dạng xlsx, nhập ở **Bộ câu hỏi → Nhập từ Excel** thành phiên bản mới rồi xuất bản.
+
 ## 4. Rủi ro và cách giảm
 
 | Rủi ro | Giảm thiểu |

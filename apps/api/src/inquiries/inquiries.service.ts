@@ -11,6 +11,7 @@ import type { Database } from "../database/client.js";
 import { DATABASE } from "../database/database.constants.js";
 import { adminUsers, inquiries, inquiryNotes, reports } from "../database/schema/index.js";
 import { MailService } from "../mail/mail.service.js";
+import { SettingsService } from "../settings/settings.service.js";
 import { generateRecordCode } from "../reports/report-code.js";
 import { buildTableFile, type ExportFormat, type TableFile } from "../table-export/table-export.js";
 import { INQUIRY_FORM_VERSION } from "./inquiries.constants.js";
@@ -68,10 +69,13 @@ export class InquiriesService {
     @Inject(MailService) private readonly mail: MailService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(APP_ENV) private readonly env: AppEnv,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   async create(input: CreateInquiryInput, ip: string): Promise<{ code: string }> {
     const companyId = await this.companyFromReport(input.reportCode);
+    const { inquiryNotifyEmail, defaults } = await this.settings.read();
+    const notifyEmail = inquiryNotifyEmail ?? defaults.inquiryNotifyEmail;
     for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
       const code = generateRecordCode(input.kind === "consulting" ? "TV" : "KD", 5);
       try {
@@ -108,16 +112,16 @@ export class InquiriesService {
             },
             tx,
           );
-          if (this.env.ADMIN_NOTIFY_EMAIL !== undefined) {
+          if (notifyEmail !== null) {
             await this.mail.enqueue(
               {
-                to: this.env.ADMIN_NOTIFY_EMAIL,
+                to: notifyEmail,
                 template: "inquiry_notice",
                 payload: {
                   code,
                   kind: input.kind,
                   companyName: input.companyName,
-                  url: `${this.env.PUBLIC_BASE_URL.replace(/\/$/, "")}/admin/inquiries/${code}`,
+                  url: `${this.env.PUBLIC_BASE_URL.replace(/\/$/, "")}/quan-tri/yeu-cau/${row.id}`,
                 },
               },
               tx,

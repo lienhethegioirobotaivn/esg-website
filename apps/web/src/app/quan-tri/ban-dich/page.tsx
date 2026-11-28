@@ -1,13 +1,5 @@
-import { redirect } from "next/navigation";
+import { TranslationsPage } from "@/features/about-admin/components/translations-page";
 
-import { TranslationWarmup } from "@/features/about-admin/components/translation-warmup";
-import { isAdmin } from "@/server/admin/session";
-
-export const dynamic = "force-dynamic";
-
-export default async function TranslationsAdminPage() {
-  if (!(await isAdmin())) {
-    redirect("/quan-tri");
-  }
-  return <TranslationWarmup />;
+export default function TranslationsRoute() {
+  return <TranslationsPage />;
 }

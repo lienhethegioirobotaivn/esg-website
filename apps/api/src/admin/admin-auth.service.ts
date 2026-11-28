@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, ne, sql } from "drizzle-orm";
 
 import { newSessionToken, sha256Hex } from "../auth/crypto.js";
 import { AppError } from "../common/app-error.js";
@@ -13,10 +13,11 @@ import {
   ADMIN_LOCK_MINUTES,
   ADMIN_LOGIN_MAX_FAILURES,
   ADMIN_LOGIN_RATE_LIMIT,
+  ADMIN_PASSWORD_CHANGE_RATE_LIMIT,
   ADMIN_SESSION_MAX_AGE_MS,
 } from "./admin.constants.js";
 import type { AdminIdentity } from "./admin.types.js";
-import { burnPasswordCheck, verifyPassword } from "./password.js";
+import { burnPasswordCheck, hashPassword, verifyPassword } from "./password.js";
 
 export interface AdminLoginResult {
   token: string;
@@ -112,6 +113,47 @@ export class AdminAuthService {
       await tx.delete(adminSessions).where(eq(adminSessions.id, admin.sessionId));
       await this.audit.record(
         { actorType: "admin", actorId: admin.adminId, action: "admin.logout", entity: "admin_user", entityId: admin.adminId, ip },
+        tx,
+      );
+    });
+  }
+
+  async changePassword(
+    admin: AdminIdentity,
+    input: { currentPassword: string; newPassword: string },
+    ip: string,
+  ): Promise<void> {
+    await enforceRate(
+      this.rateLimit,
+      `admin-password:${admin.adminId}`,
+      ADMIN_PASSWORD_CHANGE_RATE_LIMIT,
+    );
+    const [row] = await this.db
+      .select({ passwordHash: adminUsers.passwordHash })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, admin.adminId))
+      .limit(1);
+    if (row === undefined || !(await verifyPassword(input.currentPassword, row.passwordHash))) {
+      throw new AppError(400, "wrong_password", "Mật khẩu hiện tại không đúng.");
+    }
+    const passwordHash = await hashPassword(input.newPassword);
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(adminUsers)
+        .set({ passwordHash, failedAttempts: 0, lockedUntil: null, updatedAt: new Date() })
+        .where(eq(adminUsers.id, admin.adminId));
+      await tx
+        .delete(adminSessions)
+        .where(and(eq(adminSessions.adminId, admin.adminId), ne(adminSessions.id, admin.sessionId)));
+      await this.audit.record(
+        {
+          actorType: "admin",
+          actorId: admin.adminId,
+          action: "admin_user.change_password",
+          entity: "admin_user",
+          entityId: admin.adminId,
+          ip,
+        },
         tx,
       );
     });

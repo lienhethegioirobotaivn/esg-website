@@ -391,7 +391,10 @@ describe("yêu cầu tư vấn / thẩm định", () => {
     );
     expect(mail?.to_email).toBe("ops@example.com");
     expect(mail?.template).toBe("inquiry_notice");
-    expect(mail?.payload.url).toBe(`https://esg.example.com/admin/inquiries/${response.body.code}`);
+    const [saved] = await rows<{ id: string }>("select id from inquiries where code = $1", [
+      response.body.code,
+    ]);
+    expect(mail?.payload.url).toBe(`https://esg.example.com/quan-tri/yeu-cau/${saved?.id}`);
     expect(await audit("inquiry.create")).toHaveLength(1);
   });
 
@@ -660,6 +663,17 @@ describe("phản hồi", () => {
     );
     expect(stored?.kind).toBe("invite");
     expect(mail?.payload.url).not.toContain(stored?.token_hash ?? "x");
+  });
+
+  it("dùng số ngày mời đánh giá lấy từ cài đặt", async () => {
+    await dueReport("early@example.com", 3);
+    const invites = testApp.app.get(FeedbackInviteService);
+    expect(await invites.sendDue()).toEqual({ invited: 0 });
+
+    await database.pool.query(
+      "insert into settings (key, value) values ('feedback.invite_delay_days', '2')",
+    );
+    expect(await invites.sendDue()).toEqual({ invited: 1 });
   });
 
   it("không mời báo cáo chưa có chủ sở hữu có email", async () => {

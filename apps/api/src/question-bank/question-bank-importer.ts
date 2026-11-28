@@ -93,6 +93,10 @@ export class QuestionBankImporter {
             route: question.route,
             evidenceRule: question.evidenceRule,
             reviewStatus: question.reviewStatus,
+            reviewNote: question.reviewNote,
+            reviewedBy: question.reviewedBy,
+            reviewedOn: question.reviewedOn,
+            rolloutStatus: question.rolloutStatus,
             position: question.position,
             sourceRef: question.sourceRef,
           };

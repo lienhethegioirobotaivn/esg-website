@@ -1,3 +1,5 @@
+import { BANK_REVIEW_LABELS } from "@esg/shared/node";
+
 import { MAX_QUESTIONS_PER_GROUP } from "./question-bank.constants.js";
 import type { ImportIssue, ParsedBank } from "./question-bank.types.js";
 
@@ -61,11 +63,16 @@ export function validateQuestionBank(bank: ParsedBank): ImportIssue[] {
     add("error", "", null, "Không có câu nào ở trạng thái Đã duyệt.");
   }
   for (const question of bank.questions) {
-    if (question.reviewStatus === "pending") {
-      add("warning", question.tabName, question.code, "Câu đang Chờ duyệt, sẽ không hiển thị khi xuất bản.");
+    if (question.reviewStatus !== "approved") {
+      add(
+        "warning",
+        question.tabName,
+        question.code,
+        `Câu đang ở trạng thái "${BANK_REVIEW_LABELS[question.reviewStatus]}", sẽ không hiển thị khi xuất bản.`,
+      );
     }
     if (question.evidenceRule !== null && !("accepted" in question.evidenceRule)) {
-      add("warning", question.tabName, question.code, "Chưa có quy tắc minh chứng chi tiết ở tab 18.");
+      add("warning", question.tabName, question.code, "Chưa điền quy tắc minh chứng chi tiết (tab 18 trong file Excel).");
     }
   }
   return issues;

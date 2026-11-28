@@ -4,8 +4,9 @@ import { Crop, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui";
+import { errorMessage } from "@/features/backoffice/lib/api";
 
-import { AdminApiError, uploadImage } from "../lib/admin-api";
+import { uploadImage } from "../lib/upload-image";
 import { CoverEditor } from "./cover-editor";
 
 interface ImageFieldProps {
@@ -24,9 +25,7 @@ export function ImageField({ value, onChange }: ImageFieldProps) {
       onChange(await uploadImage(blob));
     } catch (caught) {
       throw new Error(
-        caught instanceof AdminApiError
-          ? caught.message
-          : "Không tải được ảnh. Vui lòng thử lại.",
+        errorMessage(caught, "Không tải được ảnh. Vui lòng thử lại."),
       );
     }
     setLastFile(pendingFile);

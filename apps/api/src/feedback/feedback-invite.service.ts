@@ -7,11 +7,8 @@ import type { Database } from "../database/client.js";
 import { DATABASE } from "../database/database.constants.js";
 import { feedbacks, reportExports, reports, users } from "../database/schema/index.js";
 import { MailService } from "../mail/mail.service.js";
-import {
-  FEEDBACK_INVITE_BATCH,
-  FEEDBACK_INVITE_DELAY_DAYS,
-  FEEDBACK_INVITE_MAX_AGE_DAYS,
-} from "./feedback.constants.js";
+import { SettingsService } from "../settings/settings.service.js";
+import { FEEDBACK_INVITE_BATCH, FEEDBACK_INVITE_MAX_AGE_DAYS } from "./feedback.constants.js";
 import { FeedbackService } from "./feedback.service.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -23,10 +20,12 @@ export class FeedbackInviteService {
     @Inject(MailService) private readonly mail: MailService,
     @Inject(FeedbackService) private readonly feedback: FeedbackService,
     @Inject(APP_ENV) private readonly env: AppEnv,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   async sendDue(now: number = Date.now()): Promise<{ invited: number }> {
-    const ready = new Date(now - FEEDBACK_INVITE_DELAY_DAYS * DAY_MS);
+    const { feedbackInviteDelayDays } = await this.settings.read();
+    const ready = new Date(now - feedbackInviteDelayDays * DAY_MS);
     const oldest = new Date(now - FEEDBACK_INVITE_MAX_AGE_DAYS * DAY_MS);
 
     const candidates = await this.db

@@ -89,6 +89,8 @@ Cột nào thiếu tên thì dữ liệu của cột đó không được ghi, m
 
 Trang công khai: `/ve-esg-report-online` (Thành tựu, Tin tức). Trang quản trị: `/quan-tri`.
 
+> Phần nói về `/quan-tri`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` và nút **Dịch sẵn nội dung** trong tài liệu này chỉ đúng với bản demo đang chạy. Mã từ giai đoạn 7 của v2 dùng trang quản trị mới, ghi vào PostgreSQL: xem [huong-dan-trang-quan-tri.md](huong-dan-trang-quan-tri.md).
+
 **Cập nhật Apps Script:** dán lại toàn bộ `docs/apps-script/Code.gs`, rồi **Triển khai > Quản lý bản triển khai > bút chì > Phiên bản mới > Triển khai** (sửa bản cũ, không tạo bản triển khai mới để giữ nguyên URL). Không cần thêm Script Property mới.
 
 **Tab tự tạo** ở lần ghi đầu tiên:

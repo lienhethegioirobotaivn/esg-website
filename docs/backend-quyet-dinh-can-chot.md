@@ -29,6 +29,17 @@ Mức ảnh hưởng: **Cao** (người dùng/quản trị thấy khác ngay), *
 | QĐ-19 | Giao diện trang quản trị | Màn hình hiện tại | Được phép làm lại | Cao (với quản trị) | Làm lại hợp lý theo vai trò; sẽ cho bạn duyệt bố cục ở GĐ 7 trước khi hoàn thiện |
 | QĐ-20 | Phiên bản Node.js | (Vercel tự chọn) | Chọn một bản LTS | Thấp | Node 24 LTS (hỗ trợ tới 04/2028); chuyển Node 26 khi bạn muốn |
 
+## Quyết định đã chốt khi làm GĐ 7 (27/11/2026)
+
+| Việc | Chốt |
+| --- | --- |
+| Cách giao | Làm một lần cả trang quản trị |
+| `/quan-tri` cũ | Thay hẳn |
+| Quản trị bộ câu hỏi (QĐ-10) | Đầy đủ chức năng, không thiếu so với lúc dùng Sheet cho các tab website đang đọc (01–10, 12, 18, 19) |
+| Cài đặt (QĐ-15) | Sửa được số ngày mời đánh giá và email nhận yêu cầu mới |
+| Trang mẫu carbon | Đưa sau đăng nhập |
+| Giao diện (QĐ-19) | Ưu tiên dễ dùng |
+
 ## Cách trả lời
 
 Bạn có thể trả lời ngắn, ví dụ: "QĐ-01 theo đề xuất, QĐ-07 đổi thành ... ". Mục nào bạn chưa trả lời, tôi sẽ giữ theo cột "Đề xuất" khi đến giai đoạn liên quan và nhắc lại trước khi làm.

@@ -20,7 +20,7 @@ import type { AppEnv } from "../config/env.schema.js";
 import { ADMIN_COOKIE_NAME, ADMIN_SESSION_MAX_AGE_MS } from "./admin.constants.js";
 import { AdminAuthService } from "./admin-auth.service.js";
 import { AdminSessionGuard, CurrentAdmin } from "./admin-session.guard.js";
-import { adminLoginSchema } from "./admin.schemas.js";
+import { adminLoginSchema, changePasswordSchema } from "./admin.schemas.js";
 import type { AdminIdentity } from "./admin.types.js";
 
 @Controller("admin")
@@ -62,6 +62,24 @@ export class AdminAuthController {
   @Header("Cache-Control", "private, no-store")
   me(@CurrentAdmin() admin: AdminIdentity): { email: string; name: string; role: string } {
     return { email: admin.email, name: admin.name, role: admin.role };
+  }
+
+  @Post("me/password")
+  @HttpCode(204)
+  @UseGuards(AdminSessionGuard)
+  changePassword(
+    @Body() body: unknown,
+    @CurrentAdmin() admin: AdminIdentity,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.auth.changePassword(
+      admin,
+      parseBody(changePasswordSchema, body, {
+        code: "invalid_request",
+        message: "Mật khẩu mới phải dài ít nhất 12 ký tự và khác mật khẩu hiện tại.",
+      }),
+      clientIp(request),
+    );
   }
 
   @Post("logout")

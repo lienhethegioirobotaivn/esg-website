@@ -1,6 +1,6 @@
 # ESGstudio v2: Tài liệu tổng quan Backend
 
-Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 đến 6 (khung và database, đăng nhập OTP, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, nội dung và dịch; 23–26/11/2026) đã code; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
+Tài liệu này thay thế hoàn toàn bản `backend-spec.md` cũ (thời Express + Google Sheet). Nó mô tả bản **production v2**: viết lại backend bằng NestJS, tự host PostgreSQL, bỏ Google Sheet, Apps Script và Vercel. Giai đoạn 1 đến 7 (khung và database, đăng nhập OTP, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, nội dung và dịch, giao diện quản trị; 23–28/11/2026) đã code; các giai đoạn còn lại vẫn là thiết kế, xem trạng thái ở `backend-roadmap.md`.
 
 Bộ tài liệu backend v2 gồm:
 
@@ -13,6 +13,7 @@ Bộ tài liệu backend v2 gồm:
 | `backend-deployment.md` | Docker, VPS, sao lưu, CI/CD (làm sau cùng) |
 | `backend-roadmap.md` | Các giai đoạn, đầu ra, kiểm thử, và các tính năng làm sau (AI đánh giá minh chứng...) |
 | `backend-quyet-dinh-can-chot.md` | Danh sách thay đổi ảnh hưởng tính năng/trải nghiệm so với bản demo, cần bạn quyết định |
+| `huong-dan-trang-quan-tri.md` | Cách dùng trang quản trị v2 (từ GĐ 7) |
 
 ## 1. Phạm vi và các quyết định đã chốt
 
@@ -38,7 +39,7 @@ Phiên bản kiểm tra lại ngày 23/11/2026 và đã khóa chính xác trong 
 | Database | PostgreSQL 18 (18.7), image `postgres:18` | PG 14 hết hỗ trợ 12/11/2026. PG 19.0 đã phát hành stable ngày 19/11/2026 nhưng mới là bản `.0`; giữ PG 18 và xem xét PG 19 sau khi có vài bản vá. Dùng UUIDv7 cho khóa chính (hàm `uuidv7()` có sẵn từ PG 18) |
 | Frontend | Next.js 16 + React 19 như hiện tại, chạy chế độ standalone trong Docker | Không còn route handler gọi Apps Script |
 | Đóng gói | pnpm workspace: `apps/web`, `apps/api`, `packages/shared` (`@esg/shared`), `tools/esg-agents` | Giữ monorepo, dùng chung zod schema và hằng số; `apps/api` dùng `@esg/shared/node` (bản build `dist/` bằng `tsup`), `apps/web` dùng mã nguồn qua đường dẫn gốc; image `api` phải build `@esg/shared` và mang theo `packages/shared/dist` |
-| Proxy | Caddy (HTTPS tự động) | Cùng origin: `/` về web, `/api/*` về api, cookie `SameSite=Lax` |
+| Proxy | Caddy (HTTPS tự động) | Cùng origin: `/` về web, `/api/v1/*` về api, cookie `SameSite=Lax` |
 | Việc nền | `JobScheduler` tự viết (bộ hẹn giờ trong tiến trình + khóa `pg_advisory_lock`, ghi `job_runs`) | Không dùng Redis và không cần `@nestjs/schedule`; xem `backend-database.md` mục 8.1 |
 | Email | Lớp `MailService` đổi được nhà cung cấp (`MailProvider`); đã làm adapter Brevo (gói miễn phí 300 thư/ngày) và `console` cho dev; Resend (100 thư/ngày) là phương án dự phòng, chưa làm adapter | Xem QĐ-07 về giới hạn OTP |
 | Dịch tự động | Gemini API qua `TranslationService` | Thay `LanguageApp` của Apps Script (QĐ-08) |
@@ -47,7 +48,7 @@ Phiên bản kiểm tra lại ngày 23/11/2026 và đã khóa chính xác trong 
 
 ```
 Trình duyệt ──HTTPS──> Caddy ──/──────> web (Next.js, SSR)
-                              └─/api/*─> api (NestJS)
+                              └─/api/v1/*─> api (NestJS)
                                           ├─ PostgreSQL 18 (volume)
                                           ├─ Thư mục tệp (volume): logo, minh chứng, PDF/Word, ảnh bài viết
                                           └─ Email API ngoài, Gemini API (tùy chọn)
@@ -95,6 +96,7 @@ Trình duyệt ──HTTPS──> Caddy ──/──────> web (Next.js,
 | `rate-limit` | Giới hạn tần suất lưu trong PostgreSQL |
 | `audit` | Nhật ký thao tác quản trị |
 | `jobs` | Lịch chạy nền: dọn tệp tạm, dọn mồ côi, gửi thư mời đánh giá, dịch, sao lưu |
+| `settings` / `system` | Cài đặt sửa từ quản trị; việc nền, hộp thư đi, tình trạng tệp (GĐ 7) |
 | `health` | `GET /api/v1/health` cho Docker và giám sát: 200 khi database trả lời trong 3 giây, 503 khi không |
 
 ## 6. Mô hình báo cáo
@@ -109,7 +111,7 @@ Giữ nguyên mô hình dữ liệu dùng chung ở `@esg/shared` để frontend
 ## 7. Bảo mật và quyền riêng tư
 
 - Cookie phiên: `HttpOnly`, `Secure`, `SameSite=Lax`. Token phiên ngẫu nhiên dài, chỉ lưu băm trong database (khác với HMAC hiện tại, nên có thể thu hồi từng phiên).
-- Mật khẩu quản trị băm argon2id. Khóa tạm sau 5 lần sai trong 15 phút (giữ như demo).
+- Mật khẩu quản trị băm scrypt (đã làm GĐ 5). Khóa tạm sau 5 lần sai trong 15 phút (giữ như demo).
 - Tệp minh chứng và báo cáo không có URL công khai; tải qua API có kiểm tra chủ sở hữu.
 - Đồng ý được ghi kèm thời điểm và phiên bản văn bản. Dữ liệu nghiên cứu chỉ dùng khi có đồng ý tương ứng (P-020).
 - Mọi dữ liệu có lưu trữ đều phải có đường dọn: tệp không còn được tham chiếu, OTP hết hạn, phiên hết hạn, đoạn tải lên dở, bản xuất quá 5 bản, ảnh bài viết không còn dùng (chi tiết ở `backend-database.md`, mục 5).

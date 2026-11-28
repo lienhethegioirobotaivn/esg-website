@@ -1,3 +1,9 @@
+import {
+  BANK_EVIDENCE_CODES,
+  BANK_MAX_QUESTIONS_PER_GROUP,
+  BANK_PROFILE_INPUT_TYPES,
+} from "@esg/shared/node";
+
 import type { QuestionSource, QuestionTrack } from "../database/schema/index.js";
 
 export interface BankTab {
@@ -40,8 +46,6 @@ export const CONTENT_FIRST_HEADER = "Mã câu";
 export const LOGIC_FIRST_HEADER = "question_id";
 export const AI_CASES_FIRST_HEADER = "Mã ca";
 
-export const APPROVED_LABEL = "Đã duyệt";
-export const PENDING_LABEL = "Chờ duyệt";
 export const BASIC_LABEL = "Cơ bản";
 export const EXTENDED_LABEL = "Mở rộng";
 export const REQUIRED_LABEL = "Có";
@@ -49,25 +53,16 @@ export const OPTIONAL_LABEL = "Không";
 export const ROUTE_ALL = "ALL";
 
 export const QUESTION_CODE_PATTERN = /^(P|C|[A-Z]{3})-\d{3}$/;
-export const MAX_QUESTIONS_PER_GROUP = 5;
+export const MAX_QUESTIONS_PER_GROUP = BANK_MAX_QUESTIONS_PER_GROUP;
+export const PROFILE_EXTRA_INPUT_TYPES = BANK_PROFILE_INPUT_TYPES;
+export const EVIDENCE_RULE_CODES = BANK_EVIDENCE_CODES;
 
-export const PROFILE_EXTRA_INPUT_TYPES = [
-  "CONSENT",
-  "PERIOD",
-  "SECTOR",
-  "SECTORS",
-  "SIZE",
-  "LEVEL",
-  "CAPABILITIES",
-  "REVENUE",
-] as const;
+export const BANK_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 
-export const EVIDENCE_RULE_CODES = [
-  "EV-PRACTICE",
-  "EV-INCIDENT",
-  "EV-DATA",
-  "EV-OPTIONAL",
-] as const;
+export const REPORT_DEPENDENT_CODES: readonly string[] = [
+  ...[1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+  ...[33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59],
+].map((number) => `C-${String(number).padStart(3, "0")}`);
 
 export const SURVEY_BANK_RATE_LIMIT = { limit: 120, windowSeconds: 60 } as const;
 export const SURVEY_BANK_CACHE_CONTROL = "public, max-age=60, must-revalidate";

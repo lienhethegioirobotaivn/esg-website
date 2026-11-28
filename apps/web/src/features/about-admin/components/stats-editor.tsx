@@ -1,29 +1,29 @@
 "use client";
 
-import { statsInputSchema } from "@esg/shared";
+import { statsInputSchema, type StatItem } from "@esg/shared";
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import { Button, Card, IconButton, Input } from "@/components/ui";
-
-import { AdminApiError, saveStats } from "../lib/admin-api";
+import { useNotify } from "@/features/backoffice/components/toast";
+import { errorMessage, sendJson } from "@/features/backoffice/lib/api";
+import { useUnsavedWarning } from "@/features/backoffice/lib/use-unsaved-warning";
 
 interface StatsEditorProps {
-  initial: { value: string; label: string }[];
+  initial: StatItem[];
+  onSaved: (next: { items: StatItem[]; updatedAt: string | null }) => void;
 }
 
 const MAX_ITEMS = 8;
 
-export function StatsEditor({ initial }: StatsEditorProps) {
-  const router = useRouter();
+export function StatsEditor({ initial, onSaved }: StatsEditorProps) {
+  const notify = useNotify();
   const [items, setItems] = useState(initial);
+  const [saved, setSaved] = useState(initial);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isRefreshing, startRefresh] = useTransition();
-  const busy = isSaving || isRefreshing;
+  const dirty = JSON.stringify(items) !== JSON.stringify(saved);
+  useUnsavedWarning(dirty);
 
   function update(
     index: number,
@@ -54,7 +54,6 @@ export function StatsEditor({ initial }: StatsEditorProps) {
       return;
     }
     setError(null);
-    setMessage(null);
     const parsed = statsInputSchema.safeParse({ items });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Dữ liệu chưa hợp lệ.");
@@ -62,15 +61,16 @@ export function StatsEditor({ initial }: StatsEditorProps) {
     }
     setIsSaving(true);
     try {
-      await saveStats(parsed.data.items);
-      setMessage("Đã lưu số liệu.");
-      startRefresh(() => router.refresh());
+      const next = await sendJson<{
+        items: StatItem[];
+        updatedAt: string | null;
+      }>("PUT", "/admin/stats", parsed.data);
+      setItems(next.items);
+      setSaved(next.items);
+      onSaved(next);
+      notify("Đã lưu số liệu.");
     } catch (caught) {
-      setError(
-        caught instanceof AdminApiError
-          ? caught.message
-          : "Không lưu được số liệu.",
-      );
+      setError(errorMessage(caught, "Không lưu được số liệu."));
     } finally {
       setIsSaving(false);
     }
@@ -78,16 +78,7 @@ export function StatsEditor({ initial }: StatsEditorProps) {
 
   return (
     <div>
-      <Link href="/quan-tri" className="text-sm text-muted hover:underline">
-        ← Danh sách bài viết
-      </Link>
-      <h1 className="mt-1 text-2xl text-primary-800">Số liệu thành tựu</h1>
-      <p className="mt-2 text-sm text-muted">
-        Hiển thị ở dải màu xanh đầu trang Thành tựu. Xóa hết số liệu và lưu thì
-        dải này sẽ ẩn.
-      </p>
-
-      <Card className="mt-5 space-y-3 p-5">
+      <Card className="space-y-3 p-5">
         {items.length === 0 ? (
           <p className="text-sm text-muted">Chưa có số liệu nào.</p>
         ) : null}
@@ -156,20 +147,20 @@ export function StatsEditor({ initial }: StatsEditorProps) {
             <span role="alert" className="text-danger-600">
               {error}
             </span>
-          ) : message ? (
-            <span className="text-primary-700">{message}</span>
+          ) : dirty ? (
+            <span className="text-muted">Có thay đổi chưa lưu.</span>
           ) : null}
         </div>
         <Button
-          disabled={busy}
+          disabled={isSaving || !dirty}
           onClick={() => void handleSave()}
           leadingIcon={
-            busy ? (
+            isSaving ? (
               <Loader2 aria-hidden className="size-4 animate-spin" />
             ) : null
           }
         >
-          {busy ? "Đang lưu..." : "Lưu số liệu"}
+          {isSaving ? "Đang lưu..." : "Lưu số liệu"}
         </Button>
       </div>
     </div>

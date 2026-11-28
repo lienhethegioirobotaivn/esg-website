@@ -29,7 +29,7 @@ Tài liệu bàn giao cho người phát triển và người quản trị. Cài
 - Dịch tự động không cần bấm nút:
   - Lưu hoặc xóa bài, lưu số liệu trên trang quản trị tự dịch nền và dọn dòng không còn dùng.
   - Sửa Sheet câu hỏi: trigger Apps Script (`installTranslationTriggers`) đặt cờ, trong tối đa 10 phút gọi `GET /api/cron/translations?prune=1` (khóa `Authorization: Bearer <CRON_SECRET>`), mỗi 24 giờ chạy một lượt đầy đủ.
-  - Muốn dịch ngay: `/quan-tri/ban-dich` → "Dịch sẵn nội dung".
+  - Muốn dịch ngay (bản demo đang chạy): `/quan-tri/ban-dich` → "Dịch sẵn nội dung". Mã từ giai đoạn 7 của v2 không còn nút này cho nội dung Sheet; gọi `GET /api/cron/translations?prune=1` như dòng trên. Trang **Bản dịch** mới quản lý bản dịch trong PostgreSQL.
 - Dọn dữ liệu mồ côi: hành động `pruneTranslations` xóa dòng không còn thuộc bộ câu hỏi, bài (kể cả nháp) hoặc nhãn số liệu; dòng có chữ ở cột sửa tay luôn được giữ (xóa tay nếu muốn); lấy dữ liệu lỗi hoặc rỗng thì dừng và không xóa gì. Quy ước chung của dự án: tính năng nào lưu dữ liệu lên Google Sheet hoặc Drive phải có cơ chế dọn dữ liệu mồ côi.
 
 ## 4. SEO

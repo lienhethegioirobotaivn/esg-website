@@ -169,12 +169,3 @@ export async function getAdminPosts(): Promise<Post[]> {
   const response = await callAbout("listPosts", { includeDrafts: true });
   return parsePosts(response["posts"]);
 }
-
-export async function getAdminStats(): Promise<{ value: string; label: string }[]> {
-  if (!isAboutBridgeConfigured()) {
-    return [];
-  }
-  const response = await callAbout("listStats");
-  const items = z.array(statItemSchema).safeParse(response["items"]);
-  return items.success ? items.data : [];
-}

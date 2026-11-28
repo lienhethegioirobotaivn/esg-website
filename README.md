@@ -13,7 +13,7 @@ Website khảo sát ESG miễn phí cho doanh nghiệp. Doanh nghiệp điền t
 | Kế hoạch cải thiện ESG | Nhập trên web, lưu trong trình duyệt, chưa lên Sheet |
 | Báo cáo PDF | Tạo ngay trên trình duyệt (`@react-pdf/renderer`), theo mẫu của sếp |
 | Giao diện báo cáo theo thương hiệu | Tùy chọn, tắt mặc định (`ENABLE_BRAND_THEME`): tải ảnh bộ nhận diện, Gemini đề xuất màu, phông và kiểu bìa cho PDF và Word; xem [docs/thuong-hieu-bao-cao.md](docs/thuong-hieu-bao-cao.md) |
-| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Đã xong giai đoạn 1–6: khung dự án, schema, đăng nhập OTP, gửi thư, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, bài viết, thống kê, bản dịch. Frontend vẫn dùng Sheet và Apps Script cho tới giai đoạn 8; thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
+| `apps/api` | Bản production v2 (NestJS 12 + Drizzle + PostgreSQL 18). Đã xong giai đoạn 1–7: khung dự án, schema, đăng nhập OTP, gửi thư, ngân hàng câu hỏi, báo cáo và tệp, quản trị và CRM, bài viết, thống kê, bản dịch, giao diện quản trị. Website công khai vẫn dùng Sheet và Apps Script cho tới giai đoạn 8 (trang `/quan-tri` đã gọi API này); thiết kế ở [docs/backend-spec.md](docs/backend-spec.md), lộ trình ở [docs/backend-roadmap.md](docs/backend-roadmap.md) |
 | `/admin` | Ẩn khỏi giao diện, giữ mã nguồn |
 | Chấm điểm | Chưa làm |
 
@@ -52,6 +52,8 @@ pnpm dev:api
 Nếu `pnpm db:up` báo lỗi cổng 5432 (`forbidden by its access permissions` trên Windows), tạo file `.env` ở thư mục gốc với `DB_PORT=5433`, rồi đổi cổng thành 5433 trong `DATABASE_URL` của `apps/api/.env` và `TEST_DATABASE_URL`. Kiểm tra cổng bị chặn bằng `netsh interface ipv4 show excludedportrange protocol=tcp`.
 
 Kiểm tra: `http://localhost:3001/api/v1/health` trả `{"status":"ok","database":"up",...}`.
+
+Trang quản trị `http://localhost:3000/quan-tri` cần cả `pnpm dev:api` và `pnpm dev` cùng chạy. Web gọi API qua `API_INTERNAL_URL` trong `apps/web/.env.local` (mặc định `http://localhost:3001`). Tài khoản đầu tiên tạo từ `ADMIN_BOOTSTRAP_EMAIL` và `ADMIN_BOOTSTRAP_PASSWORD`.
 
 | Biến (`apps/api/.env`) | Mặc định | Ý nghĩa |
 | --- | --- | --- |
@@ -173,6 +175,7 @@ Cấu trúc trên theo các file đã làm việc; kiểm tra lại với repo t
   - [Lộ trình và tính năng làm sau](docs/backend-roadmap.md)
   - [Thay đổi cần chốt so với bản demo](docs/backend-quyet-dinh-can-chot.md)
 - [Cài đặt Apps Script](docs/huong-dan-cai-dat-apps-script.md)
+- [Trang quản trị v2](docs/huong-dan-trang-quan-tri.md)
 - [Quản trị bộ câu hỏi trong Sheet](docs/huong-dan-quan-tri-bo-cau-hoi.md)
 - [Đối chiếu biến mẫu và nguồn dữ liệu](docs/doi-chieu-bien-mau-nguon-du-lieu.md)
 - Cài đặt Apps Script và quản trị Sheet chỉ còn đúng với bản demo; sẽ bỏ khi chuyển sang v2.

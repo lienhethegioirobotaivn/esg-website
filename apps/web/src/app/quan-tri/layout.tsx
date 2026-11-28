@@ -1,67 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Container } from "@/components/ui";
-import { ABOUT_PATH } from "@/features/about/constants";
-import { LogoutButton } from "@/features/about-admin/components/logout-button";
-import { isAdmin } from "@/server/admin/session";
+import { AdminShell } from "@/features/backoffice/components/admin-shell";
 
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Quản trị nội dung",
+  title: "Quản trị · ESG Report Online",
   robots: { index: false, follow: false },
   icons: { icon: "/favicon.ico" },
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const signedIn = await isAdmin();
   return (
     <html lang="vi">
       <body className="min-h-screen">
-        <div className="min-h-screen">
-          <header className="border-b border-border bg-surface">
-            <Container className="flex min-h-14 items-center justify-between gap-4">
-              <Link href="/quan-tri" className="font-bold text-primary-800">
-                Quản trị nội dung · ESG Report Online
-              </Link>
-              <div className="flex items-center gap-3 text-sm">
-                <Link
-                  href="/quan-tri/trong-rung"
-                  className="text-muted hover:underline"
-                >
-                  Trồng rừng
-                </Link>
-                <Link
-                  href="/quan-tri/tin-chi-carbon"
-                  className="text-muted hover:underline"
-                >
-                  Tín chỉ Carbon
-                </Link>
-                <Link href={ABOUT_PATH} className="text-muted hover:underline">
-                  Xem trang web
-                </Link>
-                {signedIn ? (
-                  <Link
-                    href="/quan-tri/ban-dich"
-                    className="text-muted hover:underline"
-                  >
-                    Bản dịch
-                  </Link>
-                ) : null}
-                {signedIn ? <LogoutButton /> : null}
-              </div>
-            </Container>
-          </header>
-          <main>
-            <Container className="py-8">{children}</Container>
-          </main>
-        </div>
+        <AdminShell>{children}</AdminShell>
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import { sanitizeRichDoc, type PostSection, type RichDoc } from "@esg/shared";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import {
   Button,
@@ -23,8 +23,11 @@ import {
   postPath,
 } from "@/features/about/constants";
 import type { Post } from "@/features/about/types";
+import { useNotify } from "@/features/backoffice/components/toast";
+import { ApiError, sendJson } from "@/features/backoffice/lib/api";
+import { useUnsavedWarning } from "@/features/backoffice/lib/use-unsaved-warning";
 
-import { AdminApiError, savePost } from "../lib/admin-api";
+import { toPost, type ApiPostDetail } from "../lib/posts";
 import { slugify } from "../lib/slugify";
 import { RichEditor } from "./rich-editor";
 import { ImageField } from "./image-field";
@@ -45,7 +48,9 @@ function today(): string {
 
 export function PostEditor({ initial }: PostEditorProps) {
   const router = useRouter();
-  const isNew = initial === null;
+  const notify = useNotify();
+  const [saved, setSaved] = useState(initial);
+  const isNew = saved === null;
   const [section, setSection] = useState<PostSection>(
     initial?.section ?? "tin-tuc",
   );
@@ -71,15 +76,10 @@ export function PostEditor({ initial }: PostEditorProps) {
     sanitizeRichDoc(initial?.body),
   );
   const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savingStatus, setSavingStatus] = useState<
     "published" | "draft" | null
   >(null);
-  const [lastStatus, setLastStatus] = useState<"published" | "draft" | null>(
-    null,
-  );
-  const [isNavigating, startNavigation] = useTransition();
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -88,6 +88,25 @@ export function PostEditor({ initial }: PostEditorProps) {
     ...categories,
     ...(category !== "" && !categories.includes(category) ? [category] : []),
   ].map((value) => ({ value, label: value }));
+
+  const snapshot = JSON.stringify([
+    section,
+    category,
+    title,
+    slug,
+    summary,
+    coverUrl,
+    author,
+    readMinutes,
+    publishedAt,
+    featured,
+    popular,
+    spotlight,
+    body,
+  ]);
+  const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
+  const dirty = snapshot !== savedSnapshot;
+  useUnsavedWarning(dirty);
 
   function changeSection(next: PostSection) {
     setSection(next);
@@ -105,7 +124,6 @@ export function PostEditor({ initial }: PostEditorProps) {
 
   function buildInput(status: "published" | "draft") {
     return {
-      ...(initial ? { id: initial.id } : {}),
       section,
       slug,
       category,
@@ -140,7 +158,6 @@ export function PostEditor({ initial }: PostEditorProps) {
     if (savingStatus !== null) {
       return;
     }
-    setMessage(null);
     setSaveError(null);
     const input = buildInput(status);
     const parsed = postInputSchema.safeParse(input);
@@ -151,23 +168,22 @@ export function PostEditor({ initial }: PostEditorProps) {
     }
     setErrors({});
     setSavingStatus(status);
-    setLastStatus(status);
     try {
-      const id = await savePost(parsed.data);
-      setMessage(status === "published" ? "Đã đăng bài." : "Đã lưu bản nháp.");
-      startNavigation(() => {
-        if (isNew && id !== "") {
-          router.replace(`/quan-tri/bai-viet/${encodeURIComponent(id)}`);
-        }
-        router.refresh();
-      });
+      const result = await sendJson<ApiPostDetail>(
+        saved ? "PATCH" : "POST",
+        saved ? `/admin/posts/${saved.id}` : "/admin/posts",
+        parsed.data,
+      );
+      setSaved(toPost(result));
+      setSavedSnapshot(snapshot);
+      notify(status === "published" ? "Đã đăng bài." : "Đã lưu bản nháp.");
+      if (saved === null) {
+        router.replace(`/quan-tri/bai-viet/${result.id}`);
+      }
     } catch (caught) {
-      if (caught instanceof AdminApiError) {
+      if (caught instanceof ApiError) {
         setErrors(caught.fields);
         setSaveError(caught.message);
-        if (caught.status === 401) {
-          router.refresh();
-        }
       } else {
         setSaveError("Không lưu được bài viết. Vui lòng thử lại.");
       }
@@ -177,7 +193,7 @@ export function PostEditor({ initial }: PostEditorProps) {
   }
 
   const previewPost: Post = {
-    id: initial?.id ?? "xem-truoc",
+    id: saved?.id ?? "xem-truoc",
     slug: slug || "xem-truoc",
     section,
     category: category || "Chưa chọn chuyên mục",
@@ -187,23 +203,26 @@ export function PostEditor({ initial }: PostEditorProps) {
     author,
     readMinutes: Number(readMinutes) || 1,
     publishedAt,
-    likes: initial?.likes ?? 0,
+    likes: saved?.likes ?? 0,
     featured,
     popular,
     spotlight,
-    status: initial?.status ?? "draft",
+    status: saved?.status ?? "draft",
     isSample: false,
     body,
   };
 
-  const activeStatus = savingStatus ?? (isNavigating ? lastStatus : null);
-  const busy = activeStatus !== null || isUploadingImage;
+  const busy = savingStatus !== null || isUploadingImage;
+  const isPublished = saved?.status === "published";
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/quan-tri" className="text-sm text-muted hover:underline">
+          <Link
+            href="/quan-tri/bai-viet"
+            className="text-sm text-muted hover:underline"
+          >
             ← Danh sách bài viết
           </Link>
           <h1 className="mt-1 text-2xl text-primary-800">
@@ -211,9 +230,9 @@ export function PostEditor({ initial }: PostEditorProps) {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          {initial && initial.status === "published" ? (
+          {saved && isPublished ? (
             <Link
-              href={postPath(initial.section, initial.slug)}
+              href={postPath(saved.section, saved.slug)}
               target="_blank"
               className="inline-flex min-h-10 items-center rounded-control border border-border bg-surface px-4 text-sm font-medium hover:bg-surface-muted"
             >
@@ -430,12 +449,10 @@ export function PostEditor({ initial }: PostEditorProps) {
             <span className="text-muted">
               Đang tải ảnh lên, vui lòng đợi xong rồi hãy lưu bài.
             </span>
-          ) : message ? (
-            <span className="text-primary-700">{message}</span>
-          ) : initial ? (
+          ) : saved ? (
             <span className="text-muted">
-              Trạng thái hiện tại:{" "}
-              {initial.status === "published" ? "Đã đăng" : "Nháp"}
+              Trạng thái hiện tại: {isPublished ? "Đã đăng" : "Nháp"}
+              {dirty ? " · Có thay đổi chưa lưu" : ""}
             </span>
           ) : null}
         </div>
@@ -445,25 +462,29 @@ export function PostEditor({ initial }: PostEditorProps) {
             disabled={busy}
             onClick={() => void submit("draft")}
             leadingIcon={
-              activeStatus === "draft" ? (
+              savingStatus === "draft" ? (
                 <Loader2 aria-hidden className="size-4 animate-spin" />
               ) : null
             }
           >
-            {activeStatus === "draft" ? "Đang lưu..." : "Lưu nháp"}
+            {savingStatus === "draft"
+              ? "Đang lưu..."
+              : isPublished
+                ? "Gỡ về nháp"
+                : "Lưu nháp"}
           </Button>
           <Button
             disabled={busy}
             onClick={() => void submit("published")}
             leadingIcon={
-              activeStatus === "published" ? (
+              savingStatus === "published" ? (
                 <Loader2 aria-hidden className="size-4 animate-spin" />
               ) : null
             }
           >
-            {activeStatus === "published"
+            {savingStatus === "published"
               ? "Đang đăng..."
-              : initial?.status === "published"
+              : isPublished
                 ? "Cập nhật bài"
                 : "Đăng bài"}
           </Button>

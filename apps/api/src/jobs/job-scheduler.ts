@@ -65,6 +65,10 @@ export class JobScheduler implements OnApplicationBootstrap, OnApplicationShutdo
     this.timers.length = 0;
   }
 
+  definitions(): readonly JobDefinition[] {
+    return this.jobs;
+  }
+
   async runOnce(name: string): Promise<JobRunOutcome> {
     const job = this.jobs.find((candidate) => candidate.name === name);
     if (job === undefined) {

@@ -1,6 +1,6 @@
 # ESGstudio v2: Hợp đồng API
 
-Tiền tố `/api/v1`, cùng origin với website (Caddy chuyển `/api/*` sang NestJS). Dữ liệu vào/ra kiểm tra bằng schema dùng chung ở `@esg/shared`. Lỗi trả về dạng `{ "error": { "code": "...", "message": "..." } }`; thông điệp hiển thị cho người dùng đi theo i18n ở frontend, `code` là mã ổn định.
+Tiền tố `/api/v1`, cùng origin với website (khi phát triển, Next.js rewrite `/api/v1/*` sang `API_INTERNAL_URL`; ở production Caddy chuyển `/api/v1/*` thẳng sang NestJS). Dữ liệu vào/ra kiểm tra bằng schema dùng chung ở `@esg/shared`. Lỗi trả về dạng `{ "error": { "code": "...", "message": "..." } }`; thông điệp hiển thị cho người dùng đi theo i18n ở frontend, `code` là mã ổn định.
 
 Ký hiệu quyền: **Public** (không cần đăng nhập), **User** (cookie `esg-user`, đã xác thực email), **Admin** (cookie phiên quản trị; ghi rõ vai trò).
 
@@ -98,15 +98,17 @@ Tất cả dưới `/admin`, cần phiên quản trị; ghi `audit_logs`.
 | Nhóm | Đường dẫn | Vai trò | Ghi chú |
 | --- | --- | --- | --- |
 | Phiên (đã làm GĐ 5) | `POST /admin/login`, `POST /admin/logout`, `GET /admin/me` | - | Khóa 15 phút sau 5 lần sai (như demo) |
+| Đổi mật khẩu của mình (đã làm GĐ 7) | `POST /admin/me/password` `{ currentPassword, newPassword }` → `204` | mọi vai trò | Mật khẩu mới ≥ 12 ký tự, khác mật khẩu cũ; đóng các phiên khác; 400 `wrong_password`; 10 lượt/15 phút/người |
+| Người phụ trách (đã làm GĐ 7) | `GET /admin/assignees` → `{ assignees: [{ id, name, role }] }` | `admin`, `ops` | Tài khoản `admin`, `ops` đang hoạt động |
 | Tài khoản (đã làm GĐ 5) | `GET/POST/PATCH /admin/users` | `admin` | Tạo, đổi vai trò, đổi mật khẩu, vô hiệu hóa |
-| Ngân hàng câu hỏi | `GET /admin/question-banks`, `POST /admin/question-banks` (nhập từ xlsx hoặc nhân bản bản đang xuất bản), `PATCH .../questions/:id`, `POST .../publish`, `POST .../validate` | `admin`, `content` | Có xem trước, kiểm tra hợp lệ trước khi xuất bản |
+| Ngân hàng câu hỏi (đã làm GĐ 7) | `/admin/question-banks...` | `admin`, `content` | Chi tiết ở mục 6.2 |
 | CRM (đã làm GĐ 5) | `GET /admin/customers`, `GET/PATCH /admin/customers/:id` (cột chăm sóc), `GET /admin/inquiries`, `GET/PATCH /admin/inquiries/:id` (trạng thái, ưu tiên, người phụ trách, hẹn gọi lại, kết quả), `POST /admin/inquiries/:id/notes`, `GET /admin/feedback` | `admin`, `ops` | Lọc, tìm kiếm, phân trang `limit`/`offset` |
 | Xuất file CRM (đã làm GĐ 5) | `GET /admin/customers/export?format=xlsx|csv`, `GET /admin/inquiries/export?...`, `GET /admin/feedback/export?...` | `admin`, `ops` | Ghi `audit_logs`; mặc định csv (có BOM), theo bộ lọc đang chọn, tối đa 10.000 dòng |
 | Bài viết (đã làm GĐ 6) | `GET/POST /admin/posts`, `GET/PATCH/DELETE /admin/posts/:id`, `POST /admin/upload` (ảnh) | `admin`, `content` | Thay `admin/posts`, `admin/upload`; chi tiết ở mục 6.1 |
 | Thống kê (đã làm GĐ 6) | `GET/PUT /admin/stats` | `admin`, `content` | Thay `admin/stats`; tối đa 8 số liệu |
 | Bản dịch (đã làm GĐ 6) | `GET/PUT /admin/translations`, `POST /admin/translations/run` | `admin`, `content` | Thay `admin/translations`, `cron/translations`; chi tiết ở mục 6.1 |
-| Hệ thống | `GET /admin/jobs`, `GET /admin/files/health`, `GET /admin/outbox` | `admin` | Theo dõi việc nền, tệp mất, thư chưa gửi |
-| Cài đặt | `GET/PATCH /admin/settings` | `admin` | |
+| Hệ thống (đã làm GĐ 7) | `/admin/jobs`, `/admin/outbox`, `/admin/files/...` | `admin` | Chi tiết ở mục 6.3 |
+| Cài đặt (đã làm GĐ 7) | `GET/PATCH /admin/settings` | `admin` | Chi tiết ở mục 6.3 |
 
 ### 6.1 Chi tiết phần nội dung (GĐ 6)
 
@@ -124,6 +126,43 @@ Tất cả dưới `/admin`, cần phiên quản trị; ghi `audit_logs`.
 | `POST /admin/translations/run` | `{ locale?, retryFailed?, prune? }`; 30 lượt/10 phút/người | Chạy dịch: `{ configured, stoppedReason, requests, locales: { en: { total, translated, remaining } } }`. `prune: true` chỉ dọn: `{ removed, keptManual, skipped }` | 409 `translation_running` |
 
 `stoppedReason`: `null` (hết việc cần làm hoặc phần còn lại đang chờ thử lại), `time_budget` (hết 40 giây của một lượt bấm, bấm tiếp để chạy phần còn lại), `daily_limit` (hết `TRANSLATION_DAILY_LIMIT`), `rate_limited` (Gemini trả 429), `error` (không gọi được Gemini; xem log API). `configured: false` nghĩa là chưa đặt `GEMINI_API_KEY`: câu nguồn vẫn được đồng bộ để chỉnh tay.
+
+### 6.2 Ngân hàng câu hỏi (GĐ 7)
+
+Tiền tố `/admin/question-banks`. Kiểu dữ liệu ở `packages/shared/src/question-bank-admin.ts`. Mọi thao tác ghi `audit_logs`.
+
+| Endpoint | Yêu cầu | Thành công | Lỗi |
+| --- | --- | --- | --- |
+| `GET /` | - | `{ banks: BankSummary[] }` (kèm số câu theo trạng thái, số báo cáo đang dùng) | - |
+| `POST /` | `{ fromId?, version?, note? }`; không có `fromId` thì nhân bản bản đang xuất bản | `201 BankDetail` | 404/409 `bank_not_found`, 409 `version_taken` |
+| `POST /import` | Multipart `file` (xlsx ≤ 5 MB), `version?`, `note?`, `dryRun?` (`true`/`false`) | `BankImportResult` `{ ok, imported, issues, version, questions, groups, replacesDraft, bankId }`; còn lỗi thì không ghi gì | 400 `invalid_file`, 413 `file_too_large` |
+| `GET /:id` | - | `BankDetail` `{ bank, groups, questions, nextCodes }` | 404 `bank_not_found` |
+| `PATCH /:id` | `{ version?, note? }` | `BankDetail` | 409 `bank_locked`, `version_taken` |
+| `DELETE /:id` | - | `204` | 409 `bank_locked` |
+| `GET /:id/export` | - | File xlsx gồm tab 01–10, 12, 18, 19; nhập lại được | - |
+| `POST /:id/validate` | - | `{ ok, issues, changes: { comparedTo, added, removed, changed } }` so với bản đang xuất bản | - |
+| `POST /:id/publish` | - | `BankDetail`; bản đang xuất bản chuyển sang lưu trữ. Dùng được cho bản nháp và bản lưu trữ | 400 `bank_invalid`, 409 `already_published` |
+| `POST /:id/questions` | `source`, `text`, tùy chọn `code`, `afterId` (`null` là đầu tab) và các trường câu hỏi | `201 BankDetail` | 400 `invalid_request`, `invalid_code`, `invalid_position`, `pillar_required`, `invalid_input_type`; 409 `code_taken` |
+| `PATCH /:id/questions/:questionId` | Chỉ các trường muốn đổi | `BankDetail` | như trên, 404 `question_not_found`, 409 `code_locked` |
+| `POST /:id/questions/bulk` | `{ ids (≤ 500), patch: { reviewStatus?, declarationLevel?, required?, rolloutStatus? } }` | `BankDetail` | 404 `question_not_found` |
+| `POST /:id/questions/delete` | `{ ids }` | `BankDetail` | 404 `question_not_found` |
+| `PUT /:id/order` | `{ source, ids }`: đủ mọi câu của tab theo thứ tự mới | `BankDetail` | 409 `order_outdated` |
+
+Quy tắc: mọi thao tác sửa câu trên bản không phải nháp trả 409 `bank_locked`; nhóm lưu và thứ tự tính lại sau mỗi lần sửa; đổi nội dung hoặc hướng dẫn thì xóa bản dịch riêng trong `question_texts` của câu đó; duyệt câu mà để trống người, ngày duyệt thì tự điền.
+
+### 6.3 Hệ thống và cài đặt (GĐ 7)
+
+| Endpoint | Thành công | Lỗi |
+| --- | --- | --- |
+| `GET /admin/jobs` | `{ jobs: [{ name, intervalSeconds, tracked, lastRun }] }` | - |
+| `POST /admin/jobs/:name/run` | `{ outcome, job }` | 404 `job_not_found` |
+| `GET /admin/outbox?status=failed|pending|sent&limit=&offset=` | `{ items, total, counts }`; không trả nội dung thư | - |
+| `POST /admin/outbox/:id/retry` | `204`, xếp gửi lại | 404 `not_found`, 409 `not_failed`, `cannot_retry` (thư đã xóa nội dung, ví dụ OTP) |
+| `DELETE /admin/outbox/:id` | `204`, chỉ thư lỗi | 404 `not_found`, 409 `not_failed` |
+| `GET /admin/files/health` | `{ checkedAt, kinds, missing, missingTotal, untracked, pendingPurge }` | - |
+| `DELETE /admin/files/untracked` | `{ removed }`: tệp trên đĩa không có trong database và cũ hơn 24 giờ | - |
+| `GET /admin/settings` | `{ feedbackInviteDelayDays, inquiryNotifyEmail, defaults }` | - |
+| `PATCH /admin/settings` | `{ feedbackInviteDelayDays? (1–29), inquiryNotifyEmail? }`; `null` là quay về mặc định | 400 `invalid_request` |
 
 ## 7. Route cũ không chuyển sang v2
 

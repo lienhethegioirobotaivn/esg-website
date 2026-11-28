@@ -1,6 +1,7 @@
 import type {
   QuestionPillar,
   QuestionReviewStatus,
+  QuestionRolloutStatus,
   QuestionSource,
   QuestionTier,
   QuestionTrack,
@@ -37,6 +38,10 @@ export interface ParsedQuestion {
   readonly route: Record<string, unknown>;
   readonly evidenceRule: Record<string, unknown> | null;
   readonly reviewStatus: QuestionReviewStatus;
+  readonly reviewNote: string | null;
+  readonly reviewedBy: string | null;
+  readonly reviewedOn: string | null;
+  readonly rolloutStatus: QuestionRolloutStatus;
   readonly reportSection: string | null;
   readonly sourceRef: string | null;
 }

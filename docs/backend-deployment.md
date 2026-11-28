@@ -6,7 +6,7 @@
 
 | Dịch vụ | Image | Ghi chú |
 | --- | --- | --- |
-| `caddy` | `caddy:2` | HTTPS tự động, chuyển `/api/*` về `api`, còn lại về `web` |
+| `caddy` | `caddy:2` | HTTPS tự động, chuyển `/api/v1/*` thẳng về `api`, còn lại về `web` |
 | `web` | build từ `apps/web` | Next.js standalone |
 | `api` | build từ `apps/api` | NestJS, chạy migration lúc khởi động có khóa |
 | `db` | `postgres:18` | Volume riêng, không mở cổng ra ngoài. Từ PG 18 image dùng thư mục dữ liệu theo phiên bản, nên mount volume vào `/var/lib/postgresql` (không phải `/var/lib/postgresql/data`) như `compose.dev.yaml` |
@@ -30,6 +30,9 @@ Kiểm tra bằng schema lúc khởi động. Không có biến nào dùng chung
 | Dịch (đã có từ GĐ 6) | `GEMINI_API_KEY` (tùy chọn; bỏ trống thì không dịch máy, web hiện tiếng Việt hoặc bản chỉnh tay), `GEMINI_MODEL` (mặc định `gemini-3.5-flash-lite`), `TRANSLATION_DAILY_LIMIT` (mặc định 200 lượt gọi/24 giờ, mỗi lượt tối đa 40 câu; `0` là tắt), `GEMINI_API_BASE_URL` (chỉ dùng khi đi qua proxy hoặc để kiểm thử). Image `api` phải mang theo `apps/api/data/glossary.json` |
 | Website | `PUBLIC_BASE_URL` (GĐ 5, mặc định `http://localhost:3000`; dùng dựng liên kết trong thư mời phản hồi và thư báo yêu cầu); `TRUSTED_PROXY` (đã có từ GĐ 2: số lớp proxy tin cậy, Caddy đặt `1`) |
 | Việc nền (đã có từ GĐ 2) | `JOBS_ENABLED` (mặc định `true`) |
+| `web` (từ GĐ 7) | `API_INTERNAL_URL` (mặc định `http://localhost:3001`; địa chỉ `api` mà Next.js rewrite `/api/v1/*` tới, **đọc lúc build**; trong Docker đặt `http://api:3001` khi build image). `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` không còn dùng |
+
+Ở production để Caddy chuyển `/api/v1/*` thẳng sang `api` thay vì đi qua rewrite của `web`: nhờ vậy `TRUSTED_PROXY=1` lấy đúng IP người dùng cho giới hạn tần suất và nhật ký. Thời gian chờ của proxy cho `/api/v1/admin/*` cần ít nhất 180 giây (dịch và nhập file chạy lâu).
 
 ## 3. Sao lưu tự động
 
